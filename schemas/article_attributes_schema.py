@@ -3,9 +3,9 @@ from typing import Optional
 
 
 class ArticleAttributesSchema(BaseModel):
-    id: int
     supplierid: int
     datasupplierarticlenumber: str
+    id: int
     description: Optional[str]
     displaytitle: str
     displayvalue: str
