@@ -1,4 +1,5 @@
 from boto3.session import Session
+from botocore.exceptions import ClientError
 
 from S3.s3_setting import S3Setting
 
@@ -18,6 +19,8 @@ class S3Service:
 
     def get_image_url(self, file_name: str, expires_in: int = 86400):
         try:
+            self.s3_client.head_object(Bucket=self.s3_setting.bucket_name, Key=file_name)
+
             url = self.s3_client.generate_presigned_url(
                 'get_object',
                 Params={'Bucket': self.s3_setting.bucket_name, 'Key': file_name},
@@ -25,6 +28,5 @@ class S3Service:
                 HttpMethod='GET'
             )
             return url
-        except Exception as e:
-            print(f"Error when generating link: {str(e)}")
+        except ClientError:
             return None
