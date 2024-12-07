@@ -31,7 +31,7 @@ class ArticlesService:
         """Получить записи по полю FoundString."""
         filter_condition = self.repository.model.FoundString == found_string
         record = await self.repository.find_one(filter_condition=filter_condition)
-        return ArticlesSchema.model_validate(record)
+        return ArticlesSchema.model_validate(record) if record else None
 
     async def get_valid_articles(self) -> List[ArticlesSchema]:
         """Получить только валидные статьи (IsValid = 'True')."""
