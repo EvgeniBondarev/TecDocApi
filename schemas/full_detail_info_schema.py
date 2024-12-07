@@ -8,6 +8,7 @@ from schemas.suppliers_schema import SuppliersSchema
 
 
 class FullDetailInfoSchema(BaseModel):
+    normalized_article: str
     detail_attribute: List[ArticleAttributesSchema]
     img_urls: List[str]
     supplier_from_jc: Optional[EtProducerSchema]

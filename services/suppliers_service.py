@@ -33,7 +33,7 @@ class SuppliersService:
         """Получить записи по описанию (без учета регистра)."""
         filter_condition = self.repository.model.matchcode == matchcode
         record = await self.repository.find_one(filter_condition=filter_condition)
-        return SuppliersSchema.model_validate(record)
+        return SuppliersSchema.model_validate(record) if record else None
 
     async def get_suppliers_with_articles(self) -> List[SuppliersSchema]:
         """Получить поставщиков, у которых есть статьи."""

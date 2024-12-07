@@ -27,6 +27,7 @@ router = APIRouter(
     tags=["Detail full info"],
 )
 
+# Основной эндпоинт
 @router.get("/{supplier}/{article}", response_model=FullDetailInfoSchema)
 async def get_full_detail_info(
         supplier: str,
@@ -49,6 +50,7 @@ async def get_full_detail_info(
         normalized_article = await get_normalized_article(article, articles_service)
 
         # Шаг 2: Получение ID поставщика
+        supplier_from_jc = await et_producer_service.get_producers_by_name(supplier)
         supplier_id = await get_supplier_id(supplier, et_producer_service, suppliers_service)
 
         # Шаг 3: Получение атрибутов и изображений
@@ -58,11 +60,16 @@ async def get_full_detail_info(
         # Шаг 4: Генерация URL для изображений
         img_urls = await fetch_image_urls(images, s3_service)
 
+        # Шаг 5: Получение данных поставщика из TD
+        supplier_from_td = await get_supplier_from_td(supplier, supplier_from_jc, suppliers_service)
+
+        # Возврат ответа
         return FullDetailInfoSchema(
+            normalized_article=normalized_article,
             detail_attribute=detail_attribute,
             img_urls=img_urls,
-            supplier_from_jc=await et_producer_service.get_producers_by_name(supplier),
-            supplier_from_td=None  # Данных о поставщике из TD может не быть
+            supplier_from_jc=supplier_from_jc,
+            supplier_from_td=supplier_from_td  # Устанавливаем результат
         )
     except HTTPException as e:
         raise e
@@ -115,6 +122,24 @@ async def get_supplier_id(
     else:
         return supplier_from_jc.tecdocSupplierId
 
+async def get_supplier_from_td(
+    supplier: str,
+    supplier_from_jc: EtProducerSchema,
+    suppliers_service: SuppliersService
+) -> Optional[SuppliersSchema]:
+    """
+    Ищет поставщика в TD по описанию, префиксу или marketPrefix.
+    """
+    # Попытка найти поставщика по описанию
+    supplier_from_td: Optional[SuppliersSchema] = await suppliers_service.get_suppliers_by_description_case_ignore(supplier)
+
+    # Если не найдено, ищем через префиксы
+    if supplier_from_jc.prefix and not supplier_from_td:
+        supplier_from_td = await suppliers_service.get_suppliers_by_matchcode(supplier_from_jc.prefix)
+        if not supplier_from_td:
+            supplier_from_td = await suppliers_service.get_suppliers_by_matchcode(supplier_from_jc.marketPrefix)
+
+    return supplier_from_td
 
 # Вспомогательная функция: Получение URL изображений
 async def fetch_image_urls(images: List[ArticleImageSchema], s3_service: S3Service) -> List[str]:
