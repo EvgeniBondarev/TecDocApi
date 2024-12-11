@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List, Optional
 from pydantic import BaseModel
+from sqlalchemy.util import await_only
 
 from S3.s3_service import S3Service
 from dependencies import (
@@ -60,16 +61,22 @@ async def get_full_detail_info(
         # Шаг 4: Генерация URL для изображений
         img_urls = await fetch_image_urls(images, s3_service)
 
+        if supplier_from_jc.marketPrefix is not None:
+            img_by_supplier = await fetch_image_by_supplier_code(supplier_from_jc.marketPrefix, article, s3_service)
+            if img_by_supplier is not None:
+                img_urls.append(img_by_supplier)
+
+
+
         # Шаг 5: Получение данных поставщика из TD
         supplier_from_td = await get_supplier_from_td(supplier, supplier_from_jc, suppliers_service)
 
-        # Возврат ответа
         return FullDetailInfoSchema(
             normalized_article=normalized_article,
             detail_attribute=detail_attribute,
             img_urls=img_urls,
             supplier_from_jc=supplier_from_jc,
-            supplier_from_td=supplier_from_td  # Устанавливаем результат
+            supplier_from_td=supplier_from_td
         )
     except HTTPException as e:
         raise e
@@ -148,7 +155,16 @@ async def fetch_image_urls(images: List[ArticleImageSchema], s3_service: S3Servi
     Если URL не может быть получен, изображение пропускается.
     """
     return [
-        s3_service.get_image_url(image.PictureName)
-        for image in images if s3_service.get_image_url(image.PictureName) is not None
+        s3_service.get_image_url(image.PictureName.replace("JPG", "jpg"),
+                                                        f"TD2018/images/{image.PictureName.split('_')[0]}")
+        for image in images if s3_service.get_image_url(image.PictureName.replace("JPG", "jpg"),
+                                                        f"TD2018/images/{image.PictureName.split('_')[0]}")
+                                                        is not None
     ]
 
+async def fetch_image_by_supplier_code(supplier: str, article: str, s3_service: S3Service) -> str:
+    """
+    Генерирует URL для всех доступных изображений.
+    Если URL не может быть получен, изображение пропускается.
+    """
+    return s3_service.get_image_url(f"{article}.jpg", f"{supplier}")

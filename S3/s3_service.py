@@ -17,13 +17,14 @@ class S3Service:
             region_name=self.s3_setting.region_name
         )
 
-    def get_image_url(self, file_name: str, expires_in: int = 86400):
+    def get_image_url(self, file_name: str, folder_name: str, expires_in: int = 86400):
         try:
-            self.s3_client.head_object(Bucket=self.s3_setting.bucket_name, Key=file_name)
+            path = f"{folder_name}/{file_name}"
+            self.s3_client.head_object(Bucket=self.s3_setting.bucket_name, Key=path)
 
             url = self.s3_client.generate_presigned_url(
                 'get_object',
-                Params={'Bucket': self.s3_setting.bucket_name, 'Key': file_name},
+                Params={'Bucket': self.s3_setting.bucket_name, 'Key': path},
                 ExpiresIn=expires_in,
                 HttpMethod='GET'
             )
