@@ -33,6 +33,12 @@ class ArticlesService:
         record = await self.repository.find_one(filter_condition=filter_condition)
         return ArticlesSchema.model_validate(record) if record else None
 
+    async def get_articles_by_data_supplier_article_number(self, article: str) -> List[ArticlesSchema]:
+        """Получить записи по полю DataSupplierArticleNumber."""
+        filter_condition = self.repository.model.DataSupplierArticleNumber == article
+        records = await self.repository.find(filter_condition=filter_condition)
+        return [ArticlesSchema.model_validate(record) for record in records]
+
     async def get_valid_articles(self) -> List[ArticlesSchema]:
         """Получить только валидные статьи (IsValid = 'True')."""
         filter_condition = self.repository.model.IsValid == "True"

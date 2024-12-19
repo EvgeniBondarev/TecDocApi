@@ -6,6 +6,7 @@ from repositories.article_images_repository import ArticlesImagesRepository
 from repositories.articles_repository import ArticlesRepository
 from repositories.et_producer_repository import EtProducerRepository
 from repositories.suppliers_repository import SuppliersRepository
+from repositories.utils.substitute_finder import SubstituteFinder
 from services.article_attributes_service import ArticleAttributesService
 from services.article_images_service import ArticleImagesService
 from services.articles_service import ArticlesService
@@ -39,3 +40,6 @@ def get_s3_service() -> S3Service:
                                S3_ENDPOINT_URL,
                                S3_REGION_NAME,
                                S3_BUCKET_NAME))
+
+def get_substitute_finder_service() -> SubstituteFinder:
+    return SubstituteFinder()

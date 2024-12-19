@@ -21,7 +21,7 @@ class EtProducerService:
         record = await self.repository.find_one(filter_condition=filter_condition)
         return EtProducerSchema.model_validate(record)  if record else None
 
-    async def get_producers_by_id(self, id: int) -> EtProducerSchema:
+    async def get_producer_by_id(self, id: int) -> EtProducerSchema:
         filter_condition = self.repository.model.id == id
         record = await self.repository.find_one(filter_condition=filter_condition)
         return EtProducerSchema.model_validate(record)
