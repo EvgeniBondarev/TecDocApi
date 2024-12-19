@@ -7,17 +7,18 @@ from dependencies import (
     get_article_images_service,
     get_articles_service,
     get_suppliers_service,
-    get_s3_service,
+    get_s3_service, get_article_ean_service,
 )
 
 from schemas.full_detail_info_schema import FullDetailInfoSchema
 from services.article_attributes_service import ArticleAttributesService
+from services.article_ean_service import ArticleEANService
 from services.article_images_service import ArticleImagesService
 from services.articles_service import ArticlesService
 from services.et_producer_service import EtProducerService
 from services.suppliers_service import SuppliersService
-from services.utils.search_preparation import get_supplier_id, get_normalized_article, fetch_image_urls, \
-    fetch_image_by_supplier_code, get_supplier_from_td
+from services.utils.search_preparation import get_supplier_id, fetch_image_urls, \
+    fetch_image_by_supplier_code, get_supplier_from_td, get_normalized_article_schema
 
 router = APIRouter(
     prefix="/detail-full-info",
@@ -33,6 +34,7 @@ async def get_full_detail_info(
         article_images_service: ArticleImagesService = Depends(get_article_images_service),
         articles_service: ArticlesService = Depends(get_articles_service),
         suppliers_service: SuppliersService = Depends(get_suppliers_service),
+        article_ean_service: ArticleEANService = Depends(get_article_ean_service),
         s3_service: S3Service = Depends(get_s3_service)
 ):
     """
@@ -44,7 +46,8 @@ async def get_full_detail_info(
     article = article.replace(" ", "")
     try:
         # Шаг 1: Нормализация артикула
-        normalized_article = await get_normalized_article(article, articles_service)
+        normalized_article_schema = await get_normalized_article_schema(article, articles_service)
+        normalized_article = normalized_article_schema.DataSupplierArticleNumber if normalized_article_schema else article
 
         # Шаг 2: Получение ID поставщика
         supplier_from_jc = await et_producer_service.get_producers_by_name(supplier)
@@ -65,8 +68,13 @@ async def get_full_detail_info(
         # Шаг 5: Получение данных поставщика из TD
         supplier_from_td = await get_supplier_from_td(supplier, supplier_from_jc, suppliers_service)
 
+        # Шаг 6: Получение данных по EAN
+        article_ean = await  article_ean_service.get_ean_by_filter(supplier_id, article)
+
         return FullDetailInfoSchema(
             normalized_article=normalized_article,
+            article_ean=article_ean,
+            article_schema=normalized_article_schema,
             detail_attribute=detail_attribute,
             img_urls=img_urls,
             supplier_from_jc=supplier_from_jc,

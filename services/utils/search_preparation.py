@@ -2,6 +2,7 @@ from http.client import HTTPException
 from typing import Optional, List
 
 from S3.s3_service import S3Service
+from schemas.articles_schema import ArticlesSchema
 from schemas.aticle_image_schema import ArticleImageSchema
 from schemas.et_producer_schema import EtProducerSchema
 from schemas.suppliers_schema import SuppliersSchema
@@ -17,6 +18,14 @@ async def get_normalized_article(article: str, articles_service: ArticlesService
     """
     data = await articles_service.get_articles_by_found_string(article)
     return data.DataSupplierArticleNumber if data else article
+
+async def get_normalized_article_schema(article: str, articles_service: ArticlesService) -> ArticlesSchema:
+    """
+    Проверяет наличие артикула в базе данных и возвращает нормализованный артикул.
+    Если артикул не найден, возвращает исходный.
+    """
+    data = await articles_service.get_articles_by_found_string(article)
+    return data if data else None
 
 # Вспомогательная функция: Получение ID поставщика
 async def get_supplier_id(
