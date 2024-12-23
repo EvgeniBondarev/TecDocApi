@@ -19,13 +19,12 @@ async def get_normalized_article(article: str, articles_service: ArticlesService
     data = await articles_service.get_articles_by_found_string(article)
     return data.DataSupplierArticleNumber if data else article
 
-async def get_normalized_article_schema(article: str, articles_service: ArticlesService) -> ArticlesSchema:
+async def get_normalized_article_schema(supplier_id: int ,article: str, articles_service: ArticlesService) -> ArticlesSchema:
     """
     Проверяет наличие артикула в базе данных и возвращает нормализованный артикул.
     Если артикул не найден, возвращает исходный.
     """
-    data = await articles_service.get_articles_by_found_string(article)
-    return data if data else None
+    return await articles_service.get_articles_by_found_string_and_supplier_id(article, supplier_id)
 
 # Вспомогательная функция: Получение ID поставщика
 async def get_supplier_id(

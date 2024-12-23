@@ -18,7 +18,7 @@ from services.articles_service import ArticlesService
 from services.et_producer_service import EtProducerService
 from services.suppliers_service import SuppliersService
 from services.utils.search_preparation import get_supplier_id, fetch_image_urls, \
-    fetch_image_by_supplier_code, get_supplier_from_td, get_normalized_article_schema
+    fetch_image_by_supplier_code, get_supplier_from_td, get_normalized_article
 
 router = APIRouter(
     prefix="/detail-full-info",
@@ -46,8 +46,7 @@ async def get_full_detail_info(
     article = article.replace(" ", "")
     try:
         # Шаг 1: Нормализация артикула
-        normalized_article_schema = await get_normalized_article_schema(article, articles_service)
-        normalized_article = normalized_article_schema.DataSupplierArticleNumber if normalized_article_schema else article
+        normalized_article = await get_normalized_article(article, articles_service)
 
         # Шаг 2: Получение ID поставщика
         supplier_from_jc = await et_producer_service.get_producers_by_name(supplier)
@@ -69,7 +68,10 @@ async def get_full_detail_info(
         supplier_from_td = await get_supplier_from_td(supplier, supplier_from_jc, suppliers_service)
 
         # Шаг 6: Получение данных по EAN
-        article_ean = await  article_ean_service.get_ean_by_filter(supplier_id, article)
+        article_ean = await  article_ean_service.get_ean_by_filter(supplier_id, normalized_article)
+
+        # Шаг 7: Получение описания по артикулу
+        normalized_article_schema = await articles_service.get_articles_by_found_string_and_supplier_id(supplier_id, normalized_article)
 
         return FullDetailInfoSchema(
             normalized_article=normalized_article,
