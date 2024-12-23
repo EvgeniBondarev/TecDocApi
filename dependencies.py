@@ -5,6 +5,7 @@ from repositories.article_attributes_repository import ArticlesAttributesReposit
 from repositories.article_ean_repository import ArticleEANRepository
 from repositories.article_images_repository import ArticlesImagesRepository
 from repositories.articles_repository import ArticlesRepository
+from repositories.et_part_repository import EtPartRepository
 from repositories.et_producer_repository import EtProducerRepository
 from repositories.suppliers_repository import SuppliersRepository
 from repositories.utils.substitute_finder import SubstituteFinder
@@ -12,6 +13,7 @@ from services.article_attributes_service import ArticleAttributesService
 from services.article_ean_service import ArticleEANService
 from services.article_images_service import ArticleImagesService
 from services.articles_service import ArticlesService
+from services.et_part_service import EtPartService
 from services.et_producer_service import EtProducerService
 from services.suppliers_service import SuppliersService
 
@@ -23,6 +25,10 @@ def get_article_attributes_service() -> ArticleAttributesService:
 def get_et_producer_service() -> EtProducerService:
     repository = EtProducerRepository()
     return EtProducerService(repository)
+
+def get_et_part_service() -> EtPartService:
+    repository = EtPartRepository()
+    return EtPartService(repository)
 
 def get_article_images_service() -> ArticleImagesService:
     repository = ArticlesImagesRepository()

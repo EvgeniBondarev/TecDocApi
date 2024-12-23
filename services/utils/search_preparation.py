@@ -60,7 +60,7 @@ async def get_supplier_id(
 
         # Если поставщик не найден, возвращаем ошибку
         if not supplier_from_td:
-            raise HTTPException(status_code=404, detail="Поставщик не найден")
+            return 0
 
         return int(supplier_from_td.id)
     else:
@@ -85,19 +85,23 @@ async def get_supplier_from_td(
 
     return supplier_from_td
 
-# Вспомогательная функция: Получение URL изображений
 async def fetch_image_urls(images: List[ArticleImageSchema], s3_service: S3Service) -> List[str]:
     """
     Генерирует URL для всех доступных изображений.
     Если URL не может быть получен, изображение пропускается.
     """
-    return [
-        s3_service.get_image_url(image.PictureName.replace("JPG", "jpg"),
-                                                        f"TD2018/images/{image.PictureName.split('_')[0]}")
-        for image in images if s3_service.get_image_url(image.PictureName.replace("JPG", "jpg"),
-                                                        f"TD2018/images/{image.PictureName.split('_')[0]}")
-                                                        is not None
-    ]
+    unique_picture_names = set()
+    urls = []
+
+    for image in images:
+        picture_name_lower = image.PictureName.replace("JPG", "jpg")
+        if picture_name_lower not in unique_picture_names:
+            unique_picture_names.add(picture_name_lower)
+
+            url = s3_service.get_image_url(picture_name_lower, f"TD2018/images/{image.PictureName.split('_')[0]}")
+            if url is not None:
+                urls.append(url)
+    return urls
 
 async def fetch_image_by_supplier_code(supplier: str, article: str, s3_service: S3Service) -> str:
     """
