@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from typing import Optional
 
 class EtProducerSchema(BaseModel):
-    id: str
+    id: int
     realid: Optional[str]
     prefix: Optional[str]
     name: Optional[str]
