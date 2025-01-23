@@ -40,6 +40,10 @@ class SQLAlchemyReadRepository(AbstractReadRepository):
             if filter_condition is not None:
                 query = query.where(filter_condition)
 
+            query = query.distinct()
+
+            print(query)
+
             result = await session.execute(query)
             return result.scalars().all()
 

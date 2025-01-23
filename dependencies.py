@@ -5,6 +5,8 @@ from repositories.article_attributes_repository import ArticlesAttributesReposit
 from repositories.article_ean_repository import ArticleEANRepository
 from repositories.article_images_repository import ArticlesImagesRepository
 from repositories.articles_repository import ArticlesRepository
+from repositories.et_part_field_data_repository import EtPartFieldDataRepository
+from repositories.et_part_field_repository import EtPartFieldRepository
 from repositories.et_part_repository import EtPartRepository
 from repositories.et_producer_repository import EtProducerRepository
 from repositories.suppliers_repository import SuppliersRepository
@@ -13,6 +15,8 @@ from services.article_attributes_service import ArticleAttributesService
 from services.article_ean_service import ArticleEANService
 from services.article_images_service import ArticleImagesService
 from services.articles_service import ArticlesService
+from services.et_part_field_data_service import EtPartFieldDataService
+from services.et_part_field_service import EtPartFieldService
 from services.et_part_service import EtPartService
 from services.et_producer_service import EtProducerService
 from services.suppliers_service import SuppliersService
@@ -55,3 +59,11 @@ def get_s3_service() -> S3Service:
 
 def get_substitute_finder_service() -> SubstituteFinder:
     return SubstituteFinder()
+
+def get_et_part_field_data_service() -> EtPartFieldDataService:
+    repository = EtPartFieldDataRepository()
+    return EtPartFieldDataService(repository)
+
+def get_et_part_field_service() -> EtPartFieldService:
+    repository = EtPartFieldRepository()
+    return EtPartFieldService(repository)
