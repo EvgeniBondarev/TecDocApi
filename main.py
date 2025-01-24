@@ -12,6 +12,7 @@ from routing.articles_router import router as articles_router
 from routing.supplier_router import router as supplier_router
 from routing.et_part_router import router as et_part_router
 from routing.et_part_field_router import router as et_part_field_router
+from routing.et_string_router import router as et_string_router
 app = FastAPI()
 
 origins = ["*"]
@@ -33,3 +34,4 @@ app.include_router(article_images_router)
 app.include_router(et_producer_router)
 app.include_router(et_part_router)
 app.include_router(et_part_field_router)
+app.include_router(et_string_router)

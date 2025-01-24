@@ -9,6 +9,7 @@ from repositories.et_part_field_data_repository import EtPartFieldDataRepository
 from repositories.et_part_field_repository import EtPartFieldRepository
 from repositories.et_part_repository import EtPartRepository
 from repositories.et_producer_repository import EtProducerRepository
+from repositories.et_string_repository import EtStringRepository
 from repositories.suppliers_repository import SuppliersRepository
 from repositories.utils.substitute_finder import SubstituteFinder
 from services.article_attributes_service import ArticleAttributesService
@@ -19,6 +20,7 @@ from services.et_part_field_data_service import EtPartFieldDataService
 from services.et_part_field_service import EtPartFieldService
 from services.et_part_service import EtPartService
 from services.et_producer_service import EtProducerService
+from services.et_string_service import EtStringService
 from services.suppliers_service import SuppliersService
 
 
@@ -67,3 +69,7 @@ def get_et_part_field_data_service() -> EtPartFieldDataService:
 def get_et_part_field_service() -> EtPartFieldService:
     repository = EtPartFieldRepository()
     return EtPartFieldService(repository)
+
+def get_et_string_service() -> EtStringService:
+    repository = EtStringRepository()
+    return EtStringService(repository)
