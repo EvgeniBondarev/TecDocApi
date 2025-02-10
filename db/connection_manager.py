@@ -23,5 +23,3 @@ class ConnectionManager:
                 query = text(sql_query)
                 result = await session.execute(query, parameters or {})
                 return result.fetchall()
-
-

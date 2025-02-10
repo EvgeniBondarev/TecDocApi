@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from dependencies import get_articles_service, get_suppliers_service, get_et_part_service, get_et_producer_service
 from schemas.all_suppliers_schema import AllSuppliersSchema
@@ -35,6 +35,9 @@ async def get_suppliers_by_article(article: str, articles_service : ArticlesServ
             await et_producer_service.get_producer_by_id(producer.producerId) for producer in js_producers
         ] if producer is not None
     ]
+
+    if len(suppliers_from_td) == 0 or len(suppliers_from_js) == 0:
+        raise HTTPException(status_code=404, detail="Not found")
 
     return AllSuppliersSchema(
         suppliersFromJs=suppliers_from_js,

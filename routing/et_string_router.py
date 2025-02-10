@@ -1,5 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from typing import List, Optional
+
+from db.connection_manager import ConnectionManager
+from db.database_enum import DatabaseEnum
 from services.et_string_service import EtStringService
 from schemas.et_string_schema import EtStringSchema
 from dependencies import get_et_string_service
@@ -61,3 +64,4 @@ async def search_strings_by_text(
     service: EtStringService = Depends(get_et_string_service)
 ) -> List[EtStringSchema]:
     return await service.search_strings_by_id_str_and_producer_id(id_str, producer_id)
+
