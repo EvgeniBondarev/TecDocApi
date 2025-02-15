@@ -1,9 +1,10 @@
 from enum import Enum
 
-from config import TD2018_URL, JCEtalon_URL
+from config import TD2018_URL, JCEtalon_URL, MNK_URL
 
 
 class DatabaseEnum(Enum):
     TD2018 = TD2018_URL
     JCEtalon = JCEtalon_URL
+    MNK = MNK_URL
 

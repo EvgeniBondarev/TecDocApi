@@ -1,6 +1,8 @@
 from S3.s3_service import S3Service
 from S3.s3_setting import S3Setting
 from config import S3_ACCESS_KEY, S3_SECRET_KEY, S3_BUCKET_NAME, S3_REGION_NAME, S3_ENDPOINT_URL
+
+from repositories.pr_product_repository import PrProductRepository
 from repositories.article_attributes_repository import ArticlesAttributesRepository
 from repositories.article_ean_repository import ArticleEANRepository
 from repositories.article_images_repository import ArticlesImagesRepository
@@ -21,6 +23,7 @@ from services.et_part_field_service import EtPartFieldService
 from services.et_part_service import EtPartService
 from services.et_producer_service import EtProducerService
 from services.et_string_service import EtStringService
+from services.pr_product_service import PrProductService
 from services.suppliers_service import SuppliersService
 
 
@@ -73,3 +76,6 @@ def get_et_part_field_service() -> EtPartFieldService:
 def get_et_string_service() -> EtStringService:
     repository = EtStringRepository()
     return EtStringService(repository)
+
+async def get_product_service():
+    return PrProductService(PrProductRepository())
