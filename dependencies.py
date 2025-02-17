@@ -27,6 +27,7 @@ from services.et_producer_service import EtProducerService
 from services.et_string_service import EtStringService
 from services.pr_product_service import PrProductService
 from services.suppliers_service import SuppliersService
+from services.volna_parts_parser import VolnaPartsParser
 
 
 def get_article_attributes_service() -> ArticleAttributesService:
@@ -79,8 +80,11 @@ def get_et_string_service() -> EtStringService:
     repository = EtStringRepository()
     return EtStringService(repository)
 
-async def get_product_service():
+async def get_product_service() -> PrProductService:
     return PrProductService(PrProductRepository())
 
-async def get_cr_t_cross_service():
+async def get_cr_t_cross_service() -> CrTCrossService:
     return CrTCrossService(CrTCrossRepository())
+
+async def get_volna_parts_parser() -> VolnaPartsParser:
+    return VolnaPartsParser()

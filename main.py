@@ -13,6 +13,7 @@ from routing.et_part_field_router import router as et_part_field_router
 from routing.et_string_router import router as et_string_router
 from routing.pr_part_router import router as pr_part_router
 from routing.cr_t_cross_router import router as cr_t_cross_router
+from routing.volna_parts_router import router as volna_parts_router
 app = FastAPI()
 
 origins = ["*"]
@@ -37,3 +38,4 @@ app.include_router(et_part_field_router)
 app.include_router(et_string_router)
 app.include_router(pr_part_router)
 app.include_router(cr_t_cross_router)
+app.include_router(volna_parts_router)

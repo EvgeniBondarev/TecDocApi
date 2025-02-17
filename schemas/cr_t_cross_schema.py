@@ -1,6 +1,9 @@
 from pydantic import BaseModel, field_validator
 from typing import Optional
 
+from schemas.et_producer_schema import EtProducerSchema
+
+
 class CrTCrossSchema(BaseModel):
     cr_id: Optional[str]
     cr_cross: Optional[str]
@@ -13,7 +16,7 @@ class CrTCrossSchema(BaseModel):
     cr_deleted: Optional[str]
     cr_ismainnew: Optional[str]
     cr_date: Optional[str]
-
+    et_producer: Optional[EtProducerSchema] = None
     @field_validator("cr_crosscode", "cr_maincode", "cr_bycode", mode="before")
     @classmethod
     def strip_whitespace(cls, value: Optional[str]) -> Optional[str]:
