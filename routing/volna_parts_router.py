@@ -1,3 +1,5 @@
+from typing import List
+
 from fastapi import APIRouter, Depends
 
 from dependencies import get_volna_parts_parser
@@ -9,7 +11,7 @@ router = APIRouter(
     tags=["VolnaPrts"]
 )
 
-@router.get("/part/{article}", response_model=PartDataSchema)
+@router.get("/part/{article}", response_model=List[PartDataSchema])
 async def get_by_article(article: str, service: VolnaPartsParser=Depends(get_volna_parts_parser)):
     """Получить записи по article."""
     return  service.parse_part(article)
