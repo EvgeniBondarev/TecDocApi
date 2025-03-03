@@ -46,6 +46,44 @@ class VolnaPartsParser:
             return [part_data]
 
     @staticmethod
+    def parse_part_by_brand(article: str, brand: int) -> List[PartDataSchema]:
+        url = f"https://volna.parts/search/number/?article={article}&brand={brand}"
+        try:
+            response = requests.get(url)
+            response.raise_for_status()
+        except requests.RequestException as e:
+            print(f"Request error: {e}")
+            return []
+
+        soup = BeautifulSoup(response.text, 'html.parser')
+        artlookup_div = soup.find('div', class_='details-list artlookup-wrap')
+
+        if artlookup_div:
+            brand_links = []
+            for ftr_div in artlookup_div.find_all('div', class_='ftr cursor'):
+                brand_descr = ftr_div.find('div', class_=lambda x: x and 'g-brand2' in x)
+                if brand_descr:
+                    a_tag = brand_descr.find('a')
+                    if a_tag and a_tag.has_attr('href'):
+                        link = a_tag['href']
+                        brand_links.append(link)
+
+            parts = []
+            for link in brand_links:
+                try:
+                    response = requests.get(link)
+                    response.raise_for_status()
+                    part_data = VolnaPartsParser._parse_part_page(response)
+                    parts.append(part_data)
+                except Exception as e:
+                    print(f"Error parsing {link}: {e}")
+                    continue
+            return parts
+        else:
+            part_data = VolnaPartsParser._parse_part_page(response)
+            return [part_data]
+
+    @staticmethod
     def _parse_part_page(response) -> PartDataSchema:
         soup = BeautifulSoup(response.text, 'html.parser')
 

@@ -1,3 +1,4 @@
+import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -39,3 +40,6 @@ app.include_router(et_string_router)
 app.include_router(pr_part_router)
 app.include_router(cr_t_cross_router)
 app.include_router(volna_parts_router)
+
+#if __name__ == "__main__":
+    #uvicorn.run(app="main:app", reload=True)
