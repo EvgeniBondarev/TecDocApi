@@ -16,5 +16,7 @@ async def get_by_article(article: str, service: VolnaPartsParser=Depends(get_vol
     """Получить записи по article."""
     return  service.parse_part(article)
 
-
-
+@router.get("/part/{article}/{brand}", response_model=List[PartDataSchema])
+async def get_by_article_and_brand(article: str, brand: int, service: VolnaPartsParser=Depends(get_volna_parts_parser)):
+    """Получить записи по article."""
+    return  service.parse_part_by_brand(article, brand)

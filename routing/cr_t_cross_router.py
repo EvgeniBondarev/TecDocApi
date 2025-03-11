@@ -19,4 +19,12 @@ async def get_by_maincode(maincode: str, service: CrTCrossService=Depends(get_cr
         cross.et_producer = await  et_producer_service.get_producer_by_id(int(cross.cr_cross))
     return crosses
 
+@router.get("/bycode/{bycode}", response_model=List[CrTCrossSchema])
+async def get_by_bycode(bycode: str, service: CrTCrossService=Depends(get_cr_t_cross_service),
+                          et_producer_service: EtProducerService =Depends(get_et_producer_service)):
+    """Получить записи по cr_bycode."""
+    crosses: List[CrTCrossSchema] = await service.get_by_bycode(bycode)
+    for cross in crosses:
+        cross.et_producer = await  et_producer_service.get_producer_by_id(int(cross.cr_cross))
+    return crosses
 

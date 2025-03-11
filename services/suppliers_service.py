@@ -17,6 +17,11 @@ class SuppliersService:
         record = await self.repository.find_one(filter_condition=self.repository.model.id == supplier_id)
         return SuppliersSchema.model_validate(record) if record else None
 
+    async def get_supplier_by_name(self, supplier_name: int) -> Optional[SuppliersSchema]:
+        """Получить запись по ID."""
+        record = await self.repository.find_one(filter_condition=self.repository.model.matchcode == supplier_name)
+        return SuppliersSchema.model_validate(record) if record else None
+
     async def get_suppliers_by_description(self, description: str) -> List[SuppliersSchema]:
         """Получить записи по описанию (учитывая регистр)."""
         filter_condition = self.repository.model.description.like(f"%{description}%")

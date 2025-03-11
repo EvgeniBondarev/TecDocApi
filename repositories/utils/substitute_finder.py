@@ -69,7 +69,7 @@ class SubstituteFinder:
     @staticmethod
     async def _fetch_modifications(table: str, pd: tuple):
         query = f"SELECT * FROM {table}s WHERE id = %s"
-        return await ConnectionManager.execute_sql(DatabaseEnum.TD2018, query % int(pd[1]))
+        return await ConnectionManager.execute_sql(DatabaseEnum.TD2018, query % int(pd[0]))
 
     @staticmethod
     async def _fetch_attributes(table: str, id_field: str, pd: tuple):

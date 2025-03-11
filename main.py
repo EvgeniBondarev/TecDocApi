@@ -1,3 +1,4 @@
+import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -16,7 +17,7 @@ from routing.cr_t_cross_router import router as cr_t_cross_router
 from routing.volna_parts_router import router as volna_parts_router
 app = FastAPI()
 
-origins = ["*"]
+origins = ["http://109.196.101.10:8080"]
 
 app.add_middleware(
     CORSMiddleware,
