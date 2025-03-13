@@ -25,6 +25,8 @@ router = APIRouter(
     tags=["Detail full info"],
 )
 
+
+
 @router.get("/{supplier}/{article}", response_model=FullDetailInfoSchema)
 async def get_full_detail_info(
         supplier: str,

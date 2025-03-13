@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Set
 from repositories.suppliers_repository import SuppliersRepository
 from schemas.suppliers_schema import SuppliersSchema
 
@@ -49,5 +49,11 @@ class SuppliersService:
     async def get_suppliers_with_new_version_articles(self) -> List[SuppliersSchema]:
         """Получить поставщиков, у которых есть статьи новой версии."""
         filter_condition = self.repository.model.hasnewversionarticles == "True"
+        records = await self.repository.find(filter_condition=filter_condition)
+        return [SuppliersSchema.model_validate(record) for record in records]
+
+    async def get_suppliers_by_ids(self, supplier_ids: Set[int]) -> List[SuppliersSchema]:
+        """Получить записи по списку ID."""
+        filter_condition = self.repository.model.id.in_(supplier_ids)
         records = await self.repository.find(filter_condition=filter_condition)
         return [SuppliersSchema.model_validate(record) for record in records]

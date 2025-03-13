@@ -2,6 +2,7 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+
 from routing.substitute_router import router as substitute_router
 from routing.article_attributes_router import  router as article_attributes_router
 from routing.article_images_router import router as article_images_router
@@ -15,6 +16,7 @@ from routing.et_string_router import router as et_string_router
 from routing.pr_part_router import router as pr_part_router
 from routing.cr_t_cross_router import router as cr_t_cross_router
 from routing.volna_parts_router import router as volna_parts_router
+from routing.tec_dac_cross_router import router as tec_dac_cross_router
 app = FastAPI()
 
 origins = ["http://109.196.101.10:8080"]
@@ -40,3 +42,4 @@ app.include_router(et_string_router)
 app.include_router(pr_part_router)
 app.include_router(cr_t_cross_router)
 app.include_router(volna_parts_router)
+app.include_router(tec_dac_cross_router)
