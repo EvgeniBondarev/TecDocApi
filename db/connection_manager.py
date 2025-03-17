@@ -10,7 +10,7 @@ class ConnectionManager:
     @staticmethod
     def get_session_factory(database: DatabaseEnum):
         if database not in ConnectionManager._engines:
-            engine = create_async_engine(database.value, echo=True)
+            engine = create_async_engine(database.value, echo=True, pool_pre_ping=True)
             ConnectionManager._engines[database] = async_sessionmaker(engine, expire_on_commit=False)
 
         return ConnectionManager._engines[database]

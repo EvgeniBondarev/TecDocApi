@@ -4,6 +4,7 @@ from config import S3_ACCESS_KEY, S3_SECRET_KEY, S3_BUCKET_NAME, S3_REGION_NAME,
 from repositories.article_cross_repository import ArticleCrossRepository
 from repositories.article_oe_repository import ArticleOERepository
 from repositories.cr_t_cross_repository import CrTCrossRepository
+from repositories.manufacturer_repository import ManufacturerRepository
 
 from repositories.pr_product_repository import PrProductRepository
 from repositories.article_attributes_repository import ArticlesAttributesRepository
@@ -29,6 +30,7 @@ from services.et_part_field_service import EtPartFieldService
 from services.et_part_service import EtPartService
 from services.et_producer_service import EtProducerService
 from services.et_string_service import EtStringService
+from services.manufacturer_service import ManufacturerService
 from services.pr_product_service import PrProductService
 from services.suppliers_service import SuppliersService
 from services.volna_parts_parser import VolnaPartsParser
@@ -100,3 +102,7 @@ async def get_article_cross_service() -> ArticleCrossService:
 async def get_article_oe_service() -> ArticleOEService:
     repository = ArticleOERepository()
     return ArticleOEService(repository)
+
+async def get_manufacturer_service() -> ManufacturerService:
+    repository = ManufacturerRepository()
+    return ManufacturerService(repository)

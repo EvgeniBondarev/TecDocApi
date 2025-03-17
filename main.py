@@ -16,7 +16,7 @@ from routing.et_string_router import router as et_string_router
 from routing.pr_part_router import router as pr_part_router
 from routing.cr_t_cross_router import router as cr_t_cross_router
 from routing.volna_parts_router import router as volna_parts_router
-from routing.tec_dac_cross_router import router as tec_dac_cross_router
+from routing.tec_doc_cross_router import router as tec_dac_cross_router
 app = FastAPI()
 
 origins = ["http://109.196.101.10:8080"]
