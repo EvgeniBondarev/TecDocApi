@@ -19,16 +19,13 @@ from routing.volna_parts_router import router as volna_parts_router
 from routing.tec_doc_cross_router import router as tec_dac_cross_router
 app = FastAPI()
 
-origins = ["http://109.196.101.10:8080"]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],  # Разрешаем доступ с любых доменов
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"],  # Разрешаем все HTTP-методы
+    allow_headers=["*"],  # Разрешаем все заголовки
 )
-
 app.include_router(detail_full_info_router)
 app.include_router(substitute_router)
 app.include_router(supplier_router)
