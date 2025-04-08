@@ -7,7 +7,8 @@ class SuppliersSchema(BaseModel):
     description: Optional[str] = None
     matchcode: Optional[str] = None
     nbrofarticles: Optional[int] = None
-    hasnewversionarticles: Optional[str] = None
+    hasnewversionarticles: Optional[bool] = None
+    img: Optional[str] = None
 
     class Config:
         from_attributes = True
