@@ -8,7 +8,7 @@ from schemas.suppliers_schema import SuppliersSchema
 class ArticleOESchema(BaseModel):
     supplierid: int
     datasupplierarticlenumber: str
-    IsAdditive: Literal['True', 'False']
+    IsAdditive: bool
     OENbr: str
     manufacturerId: int
     supplier: Optional[SuppliersSchema] = None
