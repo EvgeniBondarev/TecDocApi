@@ -18,12 +18,12 @@ router = APIRouter(
 
 @router.get("/{supplier}/{article}", response_model=SubstituteResultSchema)
 async def find_substitute(
-    supplier: str,
-    article: str,
-    et_producer_service: EtProducerService = Depends(get_et_producer_service),
-    articles_service: ArticlesService = Depends(get_articles_service),
-    suppliers_service: SuppliersService = Depends(get_suppliers_service),
-    service=Depends(get_substitute_finder_service)
+        supplier: str,
+        article: str,
+        et_producer_service: EtProducerService = Depends(get_et_producer_service),
+        articles_service: ArticlesService = Depends(get_articles_service),
+        suppliers_service: SuppliersService = Depends(get_suppliers_service),
+        service=Depends(get_substitute_finder_service)
 ):
     normalized_article = await get_normalized_article(article, articles_service)
     supplier_id = await get_supplier_id(supplier, et_producer_service, suppliers_service)
@@ -31,8 +31,8 @@ async def find_substitute(
     try:
         substitutes = await service.find_substitute(normalized_article, supplier_id)
         return SubstituteResultSchema(
-            Substitutes=substitutes,
-            SubstitutesCount=len(substitutes)
+            Models=substitutes,
+            SubstitutesCount=sum(len(model.Substitutes) for model in substitutes)
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

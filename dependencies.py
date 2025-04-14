@@ -16,6 +16,7 @@ from repositories.et_part_field_repository import EtPartFieldRepository
 from repositories.et_part_repository import EtPartRepository
 from repositories.et_producer_repository import EtProducerRepository
 from repositories.et_string_repository import EtStringRepository
+from repositories.supplier_details_repository import SupplierDetailsRepository
 from repositories.suppliers_repository import SuppliersRepository
 from repositories.utils.substitute_finder import SubstituteFinder
 from services.article_attributes_service import ArticleAttributesService
@@ -32,6 +33,7 @@ from services.et_producer_service import EtProducerService
 from services.et_string_service import EtStringService
 from services.manufacturer_service import ManufacturerService
 from services.pr_product_service import PrProductService
+from services.supplier_details_service import SupplierDetailsService
 from services.suppliers_service import SuppliersService
 from services.volna_parts_parser import VolnaPartsParser
 
@@ -106,3 +108,7 @@ async def get_article_oe_service() -> ArticleOEService:
 async def get_manufacturer_service() -> ManufacturerService:
     repository = ManufacturerRepository()
     return ManufacturerService(repository)
+
+async def get_supplier_details_service() -> SupplierDetailsService:
+    repository = SupplierDetailsRepository()
+    return SupplierDetailsService(repository)

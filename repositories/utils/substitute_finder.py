@@ -1,8 +1,9 @@
-from typing import List
+from typing import List, Dict
 
 from db.connection_manager import ConnectionManager
 from db.database_enum import DatabaseEnum
 from schemas.substitute.attribute_schema import Attribute
+from schemas.substitute.model_substitute_schema import ModelSubstituteSchema
 from schemas.substitute.modification_schema import Modification
 from schemas.substitute.substitute_schema import SubstituteSchema
 
@@ -17,14 +18,12 @@ class SubstituteFinder:
     }
 
     @staticmethod
-    async def find_substitute(article: str, supplier_id: int) -> List[SubstituteSchema]:
-        results = []
-
+    async def find_substitute(article: str, supplier_id: int) -> List[ModelSubstituteSchema]:
+        raw_substitutes = []
         article_links_result = await SubstituteFinder._fetch_article_links(article, supplier_id)
 
         for article_link in article_links_result:
             supplier_id, product_id, group_type, entity_id = map(int, article_link[:4])
-
             group_info = SubstituteFinder.application_group_map.get(group_type)
             if not group_info:
                 continue
@@ -38,12 +37,30 @@ class SubstituteFinder:
                 modifications_result = await SubstituteFinder._fetch_modifications(table, pd)
                 attributes_result = await SubstituteFinder._fetch_attributes(table, id_field, pd)
 
-                result = SubstituteFinder._transform_to_result(
+                substitute = SubstituteFinder._transform_to_result(
                     article_link, trees_result, modifications_result, attributes_result
                 )
-                results.append(result)
+                raw_substitutes.append(substitute)
 
-        return results
+        # Группировка по ModelId и добавление ModelName
+        models_dict: Dict[int, ModelSubstituteSchema] = {}
+        for substitute in raw_substitutes:
+            model_id = substitute.ModelId
+            if model_id not in models_dict:
+                model_name = await SubstituteFinder._get_model_name(model_id)
+                models_dict[model_id] = ModelSubstituteSchema(
+                    ModelName=model_name,
+                    ModelId=model_id,
+                    Substitutes=[]
+                )
+            models_dict[model_id].Substitutes.append(substitute)
+
+        return list(models_dict.values())
+
+    @staticmethod
+    async def _get_model_name(model_id: int) -> str:
+        model_data = await SubstituteFinder._fetch_models(model_id)
+        return model_data[0][4] if model_data else "Неизвестный"
 
     @staticmethod
     async def _fetch_article_links(article: str, supplier_id: int):
@@ -77,6 +94,11 @@ class SubstituteFinder:
         return await ConnectionManager.execute_sql(DatabaseEnum.TD2018, query % int(pd[0]))
 
     @staticmethod
+    async def _fetch_models(model_id: int):
+        query = f"SELECT * FROM models WHERE id = %s"
+        return await ConnectionManager.execute_sql(DatabaseEnum.TD2018, query % model_id)
+
+    @staticmethod
     def _transform_to_result(article_link: tuple, trees_result: list, modifications_result: list, attributes_result: list) -> SubstituteSchema:
         modification = Modification(
             description=modifications_result[0][4],
@@ -91,6 +113,7 @@ class SubstituteFinder:
         return SubstituteSchema(
             Type= SubstituteFinder.application_group_map[article_link[2]]["name"],
             Name= trees_result[0][4],
+            ModelId= modifications_result[0][-1],
             Modification= modification,
             Attributes= attributes
         )

@@ -5,14 +5,16 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from S3.s3_service import S3Service
 from dependencies import get_articles_service, get_suppliers_service, get_et_part_service, get_et_producer_service, \
-    get_article_images_service, get_s3_service
+    get_article_images_service, get_s3_service, get_supplier_details_service
 from schemas.all_suppliers_schema import AllSuppliersSchema
 from schemas.et_producer_schema import EtProducerSchema
+from schemas.supplier_details_schema import SupplierDetailsSchema
 from schemas.suppliers_schema import SuppliersSchema
 from services.article_images_service import ArticleImagesService
 from services.articles_service import ArticlesService
 from services.et_part_service import EtPartService
 from services.et_producer_service import EtProducerService
+from services.supplier_details_service import SupplierDetailsService
 from services.suppliers_service import SuppliersService
 from services.utils.search_preparation import get_normalized_article, fetch_image_urls, get_supplier_id
 
@@ -92,3 +94,18 @@ async def get_suppliers_by_article(
         suppliersFromTd=suppliers_from_td,
     )
 
+@router.get("/by-id/{supplier_id}", response_model=List[SupplierDetailsSchema])
+async def get_supplier_details_by_id(
+    supplier_id: int,
+    supplier_details_service: SupplierDetailsService = Depends(get_supplier_details_service)
+):
+    """
+    Получить все детали поставщика по его ID
+    """
+    details = await supplier_details_service.get_details_by_supplier_id(supplier_id)
+    if not details:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Details for supplier with ID {supplier_id} not found"
+        )
+    return details
