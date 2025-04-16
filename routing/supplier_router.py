@@ -38,54 +38,74 @@ async def attach_image(entity, name_field: str, normalized_article: str,
 
 @router.get("/{article}", response_model=AllSuppliersSchema)
 async def get_suppliers_by_article(
-    article: str,
-    articles_service: ArticlesService = Depends(get_articles_service),
-    suppliers_service: SuppliersService = Depends(get_suppliers_service),
-    et_part_service: EtPartService = Depends(get_et_part_service),
-    et_producer_service: EtProducerService = Depends(get_et_producer_service),
-    article_images_service: ArticleImagesService = Depends(get_article_images_service),
-    s3_service: S3Service = Depends(get_s3_service)
+        article: str,
+        articles_service: ArticlesService = Depends(get_articles_service),
+        suppliers_service: SuppliersService = Depends(get_suppliers_service),
+        et_part_service: EtPartService = Depends(get_et_part_service),
+        et_producer_service: EtProducerService = Depends(get_et_producer_service),
+        article_images_service: ArticleImagesService = Depends(get_article_images_service),
+        s3_service: S3Service = Depends(get_s3_service)
 ):
-    normalized_article = await get_normalized_article(article, articles_service)
-    articles = await articles_service.get_articles_by_data_supplier_article_number(normalized_article)
-    js_producers = await et_part_service.get_part_by_code(article)
+    # Параллельное выполнение основных запросов
+    normalized_article, articles, js_producers = await asyncio.gather(
+        get_normalized_article(article, articles_service),
+        articles_service.get_articles_by_data_supplier_article_number(article),
+        et_part_service.get_part_by_code(article)
+    )
 
-    # Получаем поставщиков из JS
-    suppliers_from_js: List[SuppliersSchema] = [
-        producer for producer in [
-            await et_producer_service.get_producer_by_id(producer.producerId) for producer in js_producers
-        ] if producer is not None
+    # Получаем уникальные producerId из js_producers
+    producer_ids = {p.producerId for p in js_producers if p.producerId}
+
+    # Параллельно получаем всех производителей из JS
+    suppliers_from_js_tasks = [
+        et_producer_service.get_producer_by_id(producer_id)
+        for producer_id in producer_ids
+    ]
+    suppliers_from_js = [
+        producer for producer in await asyncio.gather(*suppliers_from_js_tasks)
+        if producer is not None
     ]
 
+    # Получаем уникальные supplierId из articles
+    supplier_ids = {art.supplierId for art in articles if art.supplierId}
 
-    # Получаем поставщиков из TD
-    suppliers_from_td: List[EtProducerSchema] = [
-        supplier for supplier in [
-            await suppliers_service.get_supplier_by_id(art.supplierId) for art in articles
-        ] if supplier is not None
+    # Параллельно получаем всех поставщиков из TD
+    suppliers_from_td_tasks = [
+        suppliers_service.get_supplier_by_id(supplier_id)
+        for supplier_id in supplier_ids
+    ]
+    suppliers_from_td = [
+        supplier for supplier in await asyncio.gather(*suppliers_from_td_tasks)
+        if supplier is not None
     ]
 
     # Если поставщики из TD не найдены, пытаемся найти их по имени из JS
     if not suppliers_from_td and suppliers_from_js:
+        supplier_names = {s.name for s in suppliers_from_js}
+        suppliers_from_td_tasks = [
+            suppliers_service.get_supplier_by_name(name)
+            for name in supplier_names
+        ]
         suppliers_from_td = [
-            supplier for supplier in [
-                await suppliers_service.get_supplier_by_name(supplier_from_js.name) for supplier_from_js in suppliers_from_js
-            ] if supplier is not None
+            supplier for supplier in await asyncio.gather(*suppliers_from_td_tasks)
+            if supplier is not None
         ]
 
-    await asyncio.gather(*[
-        attach_image(supplier_js, "name", normalized_article, et_producer_service, suppliers_service,
-                     article_images_service, s3_service)
-        for supplier_js in suppliers_from_js
-    ])
+    # Параллельная загрузка изображений
+    image_tasks = []
+    for supplier_js in suppliers_from_js:
+        image_tasks.append(
+            attach_image(supplier_js, "name", normalized_article, et_producer_service,
+                         suppliers_service, article_images_service, s3_service)
+        )
+    for supplier_td in suppliers_from_td:
+        image_tasks.append(
+            attach_image(supplier_td, "description", normalized_article, et_producer_service,
+                         suppliers_service, article_images_service, s3_service)
+        )
 
-    await asyncio.gather(*[
-        attach_image(supplier_td, "description", normalized_article, et_producer_service, suppliers_service,
-                     article_images_service, s3_service)
-        for supplier_td in suppliers_from_td
-    ])
+    await asyncio.gather(*image_tasks)
 
-    # Если ни один из списков не содержит поставщиков, выбрасываем исключение
     if not suppliers_from_td and not suppliers_from_js:
         raise HTTPException(status_code=404, detail="Not found")
 
