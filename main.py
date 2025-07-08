@@ -2,7 +2,7 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-
+from routing.img_router import router as img_router
 from routing.substitute_router import router as substitute_router
 from routing.article_attributes_router import  router as article_attributes_router
 from routing.article_images_router import router as article_images_router
@@ -40,3 +40,4 @@ app.include_router(pr_part_router)
 app.include_router(cr_t_cross_router)
 app.include_router(volna_parts_router)
 app.include_router(tec_dac_cross_router)
+app.include_router(img_router)

@@ -25,3 +25,7 @@ class EtProducerService:
         filter_condition = self.repository.model.id == id
         record = await self.repository.find_one(filter_condition=filter_condition)
         return EtProducerSchema.model_validate(record) if record else None
+
+    async def get_unique_market_prefix(self) -> List[str]:
+        records = await self.repository.get_distinct_market_prefixes()
+        return records if records else []
