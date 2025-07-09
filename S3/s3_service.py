@@ -1,4 +1,5 @@
 import os
+import re
 from typing import Optional, List
 
 from boto3.session import Session
@@ -162,6 +163,88 @@ class S3Service:
         except ClientError as e:
             if e.response['Error']['Code'] != '404':
                 raise
+
+        return urls
+
+    def get_image_view_urls_all_folders(self, base_name: str, expires_in: int = 3600) -> List[str]:
+        """
+        Ищет изображения base_name.{ext} и base_name_*.{ext} в известных папках.
+        """
+        folders = self.list_folders()
+        image_extensions = ['.jpg', '.jpeg', '.png', '.webp']
+        content_types = {
+            '.jpg': 'image/jpeg',
+            '.jpeg': 'image/jpeg',
+            '.png': 'image/png',
+            '.gif': 'image/gif',
+            '.webp': 'image/webp'
+        }
+
+        urls = []
+
+        for folder in folders:
+            found = False
+
+            for ext in image_extensions:
+                key = f"{folder}/{base_name}{ext}"
+                try:
+                    self.s3_client.head_object(Bucket=self.s3_setting.bucket_name, Key=key)
+
+                    print(f"[DEBUG] Found main file: {key}")
+
+                    url = self.s3_client.generate_presigned_url(
+                        'get_object',
+                        Params={
+                            'Bucket': self.s3_setting.bucket_name,
+                            'Key': key,
+                            'ResponseContentType': content_types[ext]
+                        },
+                        ExpiresIn=expires_in,
+                        HttpMethod='GET'
+                    )
+                    urls.append(url)
+                    found = True  # Файл найден — можно искать с префиксом
+
+                except ClientError as e:
+                    if e.response['Error']['Code'] != '404':
+                        raise
+                    print(f"[DEBUG] Not found: {key}")
+
+            if not found:
+                continue
+
+            prefix = f"{folder}/{base_name}_"
+            paginator = self.s3_client.get_paginator('list_objects_v2')
+            try:
+                for page in paginator.paginate(Bucket=self.s3_setting.bucket_name, Prefix=prefix):
+                    for obj in page.get('Contents', []):
+                        key = obj['Key']
+                        file_name = os.path.basename(key)
+
+                        if not file_name.startswith(f"{base_name}_"):
+                            continue
+
+                        ext = os.path.splitext(file_name)[1].lower()
+                        if ext not in image_extensions:
+                            continue
+
+                        print(f"[DEBUG] Found variant: {key}")
+
+                        url = self.s3_client.generate_presigned_url(
+                            'get_object',
+                            Params={
+                                'Bucket': self.s3_setting.bucket_name,
+                                'Key': key,
+                                'ResponseContentType': content_types[ext]
+                            },
+                            ExpiresIn=expires_in,
+                            HttpMethod='GET'
+                        )
+                        urls.append(url)
+
+            except ClientError as e:
+                if e.response['Error']['Code'] != '404':
+                    raise
 
         return urls
 
