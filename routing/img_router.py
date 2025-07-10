@@ -46,6 +46,21 @@ async def get_image_urls_all_folders(
         raise HTTPException(status_code=404, detail="Files not found")
     return urls
 
+@router.get("/random-images", response_model=List[str])
+async def get_random_images(
+        count: int = 5,
+        s3_service: S3Service = Depends(get_s3_service)
+):
+    """
+    Получить указанное количество случайных изображений из всех папок в S3.
+
+    - **count**: Количество изображений
+    """
+    urls = s3_service.get_random_image_urls(count)
+    if not urls:
+        raise HTTPException(status_code=404, detail="No images found")
+    return urls
+
 
 @router.get("/folders", response_model=List[str])
 async def list_s3_folders(

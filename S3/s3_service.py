@@ -1,7 +1,7 @@
 import os
 import re
 from typing import Optional, List
-
+import random
 from boto3.session import Session
 from botocore.exceptions import ClientError
 
@@ -241,6 +241,62 @@ class S3Service:
                             HttpMethod='GET'
                         )
                         urls.append(url)
+
+            except ClientError as e:
+                if e.response['Error']['Code'] != '404':
+                    raise
+
+        return urls
+
+    def get_random_image_urls(self, count: int, expires_in: int = 3600) -> List[str]:
+        """
+        Возвращает `count` случайных изображений из случайных папок.
+        Останавливается, как только нужное количество найдено.
+        """
+        folders = self.list_folders()
+        random.shuffle(folders)
+
+        image_extensions = ['.jpg', '.jpeg', '.png', '.webp']
+        content_types = {
+            '.jpg': 'image/jpeg',
+            '.jpeg': 'image/jpeg',
+            '.png': 'image/png',
+            '.gif': 'image/gif',
+            '.webp': 'image/webp'
+        }
+
+        urls = []
+
+        for folder in folders:
+            if len(urls) >= count:
+                break
+
+            prefix = f"{folder}/"
+            paginator = self.s3_client.get_paginator('list_objects_v2')
+
+            try:
+                for page in paginator.paginate(Bucket=self.s3_setting.bucket_name, Prefix=prefix):
+                    for obj in page.get('Contents', []):
+                        key = obj['Key']
+                        ext = os.path.splitext(key)[1].lower()
+
+                        if ext not in image_extensions:
+                            continue
+
+                        url = self.s3_client.generate_presigned_url(
+                            'get_object',
+                            Params={
+                                'Bucket': self.s3_setting.bucket_name,
+                                'Key': key,
+                                'ResponseContentType': content_types.get(ext, 'application/octet-stream')
+                            },
+                            ExpiresIn=expires_in,
+                            HttpMethod='GET'
+                        )
+                        urls.append(url)
+
+                        if len(urls) >= count:
+                            return urls
 
             except ClientError as e:
                 if e.response['Error']['Code'] != '404':
