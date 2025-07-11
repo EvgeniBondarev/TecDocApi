@@ -25,3 +25,8 @@ async def get_producers_by_name(name: str, service=Depends(get_et_producer_servi
     """Получить производителей по имени."""
     return await service.get_producers_by_name(name)
 
+@router.get("/id/{id}", response_model=EtProducerSchema)
+async def get_producers_by_name(id: int, service=Depends(get_et_producer_service)):
+    """Получить производителей по имени."""
+    return await service.get_producer_by_id(id)
+

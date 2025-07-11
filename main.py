@@ -17,8 +17,12 @@ from routing.pr_part_router import router as pr_part_router
 from routing.cr_t_cross_router import router as cr_t_cross_router
 from routing.volna_parts_router import router as volna_parts_router
 from routing.tec_doc_cross_router import router as tec_dac_cross_router
-app = FastAPI()
-
+app = FastAPI(
+    title="Parts Info API",
+    description="https://interparts.mpsuper.ru/PartsInfo/Images, "
+                "https://interparts.mpsuper.ru/PartsInfo/Info/CodeInfo",
+    version="5.5"
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Разрешаем доступ с любых доменов

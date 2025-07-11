@@ -26,6 +26,7 @@ from services.article_images_service import ArticleImagesService
 from services.article_oe_service import ArticleOEService
 from services.articles_service import ArticlesService
 from services.cr_t_cross_service import CrTCrossService
+from services.duckduckgo_img_parser import DuckDuckGoImageSearch
 from services.et_part_field_data_service import EtPartFieldDataService
 from services.et_part_field_service import EtPartFieldService
 from services.et_part_service import EtPartService
@@ -112,3 +113,6 @@ async def get_manufacturer_service() -> ManufacturerService:
 async def get_supplier_details_service() -> SupplierDetailsService:
     repository = SupplierDetailsRepository()
     return SupplierDetailsService(repository)
+
+def get_duckduckgo_image_service() -> DuckDuckGoImageSearch:
+    return DuckDuckGoImageSearch()
