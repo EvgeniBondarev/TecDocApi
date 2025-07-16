@@ -110,10 +110,16 @@ class SubstituteFinder:
             for attr in attributes_result
         ]
 
+        model_id_raw = modifications_result[0][-1]
+        if not model_id_raw or not str(model_id_raw).isdigit():
+            model_id = 0
+        else:
+            model_id = int(model_id_raw)
+
         return SubstituteSchema(
             Type= SubstituteFinder.application_group_map[article_link[2]]["name"],
             Name= trees_result[0][4],
-            ModelId= modifications_result[0][-1],
+            ModelId= model_id,
             Modification= modification,
             Attributes= attributes
         )
