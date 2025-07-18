@@ -35,6 +35,11 @@ class SubstituteFinder:
             for pd in pds_result:
                 trees_result = await SubstituteFinder._fetch_trees(table, id_field, pd)
                 modifications_result = await SubstituteFinder._fetch_modifications(table, pd)
+                if table == "engine" and modifications_result:
+                    last_tuple = modifications_result[-1]
+                    modified_tuple = last_tuple[:-1] + (-1,)
+                    modifications_result[-1] = modified_tuple
+
                 attributes_result = await SubstituteFinder._fetch_attributes(table, id_field, pd)
 
                 substitute = SubstituteFinder._transform_to_result(
@@ -59,6 +64,8 @@ class SubstituteFinder:
 
     @staticmethod
     async def _get_model_name(model_id: int) -> str:
+        if model_id == -1:
+            return "Двигатель"
         model_data = await SubstituteFinder._fetch_models(model_id)
         return model_data[0][4] if model_data else "Неизвестный"
 
@@ -111,10 +118,7 @@ class SubstituteFinder:
         ]
 
         model_id_raw = modifications_result[0][-1]
-        if not model_id_raw or not str(model_id_raw).isdigit():
-            model_id = 0
-        else:
-            model_id = int(model_id_raw)
+        model_id = int(model_id_raw)
 
         return SubstituteSchema(
             Type= SubstituteFinder.application_group_map[article_link[2]]["name"],
