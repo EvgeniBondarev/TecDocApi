@@ -16,6 +16,7 @@ from repositories.et_part_field_repository import EtPartFieldRepository
 from repositories.et_part_repository import EtPartRepository
 from repositories.et_producer_repository import EtProducerRepository
 from repositories.et_string_repository import EtStringRepository
+from repositories.product_information_repository import ProductInformationRepository
 from repositories.supplier_details_repository import SupplierDetailsRepository
 from repositories.suppliers_repository import SuppliersRepository
 from repositories.utils.substitute_finder import SubstituteFinder
@@ -34,6 +35,7 @@ from services.et_producer_service import EtProducerService
 from services.et_string_service import EtStringService
 from services.manufacturer_service import ManufacturerService
 from services.pr_product_service import PrProductService
+from services.product_information_service import ProductInformationService
 from services.supplier_details_service import SupplierDetailsService
 from services.suppliers_service import SuppliersService
 from services.volna_parts_parser import VolnaPartsParser
@@ -116,3 +118,7 @@ async def get_supplier_details_service() -> SupplierDetailsService:
 
 def get_duckduckgo_image_service() -> DuckDuckGoImageSearch:
     return DuckDuckGoImageSearch()
+
+async def get_product_information_service() -> ProductInformationService:
+    repository = ProductInformationRepository()
+    return ProductInformationService(repository)

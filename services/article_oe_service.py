@@ -48,6 +48,13 @@ class ArticleOEService:
         records = await self.repository.find(filter_condition=filter_condition)
         return [ArticleOESchema.model_validate(record) for record in records]
 
+    async def get_articles_by_oe_article(self, article: str) -> List[ArticleOESchema]:
+        """Получить все записи для заданного OE номера."""
+        filter_condition = self.repository.model.datasupplierarticlenumber == article
+        records = await self.repository.find(filter_condition=filter_condition)
+        return [ArticleOESchema.model_validate(record) for record in records]
+
+
     async def get_articles_by_oen_supplier_pairs(self, oen_supplier_pairs: List[Tuple[str, int]]) -> List[
         ArticleOESchema]:
         """Получить записи по списку пар (OENbr, SupplierId)."""

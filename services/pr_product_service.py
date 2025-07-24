@@ -9,6 +9,12 @@ class PrProductService:
         raw_data = await self.repository.get_products(article, brand)
         return self._transform_data(raw_data)
 
+    async def get_links_by_td_id(self, td_id: int) -> List[Dict]:
+        return await self.repository.get_links_by_td_id(td_id)
+
+    async def get_links_by_jc_id(self, jc_id: int) -> List[Dict]:
+        return await self.repository.get_links_by_jc_id(jc_id)
+
     def _transform_data(self, raw_data: List[Dict]) -> List[Dict]:
         products = {}
         for row in raw_data:
@@ -44,3 +50,4 @@ class PrProductService:
             }
             for product in products.values()
         ]
+

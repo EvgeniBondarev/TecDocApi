@@ -41,3 +41,14 @@ class ArticleCrossService:
         filter_condition = self.repository.model.PartsDataSupplierArticleNumber == article
         records = await self.repository.find(filter_condition=filter_condition)
         return [ArticleCrossSchema.model_validate(record) for record in records]
+
+    async def get_article_by_article_and_supplier(
+        self, supplier_id: int, article_number: str
+    ) -> Optional[ArticleCrossSchema]:
+        """Получить запись по фильтру."""
+        filter_condition = (
+            (self.repository.model.SupplierId == supplier_id) &
+            (self.repository.model.PartsDataSupplierArticleNumber == article_number)
+        )
+        record = await self.repository.find_one(filter_condition=filter_condition)
+        return ArticleCrossSchema.model_validate(record) if record else None

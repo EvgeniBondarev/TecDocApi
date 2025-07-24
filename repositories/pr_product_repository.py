@@ -55,3 +55,45 @@ class PrProductRepository:
         ]
 
         return [dict(zip(columns, row)) for row in result]
+
+    @staticmethod
+    async def get_links_by_td_id(td_id: int):
+        sql = """
+           SELECT 
+               Id,
+               Brand,
+               TdId,
+               JcId
+           FROM pr_PRODUCT_LINK
+           WHERE TdId = :td_id
+           """
+
+        result = await ConnectionManager.execute_sql(
+            database=DatabaseEnum.MNK,
+            sql_query=sql,
+            parameters={"td_id": td_id}
+        )
+
+        columns = ["Id", "Brand", "TdId", "JcId"]
+        return [dict(zip(columns, row)) for row in result]
+
+    @staticmethod
+    async def get_links_by_jc_id(jc_id: int):
+        sql = """
+           SELECT 
+               Id,
+               Brand,
+               TdId,
+               JcId
+           FROM pr_PRODUCT_LINK
+           WHERE JcId = :jc_id
+           """
+
+        result = await ConnectionManager.execute_sql(
+            database=DatabaseEnum.MNK,
+            sql_query=sql,
+            parameters={"jc_id": jc_id}
+        )
+
+        columns = ["Id", "Brand", "TdId", "JcId"]
+        return [dict(zip(columns, row)) for row in result]

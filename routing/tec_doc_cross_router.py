@@ -2,12 +2,15 @@ from typing import List, Set, Dict, Tuple
 from fastapi import APIRouter, Depends
 from dependencies import (
     get_article_cross_service, get_article_oe_service, get_suppliers_service,
-    get_articles_service, get_manufacturer_service
+    get_articles_service, get_manufacturer_service, get_article_ean_service
 )
+from schemas.article_cross_schema import ArticleCrossSchema
+from schemas.article_ean_schema import ArticleEANSchema
 from schemas.article_oe_schema import ArticleOESchema
 from schemas.manufacturer_schema import ManufacturerSchema
 from schemas.suppliers_schema import SuppliersSchema
 from services.article_cross_service import ArticleCrossService
+from services.article_ean_service import ArticleEANService
 from services.article_oe_service import ArticleOEService
 from services.articles_service import ArticlesService
 from services.manufacturer_service import ManufacturerService
@@ -101,3 +104,4 @@ async def get_by_article(
     )
 
     return enriched_crosses
+
