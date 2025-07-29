@@ -46,13 +46,11 @@ async def get_suppliers_by_article(
         article_images_service: ArticleImagesService = Depends(get_article_images_service),
         s3_service: S3Service = Depends(get_s3_service)
 ):
-    # Получаем normalized_article отдельно
-    normalized_article = await get_normalized_article(article, articles_service)
-
-    # Параллельное выполнение оставшихся запросов с использованием normalized_article
-    articles, js_producers = await asyncio.gather(
-        articles_service.get_articles_by_data_supplier_article_number(normalized_article),
-        et_part_service.get_part_by_code(normalized_article)
+    # Параллельное выполнение основных запросов
+    normalized_article, articles, js_producers = await asyncio.gather(
+        get_normalized_article(article, articles_service),
+        articles_service.get_articles_by_data_supplier_article_number(article),
+        et_part_service.get_part_by_code(article)
     )
 
     # Получаем уникальные producerId из js_producers
