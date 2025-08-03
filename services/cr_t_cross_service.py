@@ -20,3 +20,9 @@ class CrTCrossService:
         filter_condition = self.repository.model.cr_crosscode == crosscode
         records = await self.repository.find(filter_condition=filter_condition)
         return [CrTCrossSchema.model_validate(record) for record in records]
+
+    async def get_by_crosscode_and_produser_id(self, crosscode: str, produser_id: int) -> List[CrTCrossSchema]:
+        filter_condition = ((self.repository.model.cr_crosscode == crosscode) &
+                            (self.repository.model.cr_cross == produser_id))
+        records = await self.repository.find(filter_condition=filter_condition)
+        return [CrTCrossSchema.model_validate(record) for record in records]

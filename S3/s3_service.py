@@ -83,82 +83,56 @@ class S3Service:
 
     def get_image_view_urls(self, base_name: str, folder_name: str = "CTP", expires_in: int = 3600) -> List[str]:
         """
-        Генерирует список URL для всех вариантов файла (включая дубли с любой нумерацией)
+        Генерирует список URL для всех вариантов файла (включая дубли с любой нумерацией),
+        с игнорированием регистра и всех символов, кроме букв и цифр.
 
         :param base_name: Базовое имя файла без расширения
         :param folder_name: Папка в S3
         :param expires_in: Время жизни ссылок
         :return: Список URL всех найденных вариантов
         """
+
+        def normalize(s: str) -> str:
+            return re.sub(r'[^a-zA-Z0-9]', '', s).lower()
+
         urls = []
+        normalized_base = normalize(base_name)
         image_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp']
+        content_type_map = {
+            '.jpg': 'image/jpeg',
+            '.jpeg': 'image/jpeg',
+            '.png': 'image/png',
+            '.gif': 'image/gif',
+            '.webp': 'image/webp'
+        }
 
-        # Сначала проверяем основной файл без номера
-        for ext in image_extensions:
-            file_name = f"{base_name}{ext}"
-            path = f"{folder_name}/{file_name}"
-
-            try:
-                self.s3_client.head_object(Bucket=self.s3_setting.bucket_name, Key=path)
-
-                content_type = {
-                    '.jpg': 'image/jpeg',
-                    '.jpeg': 'image/jpeg',
-                    '.png': 'image/png',
-                    '.gif': 'image/gif',
-                    '.webp': 'image/webp'
-                }[ext]
-
-                url = self.s3_client.generate_presigned_url(
-                    'get_object',
-                    Params={
-                        'Bucket': self.s3_setting.bucket_name,
-                        'Key': path,
-                        'ResponseContentType': content_type
-                    },
-                    ExpiresIn=expires_in,
-                    HttpMethod='GET'
-                )
-                urls.append(url)
-
-            except ClientError as e:
-                if e.response['Error']['Code'] != '404':
-                    raise
-
-        # Затем ищем все пронумерованные аналоги
         paginator = self.s3_client.get_paginator('list_objects_v2')
-        prefix = f"{folder_name}/{base_name}_"
+        prefix = f"{folder_name}/"
 
         try:
-            # Получаем все файлы с префиксом (например, "CTP/base_name_")
             for page in paginator.paginate(Bucket=self.s3_setting.bucket_name, Prefix=prefix):
                 for obj in page.get('Contents', []):
                     key = obj['Key']
-                    file_name = key.split('/')[-1]
+                    filename = key.split('/')[-1]
+                    name_part, ext = os.path.splitext(filename)
 
-                    # Проверяем что это файл с номером (например, "base_name_123.jpg")
-                    if '_' in file_name and '.' in file_name:
-                        ext = os.path.splitext(file_name)[1].lower()
-                        if ext in image_extensions:
-                            content_type = {
-                                '.jpg': 'image/jpeg',
-                                '.jpeg': 'image/jpeg',
-                                '.png': 'image/png',
-                                '.gif': 'image/gif',
-                                '.webp': 'image/webp'
-                            }[ext]
+                    if ext.lower() not in image_extensions:
+                        continue
 
-                            url = self.s3_client.generate_presigned_url(
-                                'get_object',
-                                Params={
-                                    'Bucket': self.s3_setting.bucket_name,
-                                    'Key': key,
-                                    'ResponseContentType': content_type
-                                },
-                                ExpiresIn=expires_in,
-                                HttpMethod='GET'
-                            )
-                            urls.append(url)
+                    normalized_name = normalize(name_part)
+
+                    if normalized_name == normalized_base or normalized_name.startswith(normalized_base):
+                        url = self.s3_client.generate_presigned_url(
+                            'get_object',
+                            Params={
+                                'Bucket': self.s3_setting.bucket_name,
+                                'Key': key,
+                                'ResponseContentType': content_type_map[ext.lower()]
+                            },
+                            ExpiresIn=expires_in,
+                            HttpMethod='GET'
+                        )
+                        urls.append(url)
 
         except ClientError as e:
             if e.response['Error']['Code'] != '404':
