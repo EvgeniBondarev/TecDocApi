@@ -18,6 +18,7 @@ from routing.cr_t_cross_router import router as cr_t_cross_router
 from routing.volna_parts_router import router as volna_parts_router
 from routing.tec_doc_cross_router import router as tec_dac_cross_router
 from routing.product_information_router import router as product_information_router
+from routing.abcp_router import router as abcp_router
 app = FastAPI(
     title="Parts Info API",
     description="https://interparts.mpsuper.ru/PartsInfo/Images, "
@@ -47,3 +48,4 @@ app.include_router(volna_parts_router)
 app.include_router(tec_dac_cross_router)
 app.include_router(img_router)
 app.include_router(product_information_router)
+app.include_router(abcp_router)

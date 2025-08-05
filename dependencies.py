@@ -1,6 +1,9 @@
 from S3.s3_service import S3Service
 from S3.s3_setting import S3Setting
-from config import S3_ACCESS_KEY, S3_SECRET_KEY, S3_BUCKET_NAME, S3_REGION_NAME, S3_ENDPOINT_URL
+from abcp.abcp_client import ABCPClient
+from abcp.abcp_urls import ABCPUrls
+from config import S3_ACCESS_KEY, S3_SECRET_KEY, S3_BUCKET_NAME, S3_REGION_NAME, S3_ENDPOINT_URL, ABCP_USER_LOGIN, \
+    ABCP_USER_PSW
 from repositories.article_cross_repository import ArticleCrossRepository
 from repositories.article_oe_repository import ArticleOERepository
 from repositories.cr_t_cross_repository import CrTCrossRepository
@@ -20,6 +23,7 @@ from repositories.product_information_repository import ProductInformationReposi
 from repositories.supplier_details_repository import SupplierDetailsRepository
 from repositories.suppliers_repository import SuppliersRepository
 from repositories.utils.substitute_finder import SubstituteFinder
+from services.abcp_service import ABCPService
 from services.article_attributes_service import ArticleAttributesService
 from services.article_cross_service import ArticleCrossService
 from services.article_ean_service import ArticleEANService
@@ -122,3 +126,15 @@ def get_duckduckgo_image_service() -> DuckDuckGoImageSearch:
 async def get_product_information_service() -> ProductInformationService:
     repository = ProductInformationRepository()
     return ProductInformationService(repository)
+
+async def get_abcp_client() -> ABCPClient:
+    client = ABCPClient(
+        base_url=ABCPUrls.BASE,
+        user_login=ABCP_USER_LOGIN,
+        user_psw=ABCP_USER_PSW
+    )
+    return client
+
+async def get_abcp_service() -> ABCPService:
+    client = await get_abcp_client()
+    return ABCPService(client)
