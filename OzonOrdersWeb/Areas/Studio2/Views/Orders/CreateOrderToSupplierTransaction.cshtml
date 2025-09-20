@@ -1,0 +1,1998 @@
+﻿@using OzonOrdersWeb.ViewModels.OrderViewModels
+
+
+@model MultiplayEditOrderViewModel
+
+@{
+    ViewData["Title"] = "Edit";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<script asp-src-include="~/js/**/*.js"></script>
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<style>
+    .button-container {
+        display: flex;
+        gap: 10px; /* Расстояние между кнопками */
+    }
+
+    .link-option {
+        color: blue;
+        text-decoration: underline;
+        cursor: pointer;
+    }
+
+    .highlight-error {
+        border: 3px solid rgba(220, 53, 69, 0.5);
+        ;
+    }
+
+    .highlight-warning {
+        border: 3px solid rgba(255, 255, 0, 0.5);
+    }
+
+    .bg-green-300 {
+        background-color: #73c487 !important; /* Bootstrap's 'bg-success' color */
+    }
+
+    .form-check-label {
+        user-select: none; /* предотвращает выделение текста */
+        cursor: pointer; /* меняет курсор при наведении */
+    }
+
+    .highlight-error {
+        border: 3px solid rgba(220, 53, 69, 0.5); /* Красный цвет для ошибки */
+    }
+
+    .highlight-null {
+        border: 3px solid rgba(128, 128, 128, 0.5); /* Серый цвет для ошибки */
+    }
+
+    .highlight-success {
+        border: 3px solid rgba(40, 167, 69, 0.5); /* Зеленый цвет для успешного статуса */
+    }
+
+    .custom-width {
+        width: 100px; /* Задайте нужную ширину */
+    }
+</style>
+
+<h4>Добавить заказы в журнал</h4>
+<hr />
+
+@if (Model.Orders.Count > 0)
+{
+    <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Выберите столбцы для отображения</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body-checkbox">
+                    <div class="container mt-3">
+                        <div class="form-group">
+                            <div class="form-row">
+                                <button type="button" class="btn btn-danger" onclick="clearSelectedIdsCookie()">Очистить выбранные поля для изменения</button>
+                                <br />
+                                <br />
+                                @{
+                                    int checkboxCounter = 1;
+                                }
+                                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Номер заказа"))
+                                {
+                                    <div class="form-group col-md-5">
+                                        <input type="checkbox" class="form-check-input" id="chk@(checkboxCounter)" checked>
+                                        <label class="form-check-label" for="chk@(checkboxCounter)">Номер заказа</label>
+                                    </div>
+                                    checkboxCounter++;
+                                }
+                                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Клиент"))
+                                {
+                                    <div class="form-group col-md-5">
+                                        <input type="checkbox" class="form-check-input" id="chk@(checkboxCounter)" checked>
+                                        <label class="form-check-label" for="chk@(checkboxCounter)">Клиент</label>
+                                    </div>
+                                    checkboxCounter++;
+                                }
+                                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Принят в обработку"))
+                                {
+                                    <div class="form-group col-md-5">
+                                        <input type="checkbox" class="form-check-input" id="chk@(checkboxCounter)" checked>
+                                        <label class="form-check-label" for="chk@(checkboxCounter)">Принят в обработку</label>
+                                    </div>
+                                    checkboxCounter++;
+                                }
+                                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Дата отгрузки"))
+                                {
+                                    <div class="form-group col-md-5">
+                                        <input type="checkbox" class="form-check-input" id="chk@(checkboxCounter)" checked>
+                                        <label class="form-check-label" for="chk@(checkboxCounter)">Дата отгрузки</label>
+                                    </div>
+                                    checkboxCounter++;
+                                }
+                                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Срок доставки"))
+                                {
+                                    <div class="form-group col-md-5">
+                                        <input type="checkbox" class="form-check-input" id="chk@(checkboxCounter)" checked>
+                                        <label class="form-check-label" for="chk@(checkboxCounter)">Срок доставки</label>
+                                    </div>
+                                    checkboxCounter++;
+                                }
+                                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Статус клиента"))
+                                {
+                                    <div class="form-group col-md-5">
+                                        <input type="checkbox" class="form-check-input" id="chk@(checkboxCounter)" checked>
+                                        <label class="form-check-label" for="chk@(checkboxCounter)">Статус клиента</label>
+                                    </div>
+                                    checkboxCounter++;
+                                }
+                                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Статус"))
+                                {
+                                    <div class="form-group col-md-5">
+                                        <input type="checkbox" class="form-check-input" id="chk@(checkboxCounter)" checked>
+                                        <label class="form-check-label" for="chk@(checkboxCounter)">Статус</label>
+                                    </div>
+                                    checkboxCounter++;
+                                }
+                                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Наименование товара"))
+                                {
+                                    <div class="form-group col-md-7">
+                                        <input type="checkbox" class="form-check-input" id="chk@(checkboxCounter)" checked>
+                                        <label class="form-check-label" for="chk@(checkboxCounter)">Наименование товара</label>
+                                    </div>
+                                    checkboxCounter++;
+                                }
+                                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Артикул"))
+                                {
+                                    <div class="form-group col-md-5">
+                                        <input type="checkbox" class="form-check-input" id="chk@(checkboxCounter)" checked>
+                                        <label class="form-check-label" for="chk@(checkboxCounter)">Артикул</label>
+                                    </div>
+                                    checkboxCounter++;
+                                }
+                                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Производитель"))
+                                {
+                                    <div class="form-group col-md-5">
+                                        <input type="checkbox" class="form-check-input" id="chk@(checkboxCounter)" checked>
+                                        <label class="form-check-label" for="chk@(checkboxCounter)">Производитель</label>
+                                    </div>
+                                    checkboxCounter++;
+                                }
+                                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Склад отгрузки"))
+                                {
+                                    <div class="form-group col-md-5">
+                                        <input type="checkbox" class="form-check-input" id="chk@(checkboxCounter)" checked>
+                                        <label class="form-check-label" for="chk@(checkboxCounter)">Склад отгрузки</label>
+                                    </div>
+                                    checkboxCounter++;
+                                }
+                                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Поставщик"))
+                                {
+                                    <div class="form-group col-md-5">
+                                        <input type="checkbox" class="form-check-input" id="chk@(checkboxCounter)" checked>
+                                        <label class="form-check-label" for="chk@(checkboxCounter)">Поставщик</label>
+                                    </div>
+                                    checkboxCounter++;
+                                }
+                                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Номер заказа поставщику"))
+                                {
+                                    <div class="form-group col-md-6">
+                                        <input type="checkbox" class="form-check-input" id="chk@(checkboxCounter)" checked>
+                                        <label class="form-check-label" for="chk@(checkboxCounter)">Номер заказа поставщику</label>
+                                    </div>
+                                    checkboxCounter++;
+                                }
+                                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Цена сайта"))
+                                {
+                                    <div class="form-group col-md-5">
+                                        <input type="checkbox" class="form-check-input" id="chk@(checkboxCounter)" checked>
+                                        <label class="form-check-label" for="chk@(checkboxCounter)">Цена сайта</label>
+                                    </div>
+                                    checkboxCounter++;
+                                }
+                                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Цена"))
+                                {
+                                    <div class="form-group col-md-5">
+                                        <input type="checkbox" class="form-check-input" id="chk@(checkboxCounter)" checked>
+                                        <label class="form-check-label" for="chk@(checkboxCounter)">Цена</label>
+                                    </div>
+                                    checkboxCounter++;
+                                }
+                                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Количество"))
+                                {
+                                    <div class="form-group col-md-5">
+                                        <input type="checkbox" class="form-check-input" id="chk@(checkboxCounter)" checked>
+                                        <label class="form-check-label" for="chk@(checkboxCounter)">Кол.</label>
+                                    </div>
+                                    checkboxCounter++;
+                                }
+                                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Сумма отправления"))
+                                {
+                                    <div class="form-group col-md-5">
+                                        <input type="checkbox" class="form-check-input" id="chk@(checkboxCounter)" checked>
+                                        <label class="form-check-label" for="chk@(checkboxCounter)">Сумма отправления</label>
+                                    </div>
+                                    checkboxCounter++;
+                                }
+                                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Категория"))
+                                {
+                                    <div class="form-group col-md-5">
+                                        <input type="checkbox" class="form-check-input" id="chk@(checkboxCounter)" checked>
+                                        <label class="form-check-label" for="chk@(checkboxCounter)">Категория</label>
+                                    </div>
+                                    checkboxCounter++;
+                                }
+                                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Объемный вес"))
+                                {
+                                    <div class="form-group col-md-5">
+                                        <input type="checkbox" class="form-check-input" id="chk@(checkboxCounter)" checked>
+                                        <label class="form-check-label" for="chk@(checkboxCounter)">Объемный вес</label>
+                                    </div>
+                                    checkboxCounter++;
+                                }
+                                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Цена закупки"))
+                                {
+                                    <div class="form-group col-md-5">
+                                        <input type="checkbox" class="form-check-input" id="chk@(checkboxCounter)" checked>
+                                        <label class="form-check-label" for="chk@(checkboxCounter)">Цена закупки</label>
+                                    </div>
+                                    checkboxCounter++;
+                                }
+                                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Комиссия ОЗОН"))
+                                {
+                                    <div class="form-group col-md-5">
+                                        <input type="checkbox" class="form-check-input" id="chk@(checkboxCounter)" checked>
+                                        <label class="form-check-label" for="chk@(checkboxCounter)">Комиссия Ozon</label>
+                                    </div>
+                                    checkboxCounter++;
+                                }
+                                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Прибыль"))
+                                {
+                                    <div class="form-group col-md-5">
+                                        <input type="checkbox" class="form-check-input" id="chk@(checkboxCounter)" checked>
+                                        <label class="form-check-label" for="chk@(checkboxCounter)">Прибыль</label>
+                                    </div>
+                                    checkboxCounter++;
+                                }
+                                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Наценка %"))
+                                {
+                                    <div class="form-group col-md-5">
+                                        <input type="checkbox" class="form-check-input" id="chk@(checkboxCounter)" checked>
+                                        <label class="form-check-label" for="chk@(checkboxCounter)">Наценка %</label>
+                                    </div>
+                                    checkboxCounter++;
+                                }
+                                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Себестоимость"))
+                                {
+                                    <div class="form-group col-md-5">
+                                        <input type="checkbox" class="form-check-input" id="chk@(checkboxCounter)" checked>
+                                        <label class="form-check-label" for="chk@(checkboxCounter)">Себестоимость</label>
+                                    </div>
+                                    checkboxCounter++;
+                                }
+                                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Город доставки"))
+                                {
+                                    <div class="form-group col-md-5">
+                                        <input type="checkbox" class="form-check-input" id="chk@(checkboxCounter)" checked>
+                                        <label class="form-check-label" for="chk@(checkboxCounter)">Город доставки</label>
+                                    </div>
+                                    checkboxCounter++;
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <form asp-area="Studio2" asp-controller="Orders" asp-action="CreateOrderToSupplierTransaction">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <input type="hidden" asp-for="RedirectPage" />
+
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="button-container">
+                <div class="form-group col-sm-3" style="display: none;">
+                    <label for="universalField" class="col-form-label">Цена закупки:</label>
+                    <input type="text" class="form-control" id="universalField" />
+                </div>
+            </div>
+            
+            <button type="button" class="btn btn-link" data-bs-toggle="modal" data-bs-target="#exampleModal" type="submit" style="width: 18px; height: 18x; outline: none; box-shadow: none;" title="Настройка отображения таблицы">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-gear-fill" viewBox="0 0 16 16">
+                    <path d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311c.446.82.023 1.841-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413 1.4-2.397 0-2.81l-.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z" />
+                </svg>
+                <span class="visually-hidden">Button</span>
+            </button>
+        </div>
+
+        <table class="table table-striped" id="shipmentTable">
+            <thead>
+                <tr>
+                    <th>
+                        №
+                    </th>
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Номер заказа"))
+                    {
+                        <th>
+                            Номер заказа
+                        </th>
+                    }
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Клиент"))
+                    {
+                        <th>
+                            Клиент
+                        </th>
+                    }
+
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Принят в обработку"))
+                    {
+                        <th>
+                            Принят в обработку
+                        </th>
+                    }
+
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Дата отгрузки"))
+                    {
+                        <th>
+                            Дата отгрузки
+                        </th>
+                    }
+
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Срок доставки"))
+                    {
+                        <th>
+                            Срок доставки
+                        </th>
+                    }
+
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Статус клиента"))
+                    {
+                        <th>
+                            Статус клиента
+                        </th>
+                    }
+
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Статус"))
+                    {
+                        <th class="custom-width">
+                            Статус
+                        </th>
+                    }
+
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Наименование товара"))
+                    {
+                        <th>
+                            Наименование товара
+                        </th>
+                    }
+
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Артикул"))
+                    {
+                        <th>
+                            Артикул
+                        </th>
+                    }
+
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Производитель"))
+                    {
+                        <th>
+                            Производитель
+                        </th>
+                    }
+
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Склад отгрузки"))
+                    {
+                        <th>
+                            Склад отгрузки
+                        </th>
+                    }
+
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Поставщик"))
+                    {
+                        <th>
+                            <label for="universalSelect" class="col-form-label">Поставщик</label>
+                            <select class="form-control" id="universalSelect" onchange="handleSelectChange(this)">
+                                <option value="">Выберите значение</option>
+                                @foreach (var supplier in Model.Suppliers)
+                                {
+                                    <option value="@supplier.Id" data-currency-code="@supplier.CurrencyCode" data-cost-factor="@supplier.CostFactor">@supplier.Name @supplier.CurrencyCode</option>
+                                }
+                                <option value="create" class="link-option" data-url="@Url.Action("Create", "Supplier")">Создать поставщика</option>
+                            </select>
+                        </th>
+                        <script>
+                            function handleSelectChange(selectElement) {
+                                if (selectElement.value === "create") {
+                                    window.location.href = '@Url.Action("Create", "Supplier")';
+                                } else {
+                                    var selectedOption = selectElement.options[selectElement.selectedIndex];
+                                    var supplierId = selectedOption.value;
+                                    var currencyCode = selectedOption.getAttribute('data-currency-code');
+                                    var costFactor = selectedOption.getAttribute('data-cost-factor');
+
+                                    document.querySelectorAll('.supplier-select').forEach(function (supplierSelect) {
+                                        supplierSelect.value = supplierId;
+                                        supplierSelect.dispatchEvent(new Event('change'));
+                                    });
+
+                                    document.querySelectorAll('.supplier-select').forEach(function (supplierSelect) {
+                                        var relatedCurrencyCodeSpan = supplierSelect.closest('td').querySelector('.currency-code');
+                                        if (relatedCurrencyCodeSpan) {
+                                            relatedCurrencyCodeSpan.textContent = currencyCode;
+                                        }
+                                    });
+                                }
+                            }
+                        </script>
+                    }
+
+
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Номер заказа поставщику"))
+                    {
+                        <th colspan="4" style="white-space: nowrap;">
+                            <label for="universalOrderNumberToSupplier" class="col-form-label">Номер заказа поставщику</label>
+                            <input type="text" class="form-control" id="universalOrderNumberToSupplier" />
+                        </th>
+                    }
+
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Цена сайта"))
+                    {
+                        <th>
+                            Цена сайта
+                        </th>
+                    }
+
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Цена"))
+                    {
+                        <th>
+                            Цена
+                        </th>
+                    }
+
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Количество"))
+                    {
+                        <th>
+                            Кол.
+                        </th>
+                    }
+
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Сумма отправления"))
+                    {
+                        <th>
+                            Сумма отправления
+                        </th>
+                    }
+
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Категория"))
+                    {
+                        <th>
+                            Категория
+                        </th>
+                    }
+
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Объемный вес"))
+                    {
+                        <th style="white-space: nowrap;">
+                            Объемный вес
+                        </th>
+                    }
+
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Цена закупки"))
+                    {
+                        <th colspan="4" style="white-space: nowrap;">
+                            Цена закупки
+                        </th>
+                    }
+
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Комиссия ОЗОН"))
+                    {
+                        <th style="white-space: nowrap;">
+                            Комиссия ОЗОН
+                        </th>
+                    }
+
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Прибыль"))
+                    {
+                        <th>
+                            Прибыль
+                        </th>
+                    }
+
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Наценка %"))
+                    {
+                        <th>
+                            Наценка %
+                        </th>
+                    }
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Себестоимость"))
+                    {
+                        <th>
+                            Себестоимость
+                        </th>
+                    }
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Город доставки"))
+                    {
+                        <th>
+                            Город доставки
+                        </th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @for (int i = 0; i < Model.Orders.Count; i++)
+                {
+                    
+
+                    <tr id="orderRow_@Model.Orders[i].Id">
+                        <script>
+                            $(document).ready(function () {
+                                // Обработка удаления строки
+                                $('.delete-order').on('click', function () {
+                                    var orderId = $(this).data('order-id');
+                                    $('#orderRow_' + orderId).remove();
+                                    updateRowNumbers();
+                                });
+
+                                // Обновление нумерации строк
+                                function updateRowNumbers() {
+                                    $('#shipmentTable tbody tr').each(function (index) {
+                                        $(this).find('.row-number').text(index + 1);
+                                    });
+                                }
+                                updateRowNumbers();
+                            });
+                        </script>
+                        <div class="form-group" style="display: none">
+                            <label asp-for="Orders[i].Id" class="control-label"></label><span style="margin-left: 10px; color: gray;">/ </span>
+                            <input asp-for="Orders[i].Id" class="form-control" />
+                            <span asp-validation-for="Orders[i].Id" class="text-danger"></span>
+                        </div>
+                        <div class="form-group" style="display: none">
+                            <label asp-for="Orders[i].Key" class="control-label"></label><span style="margin-left: 10px; color: gray;">/ </span>
+                            <input asp-for="Orders[i].Key" class="form-control" />
+                            <span asp-validation-for="Orders[i].Key" class="text-danger"></span>
+                        </div>
+                        <div class="form-group" style="display: none">
+                            <label asp-for="Orders[i].ShipmentNumber" class="control-label"></label><span style="margin-left: 10px; color: gray;">/ </span>
+                            <input asp-for="Orders[i].ShipmentNumber" class="form-control" />
+                            <span asp-validation-for="Orders[i].ShipmentNumber" class="text-danger"></span>
+                        </div>
+                        <div class="form-group" style="display: none">
+                            <label asp-for="Orders[i].OzonClient" class="control-label"></label><span style="margin-left: 10px; color: gray;">/ </span>
+                            <input asp-for="Orders[i].OzonClient" class="form-control" />
+                            <span asp-validation-for="Orders[i].OzonClient" class="text-danger"></span>
+                        </div>
+                        <div class="form-group" style="display: none">
+                            <label asp-for="Orders[i].ProcessingDate" class="control-label"></label><span style="margin-left: 10px; color: gray;">/ </span>
+                            <input asp-for="Orders[i].ProcessingDate" class="form-control" />
+                            <span asp-validation-for="Orders[i].ProcessingDate" class="text-danger"></span>
+                        </div>
+                        <div class="form-group" style="display: none">
+                            <label asp-for="Orders[i].ShippingDate" class="control-label"></label><span style="margin-left: 10px; color: gray;">/ </span>
+                            <input asp-for="Orders[i].ShippingDate" class="form-control" />
+                            <span asp-validation-for="Orders[i].ShippingDate" class="text-danger"></span>
+                        </div>
+                        <div class="form-group" style="display: none">
+                            <label asp-for="Orders[i].Status" class="control-label"></label><span style="margin-left: 10px; color: gray;">/ </span>
+                            <input asp-for="Orders[i].Status" class="form-control" />
+                            <span asp-validation-for="Orders[i].Status" class="text-danger"></span>
+                        </div>
+                        <div class="form-group" style="display: none">
+                            <label asp-for="Orders[i].ProductName" class="control-label"></label><span style="margin-left: 10px; color: gray;">/ </span>
+                            <input asp-for="Orders[i].ProductName" class="form-control" />
+                            <span asp-validation-for="Orders[i].ProductName" class="text-danger"></span>
+                        </div>
+                        <div class="form-group" style="display: none">
+                            <label asp-for="Orders[i].ProductKey" class="control-label"></label><span style="margin-left: 10px; color: gray;">/ </span>
+                            <input asp-for="Orders[i].ProductKey" class="form-control" />
+                            <span asp-validation-for="Orders[i].ProductKey" class="text-danger"></span>
+                        </div>
+                        <div class="form-group" style="display: none">
+                            <label asp-for="Orders[i].Quantity" class="control-label"></label><span style="margin-left: 10px; color: gray;">/ </span>
+                            <input asp-for="Orders[i].Quantity" class="form-control" />
+                            <span asp-validation-for="Orders[i].Quantity" class="text-danger"></span>
+                        </div>
+                        <div class="form-group" style="display: none">
+                            <label asp-for="Orders[i].ShipmentAmount" class="control-label"></label><span style="margin-left: 10px; color: gray;">/ </span>
+                            <input asp-for="Orders[i].ShipmentAmount" class="form-control" />
+                            <span asp-validation-for="Orders[i].ShipmentAmount" class="text-danger"></span>
+                        </div>
+                        <div class="form-group" style="display: none">
+                            <label asp-for="Orders[i].Price" class="control-label"></label><span style="margin-left: 10px; color: gray;">/ </span>
+                            <input asp-for="Orders[i].Price" class="form-control" />
+                            <span asp-validation-for="Orders[i].Price" class="text-danger"></span>
+                        </div>
+                        <div class="form-group" style="display: none">
+                            <label asp-for="Orders[i].MaxProfit" class="control-label"></label><span style="margin-left: 10px; color: gray;">/ </span>
+                            <input asp-for="Orders[i].MaxProfit" class="form-control" />
+                            <span asp-validation-for="Orders[i].MaxProfit" class="text-danger"></span>
+                        </div>
+                        <div class="form-group" style="display: none">
+                            <label asp-for="Orders[i].MinDiscount" class="control-label"></label><span style="margin-left: 10px; color: gray;">/ </span>
+                            <input asp-for="Orders[i].MinDiscount" class="form-control" />
+                            <span asp-validation-for="Orders[i].MinDiscount" class="text-danger"></span>
+                        </div>
+                        <div class="form-group" style="display: none">
+                            <label asp-for="Orders[i].DeliveryCity" class="control-label"></label><span style="margin-left: 10px; color: gray;">/ </span>
+                            <input asp-for="Orders[i].DeliveryCity" class="form-control" />
+                            <span asp-validation-for="Orders[i].DeliveryCity" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-group" style="display: none">
+                            <label asp-for="Orders[i].UpdatedBy" class="control-label"></label><span style="margin-left: 10px; color: gray;">/ </span>
+                            <input asp-for="Orders[i].UpdatedBy" class="form-control" value="@User.Identity.Name" />
+                            <span asp-validation-for="Orders[i].UpdatedBy" class="text-danger"></span>
+                        </div>
+                        
+
+                        
+                        <input type="hidden" asp-for="Orders[i].ProductInfoId" />
+
+                        <td>
+                                <b class="row-number"></b>
+                                <button type="button" class="btn btn-link p-0 delete-order" style="width: 18px; height: 18px;" data-order-id="@Model.Orders[i].Id">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash-fill" viewBox="0 0 16 16">
+                                        <path d="M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5M8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5m3 .5v7a.5.5 0 0 1-1 0v-7a.5.5.5 0 0 1 1 0"></path>
+                                    </svg>
+                                    <span class="visually-hidden">Button</span>
+                                </button>
+                        </td>
+
+                        @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Номер заказа"))
+                        {
+                            <td>
+                                @Html.DisplayFor(modelItem => Model.Orders[i].ShipmentNumber)
+                            </td>
+                        }
+                        @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Клиент"))
+                        {
+                            <td>
+                                @Html.DisplayFor(modelItem => Model.Orders[i].OzonClient.Name)
+                            </td>
+                        }
+                        @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Принят в обработку"))
+                        {
+                            <td>
+                                @Html.DisplayFor(modelItem => Model.Orders[i].FormattedProcessingDate) <br /> @Html.DisplayFor(modelItem => Model.Orders[i].FormattedProcessingTime)
+                            </td>
+                        }
+                        @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Дата отгрузки"))
+                        {
+                            <td>
+                                @Html.DisplayFor(modelItem => Model.Orders[i].FormattedShippingDate) <br /> @Html.DisplayFor(modelItem => Model.Orders[i].FormattedShippingTime)
+                            </td>
+                        }
+                        @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Срок доставки"))
+                        {
+                            <td style="white-space: nowrap; text-align: right;">
+                                @Html.DisplayFor(modelItem => Model.Orders[i].FormattedDeliveryDay)
+                                <br />
+                                @Html.DisplayFor(modelItem => Model.Orders[i].FormattedDeliveryHours)
+                            </td>
+                        }
+                        @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Статус клиента"))
+                        {
+                            <td>
+                                @Html.DisplayFor(modelItem => Model.Orders[i].Status)
+                            </td>
+                        }
+                        @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Статус"))
+                        {
+                            <td>
+                                <div class="form-group custom-width">
+                                    <select asp-for="Orders[i].AppStatusId" asp-items="@ViewBag.AppStatuses" class="form-control status-select" id="AppStatusId_@Model.Orders[i].Id">
+                                        <option value="@Model.Orders[i].AppStatus.Id">@Model.Orders[i].AppStatus.Name</option>
+                                    </select>
+                                </div>
+                            </td>
+                        }
+                          <script>
+                                document.addEventListener('DOMContentLoaded', (event) => {
+                                    // Выбираем все элементы select с классом 'status-select'
+                                    const statusSelects = document.querySelectorAll('.status-select');
+
+                                    // Функция для проверки и изменения стиля поля
+                                    function checkField(select) {
+                                        const selectedText = select.options[select.selectedIndex].text.trim();
+
+                                        // Снимаем все возможные классы
+                                        select.classList.remove('highlight-null', 'highlight-success');
+
+                                        // Добавляем соответствующий класс на основе выбранного статуса
+                                        if (selectedText === "Заказан поставщику") {
+                                            select.classList.add('highlight-success');
+                                        } else if (selectedText === "Отменен") {
+                                        select.classList.add('highlight-null');
+                                        }
+                                    }
+
+                                    // Добавляем обработчик изменения для каждого select
+                                    statusSelects.forEach(select => {
+                                        select.addEventListener('change', function () {
+                                            checkField(this);
+                                        });
+
+                                        // Изначально проверяем состояние при загрузке страницы
+                                        checkField(select);
+                                    });
+                                });
+                        </script>
+
+                        @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Наименование товара"))
+                        {
+                            <td>
+                                @{
+                                    string first15Chars = string.Empty;
+                                    if (!string.IsNullOrEmpty(Model.Orders[i].ProductName))
+                                    {
+                                        first15Chars = Model.Orders[i].ProductName.Length > 45 ? Model.Orders[i].ProductName.Substring(0, 45) + "..." : Model.Orders[i].ProductName;
+                                    }
+                                }
+
+                                @Html.DisplayFor(modelItem => first15Chars)
+                            </td>
+                        }
+                        @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Артикул"))
+                        {
+                            <td>
+                                @Html.DisplayFor(modelItem => Model.Orders[i].Article)
+                            </td>
+                        }
+                        @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Производитель"))
+                        {
+                            <td>
+                                @Html.DisplayFor(modelItem => Model.Orders[i].Manufacturer.Name)
+                            </td>
+                        }
+                        @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Склад отгрузки"))
+                        {
+                            <td>
+                                @Html.DisplayFor(modelItem => Model.Orders[i].ShipmentWarehouse.Name)
+                            </td>
+                        }
+
+                        @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Поставщик"))
+                        {
+                            <td class="supplier-td">
+                                <div class="form-group">
+                                    <select asp-for="Orders[i].SupplierId" asp-items="@ViewBag.Suppliers" class="form-control supplier-select" id="SupplierId_@Model.Orders[i].Id">
+                                        <option value="">Выберите поставщика</option>
+                                        @foreach (var supplier in Model.Suppliers)
+                                        {
+                                            <option value="@supplier.Id" data-currency-code="@supplier.CurrencyCode" data-cost-factor="@supplier.CostFactor" data-weight-factor="@supplier.WeightFactor" data-weight-currency-code="@supplier.WeightFactorCurrencyCode">@supplier.Name @supplier.CurrencyCode</option>
+                                        }
+                                    </select>
+                                </div>
+                            </td>
+                        }
+
+                        <script>
+                            document.addEventListener('DOMContentLoaded', (event) => {
+                                const supplierSelects = document.querySelectorAll('.supplier-select');
+
+                                function checkField(select) {
+                                    const value = select.value.trim().toLowerCase();
+                                    const selectedText = select.options[select.selectedIndex].text;
+
+                                    if (value === "" || selectedText.startsWith('Не указан')) {
+                                        select.classList.add('highlight-error');
+                                    } else {
+                                        select.classList.remove('highlight-error');
+                                    }
+                                }
+
+                                supplierSelects.forEach(select => {
+                                    select.addEventListener('change', function () {
+                                        checkField(this);
+                                    });
+
+                                    checkField(select);
+                                });
+                            });
+                        </script>
+
+
+
+                        @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Номер заказа поставщику"))
+                        {
+                            <td colspan="4" style="white-space: nowrap; text-align: right;" class="order-number-to-supplier">
+                                <div class="form-group">
+                                    <input asp-for="Orders[i].OrderNumberToSupplier" type="text" class="form-control orderNumberToSupplie-field" id="OrderNumberToSupplier_@Model.Orders[i].Id" />
+                                    <span asp-validation-for="Orders[i].OrderNumberToSupplier" class="text-danger" id="OrderNumberToSupplierValidation_@Model.Orders[i].Id"></span>
+                                </div>
+                            </td>
+                        }
+
+
+
+                        @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Цена сайта"))
+                        {
+                            <td style="text-align: right;">
+                                @Html.DisplayFor(modelItem => Model.Orders[i].ProductInfo.CurrentPriceWithDiscount)
+                            </td>
+                        }
+                        @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Цена"))
+                        {
+                            <td id="Price_@Model.Orders[i].Id" style="text-align: right;">
+                                @Html.DisplayFor(modelItem => Model.Orders[i].Price)
+                            </td>
+                        }
+                        @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Количество"))
+                        {
+                            <td style="text-align: center;" id="Quantity_@Model.Orders[i].Id" class="@(Model.Orders[i].Quantity > 1 ? "bg-green-300" : "")">
+                                @{
+                                    if (Model.Orders[i].Quantity > 1)
+                                    {
+                                        <b>
+                                            @Html.DisplayFor(modelItem => Model.Orders[i].Quantity)
+                                        </b>
+                                    }
+                                    else
+                                    {
+                                        @Html.DisplayFor(modelItem => Model.Orders[i].Quantity)
+                                    }
+                                }
+                            </td>
+                        }
+                        @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Сумма отправления"))
+                        {
+                            <td style="text-align: right;" id="shipmentAmount_@i">
+                                @Html.DisplayFor(modelItem => Model.Orders[i].ShipmentAmount)
+                            </td>
+                        }
+                        @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Категория"))
+                        {
+                            <td>
+                                @Html.DisplayFor(modelItem => Model.Orders[i].ProductInfo.CommercialCategory)
+                            </td>
+                        }
+                        @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Объемный вес"))
+                        {
+                            <td style="text-align: center;">
+                                @Html.DisplayFor(modelItem => Model.Orders[i].ProductInfo.VolumetricWeight)
+
+                                <div class="form-group d-flex align-items-center justify-content-end">
+                                    <div class="form-group">
+                                        <input asp-for="Orders[i].ProductInfo.Weight" class="form-control product-weight-field" id="ProductWeight_@Model.Orders[i].Id" value="@Model.Orders[i].ProductInfo.Weight" />
+                                        <span asp-validation-for="Orders[i].ProductInfo.Weight" class="text-danger"></span>
+                                    </div>
+                                    <div style="margin-left: auto; white-space: nowrap;">
+                                        <span>Вес кг.</span>
+                                    </div>
+                                </div>
+
+                            </td>
+                        }
+
+                        @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Цена закупки"))
+                        {
+                            <td colspan="4" style="text-align: right; white-space: nowrap;" class="purchase-price-td">
+                                <div class="form-group d-flex align-items-center">
+                                    <div class="flex-grow-1">
+                                        <input asp-for="Orders[i].PurchasePrice" type="text" class="form-control purchase-price-field" id="PurchasePrice_@Model.Orders[i].Id" data-order-id="@Model.Orders[i].Id" value="@Model.Orders[i].OriginalPurchasePrice" />
+                                        <span asp-validation-for="Orders[i].PurchasePrice" class="text-danger" id="PurchasePriceValidation_@Model.Orders[i].Id"></span>
+                                    </div>
+                                    <div class="ml-2">
+                                        <span class="currency-code" id="CurrencyCode_@Model.Orders[i].Id"></span>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <span class="purchase-price-rub ml-2" id="PurchasePriceRub_@Model.Orders[i].Id"></span>
+                                </div>
+                            </td>
+                        }
+                        <script>
+                            document.addEventListener('DOMContentLoaded', (event) => {
+                                const priceFields = document.querySelectorAll('.purchase-price-field');
+
+                                priceFields.forEach(field => {
+                                    field.addEventListener('input', function () {
+                                        if (this.value.trim() === "") {
+                                            this.classList.add('highlight-error');
+                                        } else {
+                                            this.classList.remove('highlight-error');
+                                        }
+                                    });
+
+                                    // Initial check if the field is empty on page load
+                                    if (field.value.trim() === "") {
+                                        field.classList.add('highlight-error');
+                                    }
+                                });
+                            });
+                        </script>
+
+
+                        <script>
+                            $(document).ready(function () {
+                                // Обработка изменения поставщика в индивидуальных полях
+                                $('.supplier-select').on('change', function () {
+                                    var orderId = $(this).attr('id').split('_')[1];
+                                    var selectedSupplier = $(this).find('option:selected');
+                                    var currencyCode = selectedSupplier.data('currency-code');
+
+                                    if (currencyCode) {
+                                        $('#CurrencyCode_' + orderId).text(currencyCode);
+                                    } else {
+                                        $('#CurrencyCode_' + orderId).text('');
+                                    }
+                                });
+                            });
+                        </script>
+
+
+                        @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Комиссия ОЗОН"))
+                        {
+                            @if (Model.Orders[i].MinOzonCommission == 0 && Model.Orders[i].MaxOzonCommission == 0)
+                            {
+                                <td style="text-align: right;">
+                                    <div class="form-group d-flex align-items-center justify-content-end mb-2">
+                                        <div class="flex-grow-1">
+                                            <input asp-for="Orders[i].MinOzonCommission" class="form-control ozon-commission-field" id="MinOzonCommission_@Model.Orders[i].Id" style="text-align: right;" />
+                                            <span asp-validation-for="Orders[i].MinOzonCommission" class="text-danger" id="MinOzonCommissionValidation_@Model.Orders[i].Id"></span>
+                                        </div>
+                                        <div style="margin-left: auto;">
+                                            <span>min.</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group d-flex align-items-center justify-content-end">
+                                        <div class="flex-grow-1">
+                                            <input asp-for="Orders[i].MaxOzonCommission" class="form-control ozon-commission-field" id="MaxOzonCommission_@Model.Orders[i].Id" style="text-align: right;" />
+                                            <span asp-validation-for="Orders[i].MaxOzonCommission" class="text-danger" id="MaxOzonCommissionValidation_@Model.Orders[i].Id"></span>
+                                        </div>
+                                        <div style="margin-left: auto;">
+                                            <span>max.</span>
+                                        </div>
+                                    </div>
+
+                                </td>
+
+                            }
+                            else
+                            {
+                                <td style="text-align: right;">
+                                    <div id="MinOzonCommission_@Model.Orders[i].Id">@Html.DisplayFor(modelItem => Model.Orders[i].MinOzonCommission)</div>
+                                    <br />
+                                    <div id="MaxOzonCommission_@Model.Orders[i].Id">@Html.DisplayFor(modelItem => Model.Orders[i].MaxOzonCommission)</div>
+                                </td>
+                            }
+                        }
+                        @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Прибыль"))
+                        {
+                            <td style="text-align: right;">
+                                <div id="MaxProfit_@Model.Orders[i].Id">
+                                    @if (Model.Orders[i].MaxProfit < 0)
+                                    {
+                                        <span style="color:red">@Html.DisplayFor(modelItem => Model.Orders[i].MaxProfit)</span>
+                                    }
+                                    else
+                                    {
+                                        @Html.DisplayFor(modelItem => Model.Orders[i].MaxProfit)
+                                    }
+                                </div>
+                                <br />
+                                <div id="MinProfit_@Model.Orders[i].Id">
+                                    @if (Model.Orders[i].MinProfit < 0)
+                                    {
+                                        <span style="color:red">@Html.DisplayFor(modelItem => Model.Orders[i].MinProfit)</span>
+                                    }
+                                    else
+                                    {
+                                        @Html.DisplayFor(modelItem => Model.Orders[i].MinProfit)
+                                    }
+                                </div>
+                            </td>
+                        }
+                        @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Наценка %"))
+                        {
+                            <td style="text-align: right;">
+                                <div id="MaxDiscount_@Model.Orders[i].Id">
+                                    @if (Model.Orders[i].MaxDiscount < 0)
+                                    {
+                                        <span style="color:red">@Html.DisplayFor(modelItem => Model.Orders[i].MaxDiscount)</span>
+                                    }
+                                    else
+                                    {
+                                        @Html.DisplayFor(modelItem => Model.Orders[i].MaxDiscount)
+                                    }
+                                </div>
+                                <br />
+                                <div id="MinDiscount_@Model.Orders[i].Id">
+                                    @if (Model.Orders[i].MinDiscount < 0)
+                                    {
+                                        <span style="color:red">@Html.DisplayFor(modelItem => Model.Orders[i].MinDiscount)</span>
+                                    }
+                                    else
+                                    {
+                                        @Html.DisplayFor(modelItem => Model.Orders[i].MinDiscount)
+                                    }
+                                </div>
+                            </td>
+
+                        }
+                        @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Себестоимость"))
+                        {
+
+                            <td>
+                                <span id="CostPrice_@Model.Orders[i].Id">@Html.DisplayFor(modelItem => Model.Orders[i].CostPrice)</span>
+                            </td>
+                        }
+
+                        @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Город доставки"))
+                        {
+                            <td>
+                                @Html.DisplayFor(modelItem => Model.Orders[i].DeliveryCity)
+                            </td>
+                        }
+                        <input asp-for="Orders[i].MinOzonCommission" type="hidden" />
+                        <input asp-for="Orders[i].MaxOzonCommission" type="hidden" />
+                    </tr>
+                }
+            </tbody>
+            <tfoot>
+                <tr>
+                    <th></th>
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Номер заказа"))
+                    {
+                        <th>
+
+                        </th>
+                    }
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Клиент"))
+                    {
+                        <th>
+
+                        </th>
+                    }
+
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Принят в обработку"))
+                    {
+                        <th>
+
+                        </th>
+                    }
+
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Дата отгрузки"))
+                    {
+                        <th>
+
+                        </th>
+                    }
+
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Срок доставки"))
+                    {
+                        <th>
+
+                        </th>
+                    }
+
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Статус клиента"))
+                    {
+                        <th>
+
+                        </th>
+                    }
+
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Статус"))
+                    {
+                        <th>
+
+                        </th>
+                    }
+
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Наименование товара"))
+                    {
+                        <th>
+
+                        </th>
+                    }
+
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Артикул"))
+                    {
+                        <th>
+
+                        </th>
+                    }
+
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Производитель"))
+                    {
+                        <th>
+
+                        </th>
+                    }
+
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Склад отгрузки"))
+                    {
+                        <th>
+
+                        </th>
+                    }
+
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Поставщик"))
+                    {
+                        <th>
+
+                        </th>
+                    }
+
+
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Номер заказа поставщику"))
+                    {
+                        <th colspan="4" style="white-space: nowrap;">
+
+                        </th>
+                    }
+
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Цена сайта"))
+                    {
+                        <th>
+
+                        </th>
+                    }
+
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Цена"))
+                    {
+                        <th>
+
+                        </th>
+                    }
+
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Количество"))
+                    {
+                        <th>
+
+                        </th>
+                    }
+
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Сумма отправления"))
+                    {
+                        <th style="white-space: nowrap; text-align: right;">
+                                <div id="totalShipmentAmount"></div>
+                        </th>
+                    }
+
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Категория"))
+                    {
+                        <th>
+
+                        </th>
+                    }
+
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Объемный вес"))
+                    {
+                        <th>
+
+                        </th>
+                    }
+
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Цена закупки"))
+                    {
+                        <th colspan="4" style="white-space: nowrap; text-align: right;">
+                            <div id="totalPurchasePriceRub"></div>
+                        </th>
+                    }
+
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Комиссия ОЗОН"))
+                    {
+                        <th style="white-space: nowrap;">
+
+                        </th>
+                    }
+
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Прибыль"))
+                    {
+                        <th>
+                            
+                        </th>
+                    }
+
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Наценка %"))
+                    {
+                        <th>
+                            
+                        </th>
+                    }
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Себестоимость"))
+                    {
+                        <td>
+
+                        </td>
+                    }
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Город доставки"))
+                    {
+                        <th>
+                            
+                        </th>
+                    }
+
+                    <input type="hidden" id="deletedOrders" name="deletedOrders" />
+
+            </tfoot>
+        </table>
+
+        <div id="selectedSuppliersList"></div>
+
+        <div class="form-group row">
+            <label for="commentField" class="col-sm-1 col-form-label">Комментарий:</label>
+            <div class="col-sm-11">
+                <textarea class="form-control" id="commentField" name="comment" rows="1"></textarea>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <div class="input-group">
+                <span class="input-group-btn">
+                    <input type="submit" value="Сохранить" class="btn btn-primary" style="margin-left: 10px;" data-bs-target="#staticBackdrop"/>
+                </span>
+            </div>
+        </div>
+    </form>
+}
+else
+{
+    <p>Нет выбранных заказов для проведения документа (Статус выбранного заказа должен быть отличным от <b>'Заказан поставщику'</b>)</p>
+}
+<script>
+    document.addEventListener('DOMContentLoaded', (event) => {
+        const supplierSelects = document.querySelectorAll('.supplier-select');
+        const statusSelects = document.querySelectorAll('.status-select');
+        const selectedSuppliers = {};
+
+        function extractNumber(text) {
+            const match = text.match(/(\d+(\.\d+)?)/);
+            return match ? parseFloat(match[0]) : 0;
+        }
+
+        function updateSelectedSuppliers() {
+            for (const key in selectedSuppliers) {
+                if (selectedSuppliers.hasOwnProperty(key)) {
+                    selectedSuppliers[key] = { count: 0, totalAmount: 0, totalQuantity: 0, totalPurchasePrice: 0 };
+                }
+            }
+
+            document.querySelectorAll('#shipmentTable tbody tr').forEach((row) => {
+                const statusSelect = row.querySelector('.status-select');
+                const selectedStatus = statusSelect.options[statusSelect.selectedIndex].text.trim();
+
+                if (selectedStatus !== "Отменен") {
+                    const supplierSelect = row.querySelector('.supplier-select');
+                    const shipmentAmount = parseFloat(row.querySelector('[id^="shipmentAmount_"]')?.textContent) || 0;
+                    const quantity = parseFloat(row.querySelector('[id^="Quantity_"]')?.textContent) || 0;
+                    const purchasePriceText = row.querySelector('[id^="PurchasePriceRub_"]')?.textContent || '0';
+                    const purchasePrice = extractNumber(purchasePriceText);
+
+                    const selectedOption = supplierSelect.options[supplierSelect.selectedIndex];
+                    const supplierName = selectedOption.text;
+
+                    if (selectedOption.value) {
+                        if (selectedSuppliers[supplierName]) {
+                            selectedSuppliers[supplierName].count++;
+                            selectedSuppliers[supplierName].totalAmount += shipmentAmount;
+                            selectedSuppliers[supplierName].totalQuantity += quantity;
+                            selectedSuppliers[supplierName].totalPurchasePrice += purchasePrice;
+                        } else {
+                            selectedSuppliers[supplierName] = { count: 1, totalAmount: shipmentAmount, totalQuantity: quantity, totalPurchasePrice: purchasePrice };
+                        }
+                    }
+                }
+            });
+
+            const selectedSuppliersList = document.getElementById('selectedSuppliersList');
+            selectedSuppliersList.innerHTML = '';
+
+            const table = document.createElement('table');
+            table.classList.add('table', 'table-striped');
+
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            ['Поставщик', 'Заказы у поставщика', 'Количество заказов', 'Сумма отправления', 'Цена закупки RUB'].forEach(headerText => {
+                const th = document.createElement('th');
+                th.textContent = headerText;
+                headerRow.appendChild(th);
+            });
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+
+            const tbody = document.createElement('tbody');
+            for (const [supplier, data] of Object.entries(selectedSuppliers)) {
+                if (data.count > 0) {
+                    const row = document.createElement('tr');
+                    const supplierCell = document.createElement('td');
+                    supplierCell.textContent = supplier;
+                    row.appendChild(supplierCell);
+
+                    const countCell = document.createElement('td');
+                    countCell.textContent = data.count;
+                    row.appendChild(countCell);
+
+                    const quantityCell = document.createElement('td');
+                    quantityCell.textContent = data.totalQuantity;
+                    row.appendChild(quantityCell);
+
+                    const amountCell = document.createElement('td');
+                    amountCell.textContent = data.totalAmount.toFixed(2);
+                    row.appendChild(amountCell);
+
+                    const purchasePriceCell = document.createElement('td');
+                    purchasePriceCell.textContent = data.totalPurchasePrice.toFixed(2);
+                    row.appendChild(purchasePriceCell);
+
+                    tbody.appendChild(row);
+                }
+            }
+            table.appendChild(tbody);
+
+            selectedSuppliersList.appendChild(table);
+        }
+
+        window.updateSupplierList = updateSelectedSuppliers;
+
+        supplierSelects.forEach((select, index) => {
+            select.addEventListener('change', updateSelectedSuppliers);
+        });
+
+        statusSelects.forEach((select) => {
+            select.addEventListener('change', updateSelectedSuppliers);
+        });
+
+        updateSelectedSuppliers();
+    });
+</script>
+
+<script>
+    function calculateSumAndDisplay() {
+        var total = 0;
+        var shipmentAmountElements = document.querySelectorAll('[id^="shipmentAmount_"]');
+        var totalDiv = document.getElementById("totalShipmentAmount");
+
+        shipmentAmountElements.forEach(function (element) {
+            var value = parseFloat(element.innerText.replace(',', '.'));
+            total += value;
+        });
+
+        // Выводим сумму в элемент div
+        totalDiv.innerText = total;
+    }
+
+    // Вызываем функцию для вычисления и вывода суммы
+    calculateSumAndDisplay();
+</script>
+
+
+<script>
+    // Функция для вычисления и отображения общей суммы
+    function calculateTotalPurchasePriceRub() {
+        var total = 0;
+
+        // Находим все элементы с классом 'purchase-price-rub'
+        var elements = document.querySelectorAll('.purchase-price-rub');
+        elements.forEach(function (element) {
+            var orderId = element.id.split('_')[1]; // Получаем orderId из id элемента
+
+            // Извлекаем числовое значение из текста элемента
+            var textContent = element.textContent.trim();
+            var numberValue = parseFloat(textContent.replace(/[^\d.-]/g, ''));
+
+            // Если получилось извлечь число, добавляем его к общей сумме
+            if (!isNaN(numberValue)) {
+                total += numberValue;
+            }
+        });
+
+        // Выводим общую сумму в элемент div
+        var totalDiv = document.getElementById("totalPurchasePriceRub");
+        totalDiv.innerText = total.toFixed(2) + " RUB";
+    }
+
+    // Функция для настройки MutationObserver
+    function setupMutationObserver() {
+        // Находим все элементы с классом 'purchase-price-rub'
+        var elements = document.querySelectorAll('.purchase-price-rub');
+        elements.forEach(function (element) {
+            // Создаем новый экземпляр MutationObserver
+            var observer = new MutationObserver(function (mutationsList) {
+                // При изменении содержимого вызываем функцию для пересчета суммы
+                calculateTotalPurchasePriceRub();
+            });
+
+            // Настраиваем наблюдение за изменениями внутри элемента 'element'
+            observer.observe(element, { childList: true, subtree: true });
+        });
+    }
+
+    // Вызываем функцию для настройки MutationObserver при загрузке страницы
+    document.addEventListener('DOMContentLoaded', function () {
+        calculateTotalPurchasePriceRub(); // Вызываем для первичного расчета суммы
+        setupMutationObserver(); // Вызываем для настройки MutationObserver
+    });
+</script>
+
+
+<div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="staticBackdropLabel">Создание журнала документов</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex justify-content-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="sr-only">.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">К списку заказов</a>
+</div>
+
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title" id="myModalLabel">Поля не заполнены</h4>
+      </div>
+      <div class="modal-body">
+        Одно или несколько полей не заполнены. Пожалуйста, заполните все поля перед отправкой формы.
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<input type="hidden" id="deletedOrders" name="deletedOrders" />
+
+<script>
+    $(document).ready(function () {
+        var deletedOrders = [];
+
+        $(document).on('click', '.delete-order', function () {
+            var orderId = $(this).data('order-id');
+            $('#orderRow_' + orderId).remove();
+            deletedOrders.push(orderId);
+            $('#deletedOrders').val(deletedOrders.join(','));
+
+            updateRowNumbers();
+            calculateSumAndDisplay();
+            calculateTotalPurchasePriceRub();
+            window.updateSupplierList(); // Обновление списка после удаления строки
+        });
+
+        function updateRowNumbers() {
+            $('#shipmentTable tbody tr').each(function (index) {
+                $(this).find('.row-number').text(index + 1);
+            });
+        }
+
+        $('form').submit(function (e) {
+            e.preventDefault();
+
+            var fieldsFilled = true;
+            $('.purchase-price-field').each(function () {
+                if ($(this).val() === '') {
+                    fieldsFilled = false;
+                }
+            });
+
+            $('.supplier-select').each(function () {
+                if ($(this).val() === '' || $(this).val() === '1') {
+                    fieldsFilled = false;
+                }
+            });
+
+            if (!fieldsFilled) {
+                $('#myModal').modal('show');
+                return;
+            } else {
+                $('#staticBackdrop').modal('show');
+                var formData = $(this).serialize();
+
+                formData += '&userName=' + '@User.Identity.Name' + '&comment=' + $('#commentField').val() + '&page=' + '@Model.RedirectPage';
+
+                $.ajax({
+                    url: '@Url.Action("CreateOrderToSupplierTransaction", "Orders")',
+                    type: 'POST',
+                    data: formData,
+                    success: function (result) {
+                        window.location.href = result.redirectTo;
+                    },
+                    error: function (xhr, status, error) {
+                        alert('Произошла ошибка при отправке формы: ' + error);
+                    }
+                });
+            }
+        });
+    });
+</script>
+
+
+
+<script>
+    $(document).ready(function () {
+        // Обработка изменения поставщика в индивидуальных полях
+        $('.supplier-select').on('change', function () {
+            var selectedSupplier = $(this).find('option:selected');
+            var currencyCode = selectedSupplier.data('currency-code');
+            var orderId = $(this).attr('id').split('_')[1]; // Извлекаем ID заказа из ID элемента
+
+            if (currencyCode) {
+                $('#CurrencyCode_' + orderId).text(currencyCode);
+            } else {
+                $('#CurrencyCode_' + orderId).text('');
+            }
+        });
+
+        // Обработка изменения поставщика в общем поле
+        $('#universalSelect').on('change', function () {
+            var selectedSupplier = $(this).find('option:selected');
+            var supplierId = selectedSupplier.val();
+            var currencyCode = selectedSupplier.data('currency-code');
+
+            $('.supplier-select').each(function () {
+                $(this).val(supplierId).trigger('change');
+            });
+
+            $('.currency-code').each(function () {
+                if (currencyCode) {
+                    $(this).text(currencyCode);
+                } else {
+                    $(this).text('');
+                }
+            });
+        });
+    });
+</script>
+
+<script>
+    $(document).ready(function () {
+        // Получаем значения курсов валют из Razor View
+        var rateUSD = @Model.RateUSD.ToString().Replace(',', '.');
+        var rateEUR = @Model.RateEUR.ToString().Replace(',', '.');
+        var rateBYN = @Model.RateBYN.ToString().Replace(',', '.');
+
+        // Обработка изменения поставщика в индивидуальных полях
+        $('.supplier-select').on('change', function () {
+            var selectedSupplier = $(this).find('option:selected');
+            var weightFactor = parseFloat(selectedSupplier.data('weight-factor')) || 0;
+            var orderId = $(this).attr('id').split('_')[1]; // Извлекаем ID заказа из ID элемента
+            var weightInput = $('#ProductWeight_' + orderId);
+
+            // Если весовой коэффициент равен 0, устанавливаем поле веса в 0 и делаем его readonly
+            if (weightFactor === 0) {
+                weightInput.val('0').prop('readonly', true);
+            } else {
+                weightInput.prop('readonly', false); // Включаем возможность редактирования
+            }
+
+            // Пример: обновляем другие значения на странице
+            var currencyCode = selectedSupplier.data('currency-code');
+            var weightCurrencyCode = selectedSupplier.data('weight-currency-code');
+            var costFactor = parseFloat(selectedSupplier.data('cost-factor').toString().replace(',', '.')) || 1;
+
+            if (currencyCode) {
+                $('#CurrencyCode_' + orderId).text(currencyCode);
+                var purchasePriceInRub = updatePurchasePriceInRub(orderId, currencyCode, costFactor);
+                updateCostPrice(orderId, currencyCode, costFactor, weightCurrencyCode, purchasePriceInRub);
+            } else {
+                $('#CurrencyCode_' + orderId).text('');
+                $('#PurchasePriceRub_' + orderId).text('');
+                $('#CostPrice_' + orderId).text('');
+            }
+        });
+
+        // Обработка изменения значения purchase price
+        $('.purchase-price-field').on('input', function () {
+            var orderId = $(this).attr('id').split('_')[1];
+            var selectedSupplier = $('#SupplierId_' + orderId).find('option:selected');
+            var currencyCode = selectedSupplier.data('currency-code');
+            var weightCurrencyCode = selectedSupplier.data('weight-currency-code');
+            var costFactor = parseFloat(selectedSupplier.data('cost-factor').toString().replace(',', '.')) || 1;
+
+            var purchasePriceInRub = updatePurchasePriceInRub(orderId, currencyCode, costFactor);
+            updateCostPrice(orderId, currencyCode, costFactor, weightCurrencyCode, purchasePriceInRub);
+            updateCalculations(orderId);
+            window.updateSupplierList(); // Используем глобальную переменную
+        });
+
+        // Обработка изменения значения веса
+        $('.product-weight-field').on('input', function () {
+            var orderId = $(this).attr('id').split('_')[1];
+            var selectedSupplier = $('#SupplierId_' + orderId).find('option:selected');
+            var currencyCode = selectedSupplier.data('currency-code');
+            var weightCurrencyCode = selectedSupplier.data('weight-currency-code');
+            var costFactor = parseFloat(selectedSupplier.data('cost-factor').toString().replace(',', '.')) || 1;
+
+            var purchasePriceInRub = updatePurchasePriceInRub(orderId, currencyCode, costFactor);
+            updateCostPrice(orderId, currencyCode, costFactor, weightCurrencyCode, purchasePriceInRub);
+            updateCalculations(orderId);
+            window.updateSupplierList(); // Используем глобальную переменную
+        });
+
+        // Обработка изменения значения комиссий Ozon
+        $('.ozon-commission-field').on('input', function () {
+            var orderId = $(this).attr('id').split('_')[1];
+            updateCalculations(orderId);
+        });
+
+        // Вызываем обновление при загрузке страницы для каждого элемента
+        $('.supplier-select').each(function () {
+            var orderId = $(this).attr('id').split('_')[1];
+            var selectedSupplier = $(this).find('option:selected');
+            var currencyCode = selectedSupplier.data('currency-code');
+            var weightCurrencyCode = selectedSupplier.data('weight-currency-code');
+            var costFactor = parseFloat(selectedSupplier.data('cost-factor').toString().replace(',', '.')) || 1;
+
+            if (currencyCode) {
+                $('#CurrencyCode_' + orderId).text(currencyCode);
+                var purchasePriceInRub = updatePurchasePriceInRub(orderId, currencyCode, costFactor);
+                updateCostPrice(orderId, currencyCode, costFactor, weightCurrencyCode, purchasePriceInRub);
+            } else {
+                $('#CurrencyCode_' + orderId).text('');
+                $('#PurchasePriceRub_' + orderId).text('');
+                $('#CostPrice_' + orderId).text('');
+            }
+        });
+
+        // Вызываем обновление вычислений при загрузке страницы для каждого элемента
+        $('.purchase-price-field, .ozon-commission-field').each(function () {
+            var orderId = $(this).attr('id').split('_')[1];
+            updateCalculations(orderId);
+        });
+
+        function updatePurchasePriceInRub(orderId, currencyCode, costFactor) {
+            var purchasePrice = parseFloat($('#PurchasePrice_' + orderId).val());
+            var purchasePriceInRub = 0;
+            var titleText = '';
+
+            switch (currencyCode) {
+                case 'USD':
+                    purchasePriceInRub = purchasePrice * costFactor * rateUSD;
+                    titleText = `${purchasePrice} (Цена закупки USD) * ${costFactor} (Коэффициент) * ${rateUSD} (Курс USD) = ${purchasePriceInRub.toFixed(2)}`;
+                    break;
+                case 'EUR':
+                    purchasePriceInRub = purchasePrice * costFactor * rateEUR;
+                    titleText = `${purchasePrice} (Цена закупки EUR) * ${costFactor} (Коэффициент) * ${rateEUR} (Курс EUR) = ${purchasePriceInRub.toFixed(2)}`;
+                    break;
+                case 'BYN':
+                    purchasePriceInRub = purchasePrice * costFactor * rateBYN;
+                    titleText = `${purchasePrice} (Цена закупки BYN) * ${costFactor} (Коэффициент) * ${rateBYN} (Курс BYN) = ${purchasePriceInRub.toFixed(2)}`;
+                    break;
+                default:
+                    purchasePriceInRub = purchasePrice * costFactor;
+                    titleText = `${purchasePrice} (Цена закупки RUB) * ${costFactor} = ${purchasePriceInRub.toFixed(2)}`;
+                    break;
+            }
+
+            $('#PurchasePriceRub_' + orderId).text(!isNaN(purchasePriceInRub) ? purchasePriceInRub.toFixed(2) + ' RUB' : '');
+            $('#PurchasePriceRub_' + orderId).attr('title', titleText);
+            $('#PurchasePrice_' + orderId).data('purchase-price-rub', purchasePriceInRub);
+
+            return purchasePriceInRub;
+        }
+
+        function updateCostPrice(orderId, currencyCode, costFactor, weightCurrencyCode, purchasePriceInRub) {
+            var weight = parseFloat($('#ProductWeight_' + orderId).val());
+            var supplierWeightFactor = parseFloat($('#SupplierId_' + orderId).find('option:selected').data('weight-factor').toString().replace(',', '.')) || 0;
+            var supplierWeightFactorInRub = 0;
+            
+            console.log(`=======`)
+            console.log(purchasePriceInRub)
+            console.log(`=======`)
+
+            var supplierWeightFactorInRubTitle = ``;
+            switch (weightCurrencyCode) {
+                case 'USD':
+                    supplierWeightFactorInRub = supplierWeightFactor * rateUSD;
+                    supplierWeightFactorInRubTitle = ` = ${supplierWeightFactor} * ${rateUSD}`
+                    break;
+                case 'EUR':
+                    supplierWeightFactorInRub = supplierWeightFactor * rateEUR;
+                    supplierWeightFactorInRubTitle = ` = ${supplierWeightFactor} * ${rateEUR}`
+                    break;
+                case 'BYN':
+                    supplierWeightFactorInRub = supplierWeightFactor * rateBYN;
+                    supplierWeightFactorInRubTitle = ` = ${supplierWeightFactor} * ${rateBYN}`
+                    break;
+                default:
+                    supplierWeightFactorInRub = supplierWeightFactor;
+                    break;
+            }
+
+            var costPrice = 0;
+            var titleText = '';
+
+            if (!isNaN(weight) && !isNaN(supplierWeightFactor) && !isNaN(purchasePriceInRub) && supplierWeightFactorInRub != 0) {
+                costPrice = (weight * supplierWeightFactorInRub) + purchasePriceInRub;
+                titleText = `${weight} (Вес) * ${supplierWeightFactorInRub.toFixed(2)} (Цена за кг. RUB${supplierWeightFactorInRubTitle}) + ${purchasePriceInRub.toFixed(2)} (Цена закупки RUB) = ${costPrice.toFixed(2)}`;
+            } else if (!isNaN(purchasePriceInRub)) {
+                costPrice = purchasePriceInRub;
+                titleText = `${purchasePriceInRub.toFixed(2)} (Цена закупки RUB) = ${costPrice.toFixed(2)}`;
+            } else {
+                // Если какое-либо из значений отсутствует или не является числом, устанавливаем costPriceInRub в пустую строку
+                $('#CostPrice_' + orderId).text('');
+                $('#CostPrice_' + orderId).attr('title', '');
+                $('#CostPrice_' + orderId).data('cost-price', '');
+                updateCalculations(orderId);
+                return; // Выходим из функции, чтобы не выполнять дальнейшие вычисления
+            }
+
+            $('#CostPrice_' + orderId).text(costPrice.toFixed(2) + ' RUB');
+            $('#CostPrice_' + orderId).attr('title', titleText);
+            $('#CostPrice_' + orderId).data('cost-price', costPrice);
+
+            updateCalculations(orderId);
+        }
+
+        function updateCalculations(orderId) {
+            var costPrice = parseFloat($('#CostPrice_' + orderId).data('cost-price'));
+            var price = parseFloat($('#Price_' + orderId).text());
+
+            // Если поле заполнено значением 0, то это значение должно быть учтено, а не заменено на NaN
+            var minOzonCommission = $('#MinOzonCommission_' + orderId).val() !== "" ? parseFloat($('#MinOzonCommission_' + orderId).val()) : parseFloat($('#MinOzonCommission_' + orderId).text());
+            var maxOzonCommission = $('#MaxOzonCommission_' + orderId).val() !== "" ? parseFloat($('#MaxOzonCommission_' + orderId).val()) : parseFloat($('#MaxOzonCommission_' + orderId).text());
+
+            minOzonCommission = !isNaN(minOzonCommission) ? minOzonCommission : 0;
+            maxOzonCommission = !isNaN(maxOzonCommission) ? maxOzonCommission : 0;
+
+            console.log(minOzonCommission);
+            console.log(maxOzonCommission);
+
+            var startCommission = price - costPrice;
+            var minProfit = startCommission - maxOzonCommission;
+            var maxProfit = startCommission - minOzonCommission;
+            var minDiscount = (minProfit / costPrice) * 100;
+            var maxDiscount = (maxProfit / costPrice) * 100;
+
+            $('#MinProfit_' + orderId).text(!isNaN(minProfit) ? minProfit.toFixed(2) : "");
+            $('#MaxProfit_' + orderId).text(!isNaN(maxProfit) ? maxProfit.toFixed(2) : "");
+            $('#MaxDiscount_' + orderId).text(!isNaN(maxDiscount) ? maxDiscount.toFixed(2) + '%' : "");
+            $('#MinDiscount_' + orderId).text(!isNaN(minDiscount) ? minDiscount.toFixed(2) + '%' : "");
+
+            $('#MinProfit_' + orderId).css('color', minProfit < 0 ? 'red' : '');
+            $('#MaxProfit_' + orderId).css('color', maxProfit < 0 ? 'red' : '');
+            $('#MaxDiscount_' + orderId).css('color', maxDiscount < 0 ? 'red' : '');
+            $('#MinDiscount_' + orderId).css('color', minDiscount < 0 ? 'red' : '');
+
+            // Добавляем title к полям
+            $('#MinProfit_' + orderId).attr('title', `${price} (Цена) - ${costPrice} (Себестоимость) - ${maxOzonCommission} (Макс. Комиссия ОЗОН) = ${minProfit.toFixed(2)}`);
+            $('#MaxProfit_' + orderId).attr('title', `${price} (Цена) - ${costPrice} (Себестоимость) - ${minOzonCommission} (Мин. Комиссия ОЗОН) = ${maxProfit.toFixed(2)}`);
+
+            $('#MaxDiscount_' + orderId).attr('title', `${maxProfit.toFixed(2)} (Макс. Прибыль) / ${costPrice} (Себестоимость) * 100 = ${maxDiscount.toFixed(2)}%`);
+            $('#MinDiscount_' + orderId).attr('title', `${minProfit.toFixed(2)} (Мин. Прибыль) / ${costPrice} (Себестоимость) * 100 = ${minDiscount.toFixed(2)}%`);
+        }
+
+    });
+</script>
+
+
+
+<script>
+    var inputChangeEvent = new Event('inputchange', {
+        bubbles: true,
+        cancelable: true
+    });
+
+    // Находим общее поле для выбора из выпадающего списка и поля для обновления в цикле
+    var universalSelect = document.getElementById('universalSelect');
+    var supplierSelects = document.querySelectorAll('.supplier-select');
+
+    // Добавляем обработчик события на изменение значения общего поля
+    universalSelect.addEventListener('change', function () {
+        var value = this.value; // Получаем выбранное значение из общего поля
+
+        // Обновляем значения полей в цикле
+        supplierSelects.forEach(function (select) {
+            select.value = value;
+        });
+    });
+</script>
+
+<script>
+    // Находим общее поле для выбора статуса из выпадающего списка и поля для обновления в цикле
+    var universalStatusSelect = document.getElementById('universalStatusSelect');
+    var statusSelects = document.querySelectorAll('.status-select');
+
+    // Добавляем обработчик события на изменение значения общего поля
+    universalStatusSelect.addEventListener('change', function () {
+        var value = this.value; // Получаем выбранное значение из общего поля
+
+        // Обновляем значения полей в цикле
+        statusSelects.forEach(function (select) {
+            select.value = value;
+        });
+    });
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Находим общее поле для ввода и все целевые поля для обновления
+        var universalField = document.getElementById('universalField');
+        var supplierFields = document.querySelectorAll('.supplier-field');
+
+        // Добавляем обработчик события на изменение значения общего поля
+        universalField.addEventListener('input', function () {
+            var value = this.value; // Получаем текущее значение из общего поля
+
+            // Обновляем значения целевых полей в цикле
+            supplierFields.forEach(function (field) {
+                field.value = value;
+                field.dispatchEvent(new Event('change'));
+            });
+        });
+    });
+
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Находим общее поле для ввода и все целевые поля для обновления
+        var universalField = document.getElementById('universalOrderNumberToSupplier');
+        var universalOrderNumberToSupplier = document.querySelectorAll('.orderNumberToSupplie-field');
+
+        // Добавляем обработчик события на изменение значения общего поля
+        universalField.addEventListener('input', function () {
+            var value = this.value; // Получаем текущее значение из общего поля
+
+            // Обновляем значения целевых полей в цикле
+            universalOrderNumberToSupplier.forEach(function (field) {
+                field.value = value;
+            });
+        });
+    });
+</script>
+
+<script>
+
+    // Функция для чтения куки
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+    }
+
+    // Функция для обработки состояния каждого чекбокса
+    function processCheckboxState(checkboxId, checkboxState) {
+        switch (checkboxId) {
+            case 'chk1':
+                toggleColumnVisibility(1, checkboxState);
+                break;
+            case 'chk2':
+                toggleColumnVisibility(2, checkboxState);
+                break;
+            case 'chk3':
+                toggleColumnVisibility(3, checkboxState);
+                break;
+            case 'chk4':
+                toggleColumnVisibility(4, checkboxState);
+                break;
+            case 'chk5':
+                toggleColumnVisibility(5, checkboxState);
+                break;
+            case 'chk6':
+                toggleColumnVisibility(6, checkboxState);
+                break;
+            case 'chk7':
+                toggleColumnVisibility(7, checkboxState);
+                break;
+            case 'chk8':
+                toggleColumnVisibility(8, checkboxState);
+                break;
+            case 'chk9':
+                toggleColumnVisibility(9, checkboxState);
+                break;
+            case 'chk10':
+                toggleColumnVisibility(10, checkboxState);
+                break;
+            case 'chk11':
+                toggleColumnVisibility(11, checkboxState);
+                break;
+            case 'chk12':
+                toggleColumnVisibility(12, checkboxState);
+                break;
+            case 'chk13':
+                toggleColumnVisibility(13, checkboxState);
+                break;
+            case 'chk14':
+                toggleColumnVisibility(14, checkboxState);
+                break;
+            case 'chk15':
+                toggleColumnVisibility(15, checkboxState);
+                break;
+            case 'chk16':
+                toggleColumnVisibility(16, checkboxState);
+                break;
+            case 'chk17':
+                toggleColumnVisibility(17, checkboxState);
+                break;
+            case 'chk18':
+                toggleColumnVisibility(18, checkboxState);
+                break;
+            case 'chk19':
+                toggleColumnVisibility(19, checkboxState);
+                break;
+            case 'chk20':
+                toggleColumnVisibility(20, checkboxState);
+                break;
+            case 'chk21':
+                toggleColumnVisibility(21, checkboxState);
+                break;
+            case 'chk22':
+                toggleColumnVisibility(22, checkboxState);
+                break;
+            case 'chk23':
+                toggleColumnVisibility(23, checkboxState);
+                break;
+            case 'chk24':
+                toggleColumnVisibility(24, checkboxState);
+                break;
+            case 'chk25':
+                toggleColumnVisibility(25, checkboxState);
+                break;
+        }
+    }
+
+    // Получаем блок modal-body
+    const modalBody = document.querySelector('.modal-body-checkbox');
+
+    // Получаем все чекбоксы внутри блока modal-body
+    const checkboxes = modalBody.querySelectorAll('input[type="checkbox"]');
+
+    // Устанавливаем начальное состояние чекбоксов из кук
+    checkboxes.forEach(function (checkbox) {
+        const checkboxId = checkbox.id;
+        const checkboxState = getCookie(checkboxId);
+
+        console.log(getCookie(checkboxId));
+
+        if (checkboxState !== undefined) {
+            checkbox.checked = checkboxState === 'true';
+            processCheckboxState(checkboxId, checkboxState);
+            console.log(1)
+        }
+    });
+
+    // Перебираем чекбоксы и добавляем обработчик события change
+    checkboxes.forEach(function (checkbox) {
+        checkbox.addEventListener('change', function (event) {
+            const checkboxId = event.target.id;
+            const checkboxState = event.target.checked;
+            document.cookie = `${checkboxId}=${checkboxState}`;
+            processCheckboxState(checkboxId, checkboxState);
+        });
+    });
+
+    // Функция для скрытия и раскрытия столбца таблицы по его ID
+    function toggleColumnVisibility(columnIndex, isVisible) {
+        const table = document.getElementById("shipmentTable");
+        if (table) {
+            const rows = table.rows;
+            for (let i = 0; i < rows.length; i++) {
+                const cells = rows[i].cells;
+
+                isVisible = typeof isVisible === 'string' ? isVisible.toLowerCase() === 'true' : isVisible;
+
+                if (!isVisible) {
+                    console.log("none")
+                    cells[columnIndex].style.display = 'none';
+
+                }
+                else {
+                    console.log("none2")
+                    cells[columnIndex].style.display = '';
+                }
+
+            }
+        }
+    }
+</script>

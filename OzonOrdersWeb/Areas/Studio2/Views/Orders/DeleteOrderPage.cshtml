@@ -1,0 +1,429 @@
+﻿@using OzonOrdersWeb.ViewModels.OrderViewModels
+@model DeleteOrderViewModel
+
+<link rel="stylesheet" href="~/css/table.css" />
+<style>
+    /*
+        #shipmentTable td {
+            padding: 5px 2px; /* вертикальный  горизонтальный
+        }
+
+        #shipmentTable th {
+            padding: 5px 2px; /* вертикальный  горизонтальный
+        }
+
+        */
+
+    th {
+        white-space: nowrap;
+    }
+
+    .container .row .col-md-4 {
+        flex: 0 0 auto;
+        max-width: 33.3333%;
+    }
+
+    .container .custom-width-large {
+        width: 400px; /* Устанавливаем фиксированную ширину для поля "Наименование товара" */
+    }
+
+
+    .custom-white {
+        background-color: #fff;
+    }
+
+    .custom-gray {
+        background-color: #585858;
+        color: #fff;
+    }
+
+        .custom-gray:hover {
+            color: #fff;
+        }
+
+    .custom-red {
+        background-color: #DC143C;
+        color: #fff;
+    }
+
+    .custom-red2 {
+        background-color: #FF5A75; /* Светлее, чем #DC143C */
+        color: #fff;
+    }
+
+    .custom-red:hover {
+        color: #fff;
+    }
+
+    .custom-red2:hover {
+        color: #fff;
+    }
+
+    .product-popup {
+        display: none;
+        position: absolute;
+        z-index: 1;
+    }
+
+    .product-cell {
+        font-size: 11px;
+    }
+
+        .product-cell:hover .product-popup {
+            display: block;
+        }
+
+    #processingDateFilter,
+    #shippingDateFilter {
+        width: 70px;
+    }
+
+    #deliveryPeriodInput,
+    #timeLeftDayInput {
+        width: 50px;
+    }
+
+    #statusFilter,
+    #appStatusFilterInput,
+    #supplierFilter {
+        width: 103px;
+    }
+
+    #ozonClientFilterInput,
+    #deliveryCityFilter {
+        width: 125px;
+    }
+
+    #currentPriceWithDiscountFilter,
+    #quantityFilter,
+    #priceFilter,
+    #shipmentAmountFilter,
+    #purchasePriceFilter,
+    #costPriceFilter,
+    #ozonCommissionFilter,
+    #profitFilter,
+    #discountFilter {
+        width: 70px;
+        max-width: 70px;
+    }
+
+    a {
+        text-decoration: none;
+    }
+
+    .horizontal-line {
+        border-top: 1px solid #ccc;
+        margin: 20px 0;
+    }
+
+    #infoWindow {
+        position: fixed;
+        display: none;
+        border: 1px solid #ccc;
+        background-color: #fff;
+        padding: 10px;
+        z-index: 9999;
+    }
+
+    th.active {
+        background-color: #f4f4f4; /* Цвет подсветки */
+    }
+
+    .button-container {
+        display: flex;
+        gap: 10px; /* Расстояние между кнопками */
+    }
+
+    .horizontal-inputs {
+        display: flex;
+        align-items: center;
+    }
+
+        .horizontal-inputs > div {
+            margin-right: 10px; /* Отступ между элементами */
+        }
+
+    .vertical-align {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-between;
+        height: 100%;
+    }
+
+        .vertical-align > * {
+            margin: 2px 0; /* Минимальный отступ между элементами */
+        }
+
+    .checkbox-column {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 10px;
+    }
+
+    .nowrap {
+        white-space: nowrap;
+    }
+
+    .product-cell {
+        /* Убедитесь, что ширина элемента установлена */
+        width: 100%; /* Или установите конкретную ширину, если нужно */
+        /* Обрезка текста и добавление многоточия */
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* Изначально скрываем кнопку */
+    .clear-btn {
+        display: none;
+        position: absolute;
+        left: 100%;
+        transform: translateX(0) translateY(-50%); /* Прижимаем к основной кнопке и центрируем по вертикали */
+        z-index: 10; /* Поверх других элементов */
+        top: 50%; /* Центрируем по вертикали относительно главной кнопки */
+        opacity: 0; /* Прозрачность кнопки */
+        border: solid 1px;
+    }
+
+        /* Показываем кнопку при наведении на основную или на саму кнопку очистки */
+        .btn-container:hover .clear-btn,
+        .clear-btn:hover {
+            display: block;
+            opacity: 1; /* Увеличиваем непрозрачность при наведении */
+            border: solid 1px;
+        }
+
+    /* Обёртка для кнопок */
+    .btn-container {
+        position: relative;
+        display: inline-block;
+    }
+
+    .bg-green-300 {
+        background-color: #d4edda !important; /* Bootstrap's 'bg-success' color */
+    }
+
+    .placeholder {
+        min-height: 1em; /* Вы можете настроить минимальную высоту по вашему усмотрению */
+    }
+
+</style>
+
+<h4>Заказы не найдены в Ozon</h4>
+<hr />
+
+<table class="table table-striped" id="shipmentTable">
+    <thead>
+        <tr>
+
+            <th id="thShipmentNumber">
+                    <small>№/Номер заказа &nbsp;</small>
+                    <input id="shipmentNumberFilter" class="form-control form-control-sm" readonly />
+            </th>
+            <th>
+
+                    <div id="thOzonClient">
+                        <small>Клиент &nbsp; </small>
+                        <input id="ozonClientFilterInput" class="form-control form-control-sm" autocomplete="off" readonly />
+                    </div>
+
+                    <div id="thDeliveryCity" class="text-muted" title="Город доставки">
+                        <small>Город. &nbsp;</small>
+                        <input id="deliveryCityFilter" class="form-control form-control-sm" readonly />
+                    </div>
+            </th>
+            <th>
+                    <div id="thProcessingDate" title="Принят в обработку">
+                        <small>Принят.  &nbsp;</small>
+                        <input id="processingDateFilter" class="form-control form-control-sm" type="date" readonly />
+                    </div>
+
+                    <div id="thShippingDate" class="text-muted" title="Дата отгрузки">
+                        <small>Дата отгр.  &nbsp;</small>
+                        <input id="shippingDateFilter" class="form-control form-control-sm" type="date" readonly />
+                    </div>
+            </th>
+
+            <th style="width: 20px">
+                    <div id="thDeliveryPeriod" title="Срок доставки">
+                        <small>Срок.  &nbsp;</small>
+                        <input id="deliveryPeriodInput" class="form-control form-control-sm" type="text" placeholder="1 д. 1 ч." readonly />
+                    </div>
+
+                    <div id="thDeliveryPeriod" class="text-muted" title="Осталось времени">
+                        <small>Остал.  &nbsp;</small>
+                        <input id="timeLeftDayInput" class="form-control form-control-sm" type="number" placeholder="1 д." readonly />
+                    </div>
+            </th>
+            <th>
+
+                    <div id="thStatusOzon">
+                        <small>Статус клиента  &nbsp;</small>
+                        <input id="statusFilter" class="form-control form-control-sm statusFilter" autocomplete="off" readonly />
+                    </div>
+
+                    <div id="thStatus" class="text-muted">
+                        <div id="thStatus" class="text-muted">
+                            <small>Статус  &nbsp;</small>
+                            <input id="statusFilter" class="form-control form-control-sm statusFilter" autocomplete="off" readonly />
+                        </div>
+                    </div>
+            </th>
+
+            <th>
+                <div class="container">
+                    <div class="row mb-0 justify-content-between">
+                        <div id="thArticle" class="col-md-4 d-flex flex-column">
+                            <small>Key &nbsp;</small>
+                            <input id="articleFilter" class="form-control form-control-sm" readonly />
+                        </div>
+                        <div id="thManufacturer" class="col-md-4 d-flex flex-column">
+                            <small>Производитель &nbsp;</small>
+                            <input id="manufacturerFilter" class="form-control form-control-sm" readonly />
+                        </div>
+                        <div id="thArticle2" class="col-md-4 d-flex flex-column">
+                            <small>Код товара  &nbsp;</small>
+                            <input id="articleFilter2" class="form-control form-control-sm" readonly />
+                        </div>
+                    </div>
+                    <div class="row mt-0">
+                        <div id="thProductName" class="custom-width-large text-muted">
+                            <small>Наименование товара &nbsp;</small>
+                            <input id="productNameFilter" class="form-control form-control-sm" readonly />
+                        </div>
+                    </div>
+                </div>
+            </th>
+
+            <th>
+
+            </th>
+
+            <th>
+                    <div id="thShipmentWarehouse">
+                        <small>Склад отгрузки &nbsp;</small>
+                        <input id="shipmentWarehouseFilter" class="form-control form-control-sm" autocomplete="off" readonly />
+                    </div>
+            </th>
+            <th>
+                    <div id="thSupplier">
+                        <small>Поставщик &nbsp;</small>
+                        <input id="shipmentWarehouseFilter" class="form-control form-control-sm" id="universalSelect" autocomplete="off" readonly />
+                    </div>
+
+                    <div id="thOrderNumberToSupplierSort" class="text-muted" title="Номер заказа поставщику">
+                        <small>Номер зак. п. &nbsp;</small>
+                    <input type="text" class="form-control form-control-sm universalOrderNumberToSupplie" id="universalOrderNumberToSupplier" readonly />
+                    </div>
+            </th>
+            <th>
+                    <div id="thCategory">
+                        <small>Категория &nbsp;</small>
+                        <input id="commercialCategoryFilter" class="form-control form-control-sm" readonly />
+                    </div>
+
+                    <div id="thVolume" class="text-muted">
+                        <small>Вес V &nbsp;</small>
+                        <input id="volumetricWeightFilter" class="form-control form-control-sm" readonly />
+                    </div>
+            </th>
+            <th>
+                    <div id="thPurchasePrice" title="Цена сайта">
+                        <small>Цена с. &nbsp;</small>
+                        <input id="currentPriceWithDiscountFilter" class="form-control form-control-sm" readonly />
+                    </div>
+
+                    <div id="thQuantity" class="text-muted" title="Количество">
+                        <small>Кол. &nbsp;</small>
+                        <input id="quantityFilter" class="form-control form-control-sm" readonly />
+                    </div>
+            </th>
+            <th>
+                    <div id="thPrice">
+                        <small>Цена &nbsp;</small>
+                        <input id="priceFilter" class="form-control form-control-sm" readonly />
+                    </div>
+
+                    <div id="thShipmentAmount" class="text-muted" title="Сумма отправления">
+                        <small>Сумма о. &nbsp;</small>
+                        <input id="shipmentAmountFilter" class="form-control form-control-sm" readonly />
+                    </div>
+            </th>
+
+            <th>
+                    <div id="thCurrentPrice" title="Цена закупки">
+                        <small>Цена заку. &nbsp;</small>
+                        <input id="purchasePriceFilter" class="form-control form-control-sm" readonly />
+                    </div>
+
+                    <div id="thCostPriceсе" class="text-muted" title="Себестоимость">
+                        <small>Себест. &nbsp;</small>
+                        <input id="costPriceFilter" class="form-control form-control-sm" readonly />
+                    </div>
+            </th>
+            <th id="thOzonCommission" title="Комиссия ОЗОН">
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <div>
+                            <small>Комис. &nbsp;</small>
+                        </div>
+                        <div style="text-align: center; font-size: 10px;" class="text-muted">
+                            <div><small>min</small></div>
+                            <div><small>max</small></div>
+                        </div>
+                    </div>
+                    <input id="ozonCommissionFilter" class="form-control form-control-sm" readonly />
+            </th>
+            <th id="thProfit" title="Прибыль">
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <div>
+                            <small>Приб. &nbsp;</small>
+                        </div>
+                        <div style="text-align: center; font-size: 10px;" class="text-muted">
+                            <div><small>min</small></div>
+                            <div><small>max</small></div>
+                        </div>
+                    </div>
+                    <input id="profitFilter" class="form-control form-control-sm" readonly />
+            </th>
+
+            <th id="thDiscount" title="Наценка %">
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <div>
+                            <small>Нацен.% &nbsp;</small>
+                        </div>
+                        <div style="text-align: center; font-size: 10px;" class="text-muted">
+                            <div><small>min</small></div>
+                            <div><small>max</small></div>
+                        </div>
+                    </div>
+                    <input id="discountFilter" class="form-control form-control-sm" readonly />
+            </th>
+        </tr>
+    </thead>
+
+    <tbody>
+            @foreach(var order in Model.OrdersToDelete)
+            {
+                @await Html.PartialAsync("_OrderRowNoCheckbox", order)
+            }
+     </tbody>
+</table>
+<br />
+
+<div class="button-container">
+    <a id="deleteOrdersLink" href="#" class="btn btn-danger">Удалить</a>
+
+    <a href="/Orders/IndexV2" class="btn btn-primary">Продолжить</a> 
+</div>
+
+<script>
+    document.getElementById('deleteOrdersLink').addEventListener('click', function (e) {
+        e.preventDefault();
+        var ids = @Html.Raw(Json.Serialize(Model.IdsToDelete)); 
+        var page = 1;
+        var url = '/Orders/MultiplayDeleteOrdersV2?ids=' + ids.join(',') + '&page=' + page;
+        window.location.href = url;
+    });
+</script>

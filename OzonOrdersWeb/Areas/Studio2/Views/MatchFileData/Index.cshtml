@@ -1,0 +1,477 @@
+﻿@using OzonOrdersWeb.ViewModels.MatchFileDataViewModel
+
+@model MatchFileDataViewModel
+<style>
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0, 0, 0, 0.5); /* Полупрозрачный фон */
+    }
+
+    .modal-content {
+        background-color: #fefefe;
+        margin: 15% auto;
+        padding: 20px;
+        border: 1px solid #888;
+        width: 80%; /* Ширина контента */
+    }
+
+    .progress {
+        margin: 20px 0; /* Отступы сверху и снизу */
+    }
+
+    .modal-backdrop {
+        display: none; /* Скрыть затемнение фона */
+    }
+
+</style>
+
+@{
+    string errorResult = (string)ViewData["ErrorResult"];
+}
+
+@if (errorResult != null)
+{
+    <div class="alert alert-dismissible alert-danger">
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <p>@Html.Raw(errorResult)</p>
+    </div>
+}
+
+<div class="modal fade" id="saveMappingModal" tabindex="-1" role="dialog" aria-labelledby="saveMappingModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="saveMappingModalLabel">Сохранить состояние сопоставлений столбцов</h5>
+            </div>
+            <div class="modal-body">
+                <p>Введите название для сохранения (необязательно):</p>
+                <input type="text" id="saveMappingName" class="form-control">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" onclick="submitFormWithSave()">Сохранить и загрузить</button>
+                <button type="button" class="btn btn-primary" onclick="submitFormWithoutSave()">Продолжить без сохранения</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<nav class="navbar navbar-expand-sm navbar-light bg-white border-bottom box-shadow mb-3" style="padding: 0 10px;">
+    <div class="container-fluid">
+        <ul class="navbar-nav flex-grow-1">
+            <li class="nav-item">
+                <div class="btn-group">
+                    <a class="nav-link text-dark" href="#" id="dropdownToggle">
+                        Загруженные сопоставления
+                    </a>
+
+                    <div class="dropdown-menu p-0" id="dropdownMenu" style="max-width: 300px;">
+                        <div id="fileListContainer" class="list-group" style="max-height: 600px; overflow-y: auto;">
+                            @foreach (var matchedResult in Model.MatchedResults)
+                            {
+                                <a href="/MatchFileData/GetMatchResult?id=@matchedResult.Id" class="list-group-item list-group-item-action flex-column align-items-start">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <p class="mb-1">@matchedResult.MainFileName / @matchedResult.ScondaryFileName</p>
+                                        <small>
+                                            @if (matchedResult.СreationDate != null)
+                                            {
+                                                @matchedResult.СreationDate.ToString("dd.MM.yyyy")
+                                            }
+                                            else
+                                            {
+                                                <span>Дата не указана</span>
+                                            }
+                                        </small>
+                                    </div>
+                                </a>
+                                <div class="d-flex justify-content-between mt-1">
+                                    <small><a href="/MatchFileData/ExtendMatchedData?id=@matchedResult.Id">Дополнить</a></small>
+                                    <small>
+                                        <a class="link-danger" href="/MatchFileData/DeleteMatchResult?id=@matchedResult.Id" onclick="return confirmDelete(event)">Удалить</a>
+                                    </small>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </li>
+
+            <script>
+                // Открытие/закрытие меню при клике на текст "Загруженные сопоставления"
+                document.getElementById('dropdownToggle').addEventListener('click', function (event) {
+                    event.preventDefault(); // Предотвращаем стандартное поведение ссылки
+                    let dropdownMenu = document.getElementById('dropdownMenu');
+                    dropdownMenu.classList.toggle('show'); // Переключаем класс 'show'
+                });
+
+                // Закрытие меню при клике вне его
+                document.addEventListener('click', function (event) {
+                    let dropdownMenu = document.getElementById('dropdownMenu');
+                    let dropdownToggle = document.getElementById('dropdownToggle');
+
+                    // Проверяем, кликнул ли пользователь вне выпадающего меню или текста
+                    if (!dropdownMenu.contains(event.target) && !dropdownToggle.contains(event.target)) {
+                        dropdownMenu.classList.remove('show'); // Убираем класс 'show' для скрытия меню
+                    }
+                });
+            </script>
+
+        </ul>
+    </div>
+</nav>
+
+<hr />
+<div class="container mt-5">
+    <h1 class="mb-4">Загрузка файлов для сопоставления</h1>
+    <hr />
+    <div class="form-group">
+        <label for="savedMappings">Выберите сохраненное сопоставление:</label>
+        <select id="savedMappings" class="form-control" onchange="loadSavedMapping(this.value)">
+            <option value="">Выберите сохраненное сопоставление</option>
+            @foreach (var mapping in Model.SavedMatchingColumns)
+            {
+                <option value="@mapping.Id">@mapping.Name</option>
+            }
+        </select>
+    </div>
+    @using (Html.BeginForm("MatchFiles", "MatchFileData", FormMethod.Post, new { enctype = "multipart/form-data", @class = "needs-validation", novalidate = "novalidate", id = "uploadForm" }))
+    {
+        <div class="row">
+            <!-- Файл 1 -->
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label for="fileInput1" class="form-label">
+                        <h2>
+                            Заказы
+                        </h2>
+                    </label>
+                    <input type="file" class="form-control" id="fileInput1" name="file1" accept=".xlsx,.csv" required>
+                    <div class="invalid-feedback">
+                        Пожалуйста, выберите файл для загрузки.
+                    </div>
+                </div>
+                <div id="startInputs1" style="display: none;">
+                    <div class="mb-3">
+                        <label for="startRowInput1" class="form-label">Начальная строка (файл 1)</label>
+                        <input type="number" class="form-control" id="startRowInput1" name="startRow1" value="1">
+                    </div>
+                    <div class="mb-3">
+                        <label for="startColumnInput1" class="form-label">Начальный столбец (файл 1)</label>
+                        <input type="number" class="form-control" id="startColumnInput1" name="startColumn1" value="1">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Файл 2 -->
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label for="fileInput2" class="form-label">
+                        <h2>
+                            Платежи
+                        </h2>
+                    </label>
+                    <input type="file" class="form-control" id="fileInput2" name="file2" accept=".xlsx,.csv" required>
+                    <div class="invalid-feedback">
+                        Пожалуйста, выберите файл для загрузки.
+                    </div>
+                </div>
+                <div id="startInputs2" style="display: none;">
+                    <div class="mb-3">
+                        <label for="startRowInput2" class="form-label">Начальная строка (файл 2)</label>
+                        <input type="number" class="form-control" id="startRowInput2" name="startRow2" value="1">
+                    </div>
+                    <div class="mb-3">
+                        <label for="startColumnInput2" class="form-label">Начальный столбец (файл 2)</label>
+                        <input type="number" class="form-control" id="startColumnInput2" name="startColumn2" value="1">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="matchingFieldsContainer">
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="matchColumn1" class="form-label">Сопоставление 1</label>
+                    <input type="text" class="form-control" name="matchingColumns[0].Item1" required placeholder="Введите название столбца">
+                </div>
+
+                <div class="col-md-6">
+                    <label for="matchColumn2" class="form-label">Сопоставление 1</label>
+                    <input type="text" class="form-control" name="matchingColumns[0].Item2" required placeholder="Введите название столбца">
+                </div>
+            </div>
+        </div>
+
+        <button type="button" id="addMatchingFields" class="btn btn-link mb-3">Добавить сопоставление</button>
+
+        <input type="hidden" id="matchName" name="matchName">
+
+        <div class="row">
+            <div class="col-md-12">
+                <button type="submit" class="btn btn-primary" id="submitButton" disabled>Загрузить и сопоставить</button>
+            </div>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(ViewBag.Message))
+    {
+        <div class="alert alert-info mt-4">
+            @ViewBag.Message
+        </div>
+    }
+</div>
+
+<script>
+    // Открытие модального окна при нажатии кнопки "Отправить"
+    document.getElementById('submitButton').addEventListener('click', function (event) {
+        event.preventDefault(); // Останавливаем стандартную отправку формы
+
+        // Показываем модальное окно
+        $('#saveMappingModal').modal('show');
+    });
+
+    // Функция для отправки формы с сохранением
+    function submitFormWithSave() {
+        const matchName = document.getElementById('saveMappingName').value;
+
+        // Устанавливаем значение в скрытое поле
+        document.getElementById('matchName').value = matchName.trim();
+
+        // Закрываем модальное окно
+        $('#saveMappingModal').modal('hide');
+
+        // Отправляем форму
+        document.getElementById('uploadForm').submit();
+    }
+
+    // Функция для отправки формы без сохранения
+    function submitFormWithoutSave() {
+        // Закрываем модальное окно
+        $('#saveMappingModal').modal('hide');
+
+        // Отправляем форму без сохранения
+        document.getElementById('uploadForm').submit();
+    }
+</script>
+
+<script>
+    let matchCount = 1; // Счетчик сопоставлений
+
+    function handleFileInput(fileInputId, startInputsId) {
+        var fileInput = document.getElementById(fileInputId);
+        fileInput.addEventListener('change', function () {
+            var file = this.files[0];
+            if (file) {
+                var extension = file.name.split('.').pop().toLowerCase();
+                if (extension === 'csv' || extension === 'xlsx') {
+                    document.getElementById(startInputsId).style.display = 'block';
+                } else {
+                    document.getElementById(startInputsId).style.display = 'none';
+                }
+            }
+            updateSubmitButtonState();
+        });
+    }
+
+    function updateSubmitButtonState() {
+        const fileInput1 = document.getElementById('fileInput1').value;
+        const fileInput2 = document.getElementById('fileInput2').value;
+
+        const submitButton = document.getElementById('submitButton');
+
+        // Enable the button only if both file inputs are filled
+        if (fileInput1 && fileInput2) {
+            submitButton.disabled = false;
+        } else {
+            submitButton.disabled = true;
+        }
+    }
+    function updateMatchingFields() {
+        const fileInput1 = document.getElementById('fileInput1').value;
+        const fileInput2 = document.getElementById('fileInput2').value;
+
+        const matchingFieldsContainer = document.getElementById('matchingFieldsContainer');
+        const submitButton = document.getElementById('submitButton');
+
+        // Show the matching fields container if both file inputs have files
+        if (fileInput1 && fileInput2) {
+            matchingFieldsContainer.style.display = 'block';
+            submitButton.disabled = false; // Enable submit button when both files are selected
+        } else {
+            matchingFieldsContainer.style.display = 'none';
+            submitButton.disabled = true; // Disable submit button if any file is not selected
+        }
+    }
+
+
+    // Обработчик события для кнопки "Добавить сопоставление"
+    document.getElementById('addMatchingFields').addEventListener('click', function () {
+        addMatchingField();
+    });
+
+    // Функция для добавления нового сопоставления
+    function addMatchingField() {
+        const container = document.getElementById('matchingFieldsContainer');
+
+        const newFields = `
+            <div class="row mb-3" id="matchRow${matchCount}">
+                <div class="col-md-6">
+                    <label for="matchColumn${matchCount + 1}Item1" class="form-label">Сопоставление ${matchCount + 1}</label>
+                    <input type="text" class="form-control" name="matchingColumns[${matchCount}].Item1" required placeholder="Введите название столбца">
+                </div>
+                <div class="col-md-6">
+                    <label for="matchColumn${matchCount + 1}Item2" class="form-label">Сопоставление ${matchCount + 1}</label>
+                    <input type="text" class="form-control" name="matchingColumns[${matchCount}].Item2" required placeholder="Введите название столбца">
+                </div>
+                <div class="col-md-12">
+                    <button type="button" class="btn btn-link btn-sm" onclick="removeMatchingField(${matchCount})">Удалить</button>
+                </div>
+            </div>
+        `;
+
+        container.insertAdjacentHTML('beforeend', newFields);
+        matchCount++; // Увеличиваем счетчик
+    }
+
+    // Функция для удаления сопоставления
+    function removeMatchingField(index) {
+        const row = document.getElementById(`matchRow${index}`);
+        if (row) {
+            row.remove(); // Удаляем строку с сопоставлением
+            updateMatchingFields(); // Обновляем нумерацию оставшихся сопоставлений
+        }
+    }
+
+    // Функция для обновления нумерации сопоставлений
+    function updateMatchingFields() {
+        const container = document.getElementById('matchingFieldsContainer');
+        const rows = container.getElementsByClassName('row mb-3'); // Получаем все строки сопоставлений
+
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+
+            // Обновляем id для строки
+            row.id = `matchRow${i}`;
+
+            // Ищем элементы ввода в текущей строке
+            const item1Input = row.querySelector('input[name^="matchingColumns"]');
+            const item2Input = row.querySelector('input[name^="matchingColumns"] + input');
+
+            // Проверяем, существуют ли элементы ввода, прежде чем обновлять их
+            if (item1Input && item2Input) {
+                // Обновляем name для каждого поля в строке
+                item1Input.name = `matchingColumns[${i}].Item1`;
+                item2Input.name = `matchingColumns[${i}].Item2`;
+            }
+
+            // Обновляем метки
+            const labelItem1 = row.querySelector('label[for^="matchColumn"]');
+            const labelItem2 = row.querySelector('label[for^="matchColumn"] + label');
+
+            // Проверяем существование меток
+            if (labelItem1 && labelItem2) {
+                labelItem1.setAttribute('for', `matchColumn${i + 1}Item1`);
+                labelItem1.innerHTML = `Сопоставление ${i + 1} (Item1)`;
+                labelItem2.setAttribute('for', `matchColumn${i + 1}Item2`);
+                labelItem2.innerHTML = `Сопоставление ${i + 1} (Item2)`;
+            }
+        }
+
+        matchCount = rows.length; // Обновляем общий счетчик
+    }
+
+
+    // Attach change event listeners
+    handleFileInput('fileInput1', 'startInputs1');
+    handleFileInput('fileInput2', 'startInputs2');
+</script>
+<script>
+    // Функция для показа/скрытия списка при клике на заголовок
+    document.getElementById('toggleList').addEventListener('click', function () {
+        const listContainer = document.getElementById('fileListContainer');
+        if (listContainer.style.display === 'none' || listContainer.style.display === '') {
+            listContainer.style.display = 'block'; // Показать список
+        } else {
+            listContainer.style.display = 'none'; // Скрыть список
+        }
+    });
+</script>
+<script>
+    function confirmDelete(event) {
+        // Отменяем стандартное поведение ссылки
+        event.preventDefault();
+
+        // Показываем всплывающее окно для подтверждения
+        if (confirm("Вы уверены, что хотите удалить этот элемент?")) {
+            // Если пользователь подтвердил, переходим по ссылке
+            window.location.href = event.currentTarget.href;
+        }
+        // Если пользователь нажал "Отмена", ничего не делаем
+    }
+</script>
+<script>
+    function loadSavedMapping(mappingId) {
+        if (!mappingId) {
+            document.getElementById('matchingFieldsContainer').innerHTML = ''; // Очищаем контейнер, если ничего не выбрано
+            return;
+        }
+
+        fetch(`/MatchFileData/GetMappingById?id=${mappingId}`)
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+                populateMatchingFields(data);
+            })
+            .catch(error => console.error('Ошибка:', error));
+    }
+
+    // Обновленная функция для заполнения полей сопоставления
+    function populateMatchingFields(data) {
+        const container = document.getElementById('matchingFieldsContainer');
+        container.innerHTML = ''; // Очищаем контейнер перед добавлением новых полей
+        var matchingColumns = data["matchingColumns"];
+        console.log(matchingColumns);
+        matchCount = matchingColumns.length; 
+
+        var startInput1 = document.getElementById('startInputs1');
+        startInput1.style.display = 'block'
+
+        var startInput2 = document.getElementById('startInputs2');
+        startInput2.style.display = 'block'
+
+        var startRowInput1 = document.getElementById('startRowInput1')
+        startRowInput1.value = parseInt(data['startRow1'])
+        var startColumnInput1 = document.getElementById('startColumnInput1')
+        startColumnInput1.value = parseInt(data['startColumn1'])
+
+        var startRowInput2 = document.getElementById('startRowInput2')
+        startRowInput2.value = parseInt(data['startRow2'])
+        var startColumnInput2 = document.getElementById('startColumnInput2')
+        startColumnInput2.value = parseInt(data['startColumn2'])
+
+        matchingColumns.forEach((column, index) => {
+            const rowHtml = `
+                <div class="row mb-3" id="matchRow${index}">
+                    <div class="col-md-6">
+                        <label for="matchColumn${index + 1}Item1" class="form-label">Сопоставление ${index + 1}</label>
+                        <input type="text" class="form-control" name="matchingColumns[${index}].Item1" required placeholder="Введите название столбца" value="${column.item1}">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="matchColumn${index + 1}Item2" class="form-label">Сопоставление ${index + 1}</label>
+                        <input type="text" class="form-control" name="matchingColumns[${index}].Item2" required placeholder="Введите название столбца" value="${column.item2}">
+                    </div>
+                    <div class="col-md-12">
+                        <button type="button" class="btn btn-link btn-sm" onclick="removeMatchingField(${index})">Удалить</button>
+                    </div>
+                </div>
+            `;
+            container.insertAdjacentHTML('beforeend', rowHtml);
+        });
+    }
+</script>

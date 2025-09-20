@@ -1,0 +1,81 @@
+﻿@using OzonOrdersWeb.ViewModels.OrderViewModels
+
+@model CheckUniqueValueViewModel
+
+@{
+    ViewData["Title"] = "CheckFile";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+
+<div class="container">
+    <div class="row">
+        <div>
+            <div class="card">
+                <div class="card-header">
+                    <h2>Найдены новые записи</h2>
+                </div>
+                <div class="card-body">
+                    <form asp-area="Studio2" asp-controller="Orders" asp-action="NewValuesProcessing" method="post">
+                        <div class="pagination-wrapper d-flex justify-content-center">
+                            <div class="pagination-controls">
+
+                                @if (Model.NewOzonClients != null && Model.NewOzonClients.Count > 0)
+                                {
+                                    <h4 class="d-flex justify-content-between pr-5">Новые элементы в списке <b>клиентов</b>:</h4>
+                                    <ul style="padding-left: 2rem;">
+                                        @for (int i = 0; i < Model.NewOzonClients.Count; i++)
+                                        {
+                                            <li class="d-flex justify-content-between align-items-center">
+                                                <span>@Model.NewOzonClients[i]</span>
+                                                <input type="checkbox" name="NewOzonClientsDict[@Model.NewOzonClients[i]]" value="true" class="ml-2" title="Принять"/>
+                                                <input type="hidden" name="NewOzonClientsDict[@Model.NewOzonClients[i]]" value="false" />
+                                            </li>
+                                        }
+                                    </ul>
+                                }
+
+                                @if (Model.NewStatuses != null && Model.NewStatuses.Count > 0)
+                                {
+                                    <h4 class="d-flex justify-content-between pr-5">Новые элементы в списке <b>статусов</b>:</h4>
+                                    <ul style="padding-left: 2rem;">
+                                        @for (int i = 0; i < Model.NewStatuses.Count; i++)
+                                        {
+                                            <li class="d-flex justify-content-between align-items-center">
+                                                <span>@Model.NewStatuses[i]</span>
+                                                <input type="checkbox" name="NewStatusesDict[@Model.NewStatuses[i]]" value="true" class="ml-2" title="Принять"/>
+                                                <input type="hidden" name="NewStatusesDict[@Model.NewStatuses[i]]" value="false" />
+                                            </li>
+                                        }
+                                    </ul>
+                                }
+
+                                @if (Model.NewWarehouses != null && Model.NewWarehouses.Count > 0)
+                                {
+                                    <h4 class="d-flex justify-content-between pr-5">Новые элементы в списке <b>складов</b>:</h4>
+                                    <ul style="padding-left: 2rem;">
+                                        @for (int i = 0; i < Model.NewWarehouses.Count; i++)
+                                        {
+                                            <li class="d-flex justify-content-between align-items-center">
+                                                <span>@Model.NewWarehouses[i]</span>
+                                                <input type="checkbox" name="NewWarehousesDict[@Model.NewWarehouses[i]]" value="true" class="ml-2" title="Принять" />
+                                                <input type="hidden" name="NewWarehousesDict[@Model.NewWarehouses[i]]" value="false" />
+                                            </li>
+                                        }
+                                    </ul>
+                                }
+
+                            </div>
+                        </div>
+                        <p class="text-center">Для пропущенных будет установлен статус '<b>Не указан</b>'</p>
+                        <div class="d-flex justify-content-center mt-3">
+                            <button type="button" class="btn btn-danger mr-2 mb-2" onclick="window.history.back();">Прервать импорт</button>
+                            <p>&nbsp;&nbsp;&nbsp;&nbsp;</p>
+                            <button type="submit" class="btn btn-primary mb-2">Продолжить</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,611 @@
+﻿@using OzonDomains
+@using OzonDomains.Models
+@using OzonOrdersWeb.ViewModels.SupplierViewModels
+@using Servcies.FiltersServcies.FilterModels
+@using Servcies.FiltersServcies.SortModels
+
+
+@model SupplierViewModel<Supplier, SupplierFilterModel>
+
+@{
+    ViewData["Title"] = "Index";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<script asp-src-include="~/js/**/*.js"></script>
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+
+<style>
+    .table td:first-child, .table th:first-child {
+        width: 1px;
+        white-space: nowrap;
+    }
+</style>
+
+
+
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Выберите столбцы для отображения</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <div class="modal-body">
+                <div class="container mt-3">
+                    <div class="form-group">
+                        <div class="form-row">
+                            @{
+                                int checkboxCounter = 1;
+                            }
+                            @{
+                                <div class="form-group col-md-5">
+                                    <input type="checkbox" class="form-check-input" id="chk@(checkboxCounter)" checked>
+                                    <label class="form-check-label" for="chk@(checkboxCounter)">Поставщик</label>
+                                </div>
+                                checkboxCounter++;
+                            }
+                            @{
+                                <div class="form-group col-md-8">
+                                    <input type="checkbox" class="form-check-input" id="chk@(checkboxCounter)" checked>
+                                    <label class="form-check-label" for="chk@(checkboxCounter-1)">Коэффицент себестоимости</label>
+                                </div>
+                                checkboxCounter++;
+                            }
+                            @{
+                                <div class="form-group col-md-8">
+                                    <input type="checkbox" class="form-check-input" id="chk@(checkboxCounter)" checked>
+                                    <label class="form-check-label" for="chk@(checkboxCounter-1)">Валюта</label>
+                                </div>
+                                checkboxCounter++;
+                            }
+                            @{
+                                <div class="form-group col-md-8">
+                                    <input type="checkbox" class="form-check-input" id="chk@(checkboxCounter)" checked>
+                                    <label class="form-check-label" for="chk@(checkboxCounter-1)">Действие</label>
+                                </div>
+                                checkboxCounter++;
+                            }
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<div class="container ">
+<div class="row">
+    <div>
+        <div class="card">
+                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h2>Поставщики</h2>
+                        <p>
+                            <a asp-action="Create">Создать поставщика</a>
+                        </p>
+                    </div>
+
+                    <button type="button" class="btn btn-link" data-bs-toggle="modal" data-bs-target="#exampleModal" type="submit" style="width: 18px; height: 18px; margin-left: auto;" title="Настройка отображения таблицы">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-gear-fill" viewBox="0 0 16 16">
+                            <path d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311c.446.82.023 1.841-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413 1.4-2.397 0-2.81l-.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z" />
+                        </svg>
+                        <span class="visually-hidden">Button</span>
+                    </button>
+                </div>
+            <div class="card-body">
+                    <table class="table" id="mainTable">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <form  asp-area="Studio2" asp-controller="Supplier" asp-action="DelSortStateCookie" method="post">
+                                        <button type="submit" class="btn btn-link" style="width: 18px; height: 18x;">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash-fill" viewBox="0 0 16 16">
+                                                <path d="M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5M8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5m3 .5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 1 0"></path>
+                                            </svg>
+                                            <span class="visually-hidden">Button</span>
+                                        </button>
+                                    </form>
+                                </th>
+                                <th>
+                                    <a class="text-dark" asp-action="Index" asp-route-sortOrder="@ViewBag.SupplierNameSort">
+                                        <small>@(ViewBag.SupplierNameSort == SupplierSortState.NameAsc ? "Поставщик↑" : "Поставщик↓")</small>
+                                    </a>
+                                </th>
+                                <th>
+                                    <a class="text-dark" asp-action="Index" asp-route-sortOrder="@ViewBag.SupplieCostFactorSort">
+                                        <small>@(ViewBag.SupplieCostFactorSort == SupplierSortState.CostFactorAsc ? "Коэффицент себестоимости↑" : "Коэффицент себестоимости↓")</small>
+                                    </a>
+                                </th>
+                                <th>
+                                    <a class="text-dark" asp-action="Index" asp-route-sortOrder="@ViewBag.SupplieCurrencyCodeSort">
+                                        <small>@(ViewBag.SupplieCurrencyCodeSort == SupplierSortState.CurrencyCodeAsc ? "Валюта↑" : "Валюта↓")</small>
+                                    </a>
+                                </th>
+                                <th>
+                                    <a class="text-dark" asp-action="Index" asp-route-sortOrder="@ViewBag.SupplieWeightFactorSort">
+                                        <small>@(ViewBag.SupplieWeightFactorSort == SupplierSortState.WeightFactorAsc ? "Cтоимость за кг.↑" : "Стоимость за кг.↓")</small>
+                                    </a>
+                                </th>
+                                <th>
+                                    <a class="text-dark" asp-action="Index" asp-route-sortOrder="@ViewBag.SupplieWeightFactorCurrencyCodeSort">
+                                        <small>@(ViewBag.SupplieWeightFactorCurrencyCodeSort == SupplierSortState.CurrencyCodeAsc ? "Валюта стоимость за кг↑" : "Валюта стоимость за кг↓")</small>
+                                    </a>
+                                </th>
+                                <th>
+                                    <a class="text-dark" asp-action="Index" asp-route-sortOrder="@ViewBag.SupplieCsvUrlSort">
+                                        <small>@(ViewBag.SupplieCsvUrlSort == SupplierSortState.CsvUrlAsc ? "Url↑" : "Url↓")</small>
+                                    </a>
+                                </th>
+                                <th>
+                                    <a class="text-dark" asp-action="Index" asp-route-sortOrder="@ViewBag.SupplieSiteSort">
+                                        <small>@(ViewBag.SupplieSiteSort == SupplierSortState.SiteAsc ? "Сайт↑" : "Сайт↓")</small>
+                                    </a>
+                                </th>
+                                <th>
+                                    <a class="text-dark" asp-action="Index" asp-route-sortOrder="@ViewBag.AdditionalTermSort">
+                                        <small>@(ViewBag.AdditionalTermSort == SupplierSortState.AdditionalTermAsc ? "Доп. срок↑" : "Доп. срок↓")</small>
+                                    </a>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <form asp-area="Studio2" asp-controller="Supplier"  id="filterForm" asp-action="Index" method="post">
+                                <td>
+                                    <button type="button" class="btn btn-link ml-2" onclick="clearForm()" style="margin-top: -9px;">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash-fill" viewBox="0 0 16 16">
+                                            <path d="M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5M8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5m3 .5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 1 0"></path>
+                                        </svg>
+                                        <span class="visually-hidden">Button</span>
+                                    </button>
+                                </td>
+                                <td>
+                                    <input asp-for="@Model.FilterModel.Name" id="nameFilter" name="Name" class="form-control form-control-sm" />
+                                </td>
+                                <td>
+                                    <input asp-for="@Model.FilterModel.CostFactor" id="costFactorFilter" name="CostFactor" class="form-control form-control-sm" />
+                                </td>
+                                <td>
+                                    <input asp-for="@Model.FilterModel.CurrencyCode" id="currencyCodesFilterInput" value="@ViewData["DisplayCurrencyCode"]" class="form-control form-control-sm" autocomplete="off" />
+                                    <input type="hidden" id="currencyCodesFilterValue" name="CurrencyCode" value="@Model.FilterModel.CurrencyCode" />
+
+                                    <ul id="currencyCodesDropdown" class="dropdown-menu" style="display: none;">
+                                        <li><a href="#" data-value="NON">Все</a></li>
+                                            @foreach (var tuple in Model.CurrencyCodes)
+                                            {
+                                                var transactionType = tuple.Item1;
+                                                var displayName = tuple.Item2;
+                                            <li><a href="#" data-value="@transactionType">@displayName</a></li>
+                                            }
+                                    </ul>
+                                </td>
+                                <script>
+                                    $(document).ready(function () {
+                                        $('#currencyCodesFilterInput').focus(function () {
+                                            $('#currencyCodesDropdown').show();
+                                        });
+
+                                        $('#currencyCodesDropdown').on('click', 'a', function (e) {
+                                            e.preventDefault();
+                                            var transactionType = $(this).data('value');
+                                            var displayName = $(this).text();
+                                            $('#currencyCodesFilterInput').val(displayName); // Отображаем displayName в поле ввода
+                                            $('#currencyCodesFilterValue').val(transactionType); // Отправляем transactionType
+                                            $('#currencyCodesDropdown').hide();
+                                        });
+
+                                        $(document).on('click', function (e) {
+                                            if (!$(e.target).closest('#currencyCodesFilterInput').length && !$(e.target).closest('#currencyCodesDropdown').length) {
+                                                $('#currencyCodesDropdown').hide();
+                                            }
+                                        });
+                                    });
+                                </script>
+                                <td>
+                                    <input asp-for="@Model.FilterModel.WeightFactor" id="weightFactorFilter" name="WeightFactor" class="form-control form-control-sm" />
+                                </td>
+                                <td>
+                                    <input asp-for="@Model.FilterModel.WeightFactorCurrencyCode" id="weightFactorCurrencyCodeFilterInput" value="@ViewData["DisplayCurrencyCode"]" class="form-control form-control-sm" autocomplete="off" />
+                                    <input type="hidden" id="weightFactorCurrencyCodeFilterValue" name="WeightFactorCurrencyCode" value="@Model.FilterModel.WeightFactorCurrencyCode" />
+
+                                    <ul id="weightFactorCurrencyCodeDropdown" class="dropdown-menu" style="display: none;">
+                                        <li><a href="#" data-value="NON">Все</a></li>
+                                            @foreach (var tuple in Model.CurrencyCodes)
+                                            {
+                                                var transactionType = tuple.Item1;
+                                                var displayName = tuple.Item2;
+                                            <li><a href="#" data-value="@transactionType">@displayName</a></li>
+                                            }
+                                    </ul>
+                                </td>
+                                <script>
+                                    $(document).ready(function () {
+                                        $('#weightFactorCurrencyCodeFilterInput').focus(function () {
+                                            $('#weightFactorCurrencyCodeDropdown').show();
+                                        });
+
+                                        $('#weightFactorCurrencyCodeDropdown').on('click', 'a', function (e) {
+                                            e.preventDefault();
+                                            var transactionType = $(this).data('value');
+                                            var displayName = $(this).text();
+                                            $('#weightFactorCurrencyCodeFilterInput').val(displayName); // Отображаем displayName в поле ввода
+                                            $('#weightFactorCurrencyCodeFilterValue').val(transactionType); // Отправляем transactionType
+                                            $('#weightFactorCurrencyCodeDropdown').hide();
+                                        });
+
+                                        $(document).on('click', function (e) {
+                                            if (!$(e.target).closest('#weightFactorCurrencyCodeFilterInput').length && !$(e.target).closest('#weightFactorCurrencyCodeDropdown').length) {
+                                                $('#weightFactorCurrencyCodeDropdown').hide();
+                                            }
+                                        });
+                                    });
+                                </script>
+                                <td>
+                                    <input asp-for="@Model.FilterModel.CsvUrl" id="csvUrlFilter" name="CsvUrl" class="form-control form-control-sm" />
+                                </td>
+                                <td>
+                                    <input asp-for="@Model.FilterModel.Site" id="siteFilter" name="Site" class="form-control form-control-sm" />
+                                </td>
+                                <td>
+                                    <input asp-for="@Model.FilterModel.AdditionalTerm" id="additionalTermFilter" name="AdditionalTerm" class="form-control form-control-sm" />
+                                </td>
+                                <button type="submit" id="submitFilterButton" style="display:none;"></button>
+                                </form>
+                            </tr>
+                            @foreach (var item in Model.Items)
+                            {
+                                <tr>
+                                    <td></td>
+                                    <td>
+                                        <form asp-area="Studio2" asp-controller="Supplier"  asp-action="Edit" method="post" oninput="toggleSaveButton(this)">
+                                            <input type="hidden" name="Id" value="@item.Id" />
+                                            <input type="hidden" name="page" value="@Model.PageNumber" />
+                                            <div class="underline-input">
+                                                <input type="text" name="Name" class="form-control form-control-sm" value="@item.Name" placeholder="Указать имя" />
+                                            </div>
+                                            <input type="hidden" name="CostFactor" value="@item.CostFactor" />
+                                            <input type="hidden" name="CurrencyCode" value="@item.CurrencyCode.ToString()" />
+                                            <input type="hidden" name="WeightFactor" value="@item.WeightFactor" />
+                                            <input type="hidden" name="WeightFactorCurrencyCode" value="@item.WeightFactorCurrencyCode.ToString()" />
+                                            <input type="hidden" name="CsvUrl" value="@item.CsvUrl"/>
+                                            <input type="hidden" name="Site" value="@item.Site"/>
+                                            <input type="hidden" name="AdditionalTerm" value="@item.AdditionalTerm"/>
+                                            <button type="submit" class="btn btn-link" style="display: none;">Сохранить</button>
+                                        </form>
+                                    </td>
+                                    <td>
+                                        <form asp-area="Studio2" asp-controller="Supplier"  asp-action="Edit" method="post" oninput="toggleSaveButton(this)">
+                                            <input type="hidden" name="Id" value="@item.Id" />
+                                            <input type="hidden" name="page" value="@Model.PageNumber" />
+                                            <input type="hidden" name="Name" value="@item.Name" />
+                                            <div class="underline-input">
+                                                <input type="text" name="CostFactor" class="form-control form-control-sm" value="@(item.CostFactor?.ToString("F2") ?? "")" placeholder="Указать коэффицент себестоимости" />
+                                            </div>
+                                            <input type="hidden" name="CurrencyCode" value="@item.CurrencyCode.ToString()" />
+                                            <input type="hidden" name="WeightFactor" value="@item.WeightFactor" />
+                                            <input type="hidden" name="WeightFactorCurrencyCode" value="@item.WeightFactorCurrencyCode.ToString()" />
+                                            <input type="hidden" name="CsvUrl" value="@item.CsvUrl"/>
+                                            <input type="hidden" name="Site" value="@item.Site"/>
+                                            <input type="hidden" name="AdditionalTerm" value="@item.AdditionalTerm"/>
+                                            <button type="submit" class="btn btn-link" style="display: none;">Сохранить</button>
+                                        </form>
+                                    </td>
+                                    <td>
+                                        <form asp-area="Studio2" asp-controller="Supplier"  asp-action="Edit" method="post" oninput="toggleSaveButton(this)">
+                                            <input type="hidden" name="Id" value="@item.Id" />
+                                            <input type="hidden" name="page" value="@Model.PageNumber" />
+                                            <input type="hidden" name="Name" value="@item.Name" />
+                                            <input type="hidden" name="CostFactor" value="@item.CostFactor" />
+                                            <div class="underline-input">
+                                                <select name="CurrencyCode" class="form-control form-control-sm">
+                                                    <option value="">@((item.CurrencyCode == CurrencyCode.NON) ? "Указать валюту" : item.CurrencyCode.ToString())</option>
+                                                    @foreach (var currency in Model.CurrencyCodesSelectList)
+                                                    {
+                                                        <option value="@currency.Value" selected="@(currency.Value == ((int)item.CurrencyCode).ToString())">@currency.Text</option>
+                                                    }
+                                                </select>
+                                            </div>
+                                            <input type="hidden" name="WeightFactor" value="@item.WeightFactor" />
+                                            <input type="hidden" name="WeightFactorCurrencyCode" value="@item.WeightFactorCurrencyCode.ToString()" />
+                                            <input type="hidden" name="CsvUrl" value="@item.CsvUrl"/>
+                                            <input type="hidden" name="Site" value="@item.Site"/>
+                                            <input type="hidden" name="AdditionalTerm" value="@item.AdditionalTerm"/>
+                                            <button type="submit" class="btn btn-link" style="display: none;">Сохранить</button>
+                                        </form>
+                                    </td>
+                                    <td>
+                                        <form asp-area="Studio2" asp-controller="Supplier"  asp-action="Edit" method="post" oninput="toggleSaveButton(this)">
+                                            <input type="hidden" name="Id" value="@item.Id" />
+                                            <input type="hidden" name="page" value="@Model.PageNumber" />
+                                            <input type="hidden" name="Name" value="@item.Name" />
+                                            <input type="hidden" name="CostFactor" value="@item.CostFactor" />
+                                            <input type="hidden" name="CurrencyCode" value="@item.CurrencyCode.ToString()" />
+                                            <div class="underline-input">
+                                                <input type="text" name="WeightFactor" class="form-control form-control-sm" value="@(item.WeightFactor?.ToString("F2") ?? "")" placeholder="Указать коэффицент стоимости за кг." />
+                                            </div>
+                                            <input type="hidden" name="WeightFactorCurrencyCode" value="@item.WeightFactorCurrencyCode.ToString()" />
+                                            <input type="hidden" name="CsvUrl" value="@item.CsvUrl"/>
+                                            <input type="hidden" name="Site" value="@item.Site"/>
+                                            <input type="hidden" name="AdditionalTerm" value="@item.AdditionalTerm"/>
+                                            <button type="submit" class="btn btn-link" style="display: none;">Сохранить</button>
+                                        </form>
+                                    </td>
+                                    <td>
+                                        <form asp-area="Studio2" asp-controller="Supplier"  asp-action="Edit" method="post" oninput="toggleSaveButton(this)">
+                                            <input type="hidden" name="Id" value="@item.Id" />
+                                            <input type="hidden" name="page" value="@Model.PageNumber" />
+                                            <input type="hidden" name="Name" value="@item.Name" />
+                                            <input type="hidden" name="CostFactor" value="@item.CostFactor" />
+                                            <input type="hidden" name="CurrencyCode" value="@item.CurrencyCode.ToString()" />
+                                            <input type="hidden" name="WeightFactor" value="@item.WeightFactor" />
+                                            <input type="hidden" name="CsvUrl" value="@item.CsvUrl"/>
+                                            <input type="hidden" name="Site" value="@item.Site"/>
+                                            <input type="hidden" name="AdditionalTerm" value="@item.AdditionalTerm"/>
+                                            <div class="underline-input">
+                                                <select name="WeightFactorCurrencyCode" class="form-control form-control-sm">
+                                                    <option value="">@((item.WeightFactorCurrencyCode == CurrencyCode.NON) ? "Указать валюту" : item.WeightFactorCurrencyCode.ToString())</option>
+                                                    @foreach (var currency in Model.CurrencyCodesSelectList)
+                                                    {
+                                                        <option value="@currency.Value" selected="@(currency.Value == ((int)item.WeightFactorCurrencyCode).ToString())">@currency.Text</option>
+                                                    }
+                                                </select>
+                                            </div>
+                                            <button type="submit" class="btn btn-link" style="display: none;">Сохранить</button>
+                                        </form>
+                                    </td>
+                                    <td>
+                                        <form asp-area="Studio2" asp-controller="Supplier"  asp-action="Edit" method="post" oninput="toggleSaveButton(this)">
+                                            <input type="hidden" name="Id" value="@item.Id" />
+                                            <input type="hidden" name="page" value="@Model.PageNumber" />
+                                            <input type="hidden" name="Name" value="@item.Name" />
+                                            <input type="hidden" name="CostFactor" value="@item.CostFactor" />
+                                            <input type="hidden" name="CurrencyCode" value="@item.CurrencyCode.ToString()" />
+                                            <input type="hidden" name="WeightFactor" value="@item.WeightFactor" />
+                                            <input type="hidden" name="WeightFactorCurrencyCode" value="@item.WeightFactorCurrencyCode"/>
+                                            <input type="hidden" name="Site" value="@item.Site"/>
+                                            <input type="hidden" name="AdditionalTerm" value="@item.AdditionalTerm"/>
+                                            <div class="underline-input">
+                                                <input type="text" name="CsvUrl" class="form-control form-control-sm"
+                                                       value="@item.CsvUrl"
+                                                       placeholder="Указать ссылку на файл"
+                                                       pattern="^(https?://).*\.csv$"
+                                                       title="Ссылка должна начинаться с http:// или https:// и заканчиваться на .csv"
+                                                       required />
+                                            </div>
+                                            <button type="submit" class="btn btn-link" style="display: none;">Сохранить</button>
+                                        </form>
+                                    </td>
+                                    <td>
+                                        <form asp-area="Studio2" asp-controller="Supplier"  asp-action="Edit" method="post" oninput="toggleSaveButton(this)">
+                                            <input type="hidden" name="Id" value="@item.Id" />
+                                            <input type="hidden" name="page" value="@Model.PageNumber" />
+                                            <input type="hidden" name="Name" value="@item.Name" />
+                                            <input type="hidden" name="CostFactor" value="@item.CostFactor" />
+                                            <input type="hidden" name="CurrencyCode" value="@item.CurrencyCode.ToString()" />
+                                            <input type="hidden" name="WeightFactor" value="@item.WeightFactor" />
+                                            <input type="hidden" name="WeightFactorCurrencyCode" value="@item.WeightFactorCurrencyCode"/>
+                                            <input type="hidden" name="CsvUrl" value="@item.CsvUrl"/>
+                                            <input type="hidden" name="AdditionalTerm" value="@item.AdditionalTerm"/>
+                                            <div class="underline-input">
+                                                <input type="text" name="Site" class="form-control form-control-sm"
+                                                       value="@item.Site"
+                                                       placeholder="Указать ссылку на сaйт"
+                                                       title="Ссылка на сайт поставщика"
+                                                       required />
+                                            </div>
+                                            <button type="submit" class="btn btn-link" style="display: none;">Сохранить</button>
+                                        </form>
+                                    </td>
+                                    <td>
+                                        <form asp-area="Studio2" asp-controller="Supplier"  asp-action="Edit" method="post" oninput="toggleSaveButton(this)">
+                                            <input type="hidden" name="Id" value="@item.Id" />
+                                            <input type="hidden" name="page" value="@Model.PageNumber" />
+                                            <input type="hidden" name="Name" value="@item.Name" />
+                                            <input type="hidden" name="CostFactor" value="@item.CostFactor" />
+                                            <input type="hidden" name="CurrencyCode" value="@item.CurrencyCode.ToString()" />
+                                            <input type="hidden" name="WeightFactor" value="@item.WeightFactor" />
+                                            <input type="hidden" name="WeightFactorCurrencyCode" value="@item.WeightFactorCurrencyCode"/>
+                                            <input type="hidden" name="CsvUrl" value="@item.CsvUrl"/>
+                                            <input type="hidden" name="Site" value="@item.Site"/>
+                                            <div class="underline-input">
+                                                <input type="text" name="AdditionalTerm" class="form-control form-control-sm"
+                                                       value="@item.AdditionalTerm"
+                                                       placeholder="Доп. срок в днях"
+                                                       title="Доп. срок"
+                                                       required />
+                                            </div>
+                                            <button type="submit" class="btn btn-link" style="display: none;">Сохранить</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+
+                    <div class="pagination-wrapper d-flex justify-content-center">
+                        <div class="pagination-controls">
+                            @if (Model.TotalPages > 15)
+                            {
+                                @if (Model.PageNumber <= 8)
+                                {
+                                    @for (int i = 1; i <= 15; i++)
+                                    {
+                                        <a asp-action="Index" asp-route-page="@(i)" class="btn btn-primary @(i == Model.PageNumber ? "active" : "")">@i</a>
+                                    }
+                                    <span>...</span>
+                                    <a asp-action="Index" asp-route-page="@Model.TotalPages" class="btn btn-primary">@(Model.TotalPages)</a>
+                                }
+                                else if (Model.PageNumber >= Model.TotalPages - 7)
+                                {
+                                    <a asp-action="Index" asp-route-page="1" class="btn btn-primary">1</a>
+                                    <span>...</span>
+                                    @for (int i = Model.TotalPages - 14; i <= Model.TotalPages; i++)
+                                    {
+                                        <a asp-action="Index" asp-route-page="@(i)" class="btn btn-primary @(i == Model.PageNumber ? "active" : "")">@i</a>
+                                    }
+                                }
+                                else
+                                {
+                                    <a asp-action="Index" asp-route-page="1" class="btn btn-primary">1</a>
+                                    <span>...</span>
+                                    @for (int i = Model.PageNumber - 6; i <= Model.PageNumber + 8; i++)
+                                    {
+                                        <a asp-action="Index" asp-route-page="@(i)" class="btn btn-primary @(i == Model.PageNumber ? "active" : "")">@i</a>
+                                    }
+                                    <span>...</span>
+                                    <a asp-action="Index" asp-route-page="@Model.TotalPages" class="btn btn-primary">@(Model.TotalPages)</a>
+                                }
+                            }
+                            else
+                            {
+                                @for (int i = 1; i <= Model.TotalPages; i++)
+                                {
+                                    <a asp-action="Index" asp-route-page="@(i)" class="btn btn-primary @(i == Model.PageNumber ? "active" : "")">@i</a>
+                                }
+                            }
+                        </div>
+                    </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <script>
+        function toggleSaveButton(form) {
+            var inputs = form.querySelectorAll('input[type="text"], select');
+            var button = form.querySelector('button[type="submit"]');
+            var hasChanged = false;
+
+            inputs.forEach(function (input) {
+                if (input.dataset.initialValue !== undefined && input.value !== input.dataset.initialValue) {
+                    hasChanged = true;
+                }
+            });
+
+            if (hasChanged) {
+                button.style.display = 'inline';
+            } else {
+                button.style.display = 'none';
+            }
+        }
+
+        document.querySelectorAll('input[type="text"], select').forEach(function (input) {
+            input.dataset.initialValue = input.value;
+        });
+    </script>
+
+    <style>
+        .underline-input input, .underline-input select {
+            border: none;
+            border-bottom: 1px solid #ced4da; /* Bootstrap's gray border color */
+            outline: none;
+            width: 100%;
+            box-shadow: none;
+            border-radius: 0;
+        }
+    </style>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+            // Функция, вызываемая при нажатии клавиши в полях списках
+            function handleKeyPress(event) {
+                // Проверяем, была ли нажата клавиша Enter
+                if (event.key === 'Enter') {
+                    // Отправляем форму
+                    submitForm();
+                    // Предотвращаем стандартное поведение браузера по умолчанию
+                    event.preventDefault();
+                }
+            }
+    </script>
+
+
+    <script>
+
+            // Функция для чтения куки
+            function getCookie(name) {
+                const value = `; ${document.cookie}`;
+                const parts = value.split(`; ${name}=`);
+                if (parts.length === 2) return parts.pop().split(';').shift();
+            }
+
+            // Функция для обработки состояния каждого чекбокса
+            function processCheckboxState(checkboxId, checkboxState) {
+                switch (checkboxId) {
+                    case 'chk1':
+                        toggleColumnVisibility(1, checkboxState);
+                        break;
+                    case 'chk2':
+                        toggleColumnVisibility(2, checkboxState);
+                        break;
+                    case 'chk3':
+                        toggleColumnVisibility(3, checkboxState);
+                        break;
+                    case 'chk4':
+                        toggleColumnVisibility(4, checkboxState);
+                        break;
+                }
+            }
+
+            // Получаем блок modal-body
+            const modalBody = document.querySelector('.modal-body');
+
+            // Получаем все чекбоксы внутри блока modal-body
+            const checkboxes = modalBody.querySelectorAll('input[type="checkbox"]');
+
+            // Устанавливаем начальное состояние чекбоксов из кук
+            checkboxes.forEach(function (checkbox) {
+                const checkboxId = checkbox.id;
+                const checkboxState = getCookie(checkboxId);
+
+                console.log(getCookie(checkboxId));
+
+                if (checkboxState !== undefined) {
+                    checkbox.checked = checkboxState === 'true';
+                    processCheckboxState(checkboxId, checkboxState);
+                }
+            });
+
+            // Перебираем чекбоксы и добавляем обработчик события change
+            checkboxes.forEach(function (checkbox) {
+                checkbox.addEventListener('change', function (event) {
+                    const checkboxId = event.target.id;
+                    const checkboxState = event.target.checked;
+                    document.cookie = `${checkboxId}=${checkboxState}`;
+                    processCheckboxState(checkboxId, checkboxState);
+                });
+            });
+
+            // Функция для скрытия и раскрытия столбца таблицы по его ID
+            function toggleColumnVisibility(columnIndex, isVisible) {
+                const table = document.getElementById("mainTable");
+                if (table) {
+                    const rows = table.rows;
+                    for (let i = 0; i < rows.length; i++) {
+                        const cells = rows[i].cells;
+
+                        isVisible = typeof isVisible === 'string' ? isVisible.toLowerCase() === 'true' : isVisible;
+
+                        if (!isVisible) {
+                            console.log("none")
+                            cells[columnIndex].style.display = 'none';
+
+                        }
+                        else {
+                            console.log("none2")
+                            cells[columnIndex].style.display = '';
+                        }
+
+                    }
+                }
+            }
+    </script>
+    </div>

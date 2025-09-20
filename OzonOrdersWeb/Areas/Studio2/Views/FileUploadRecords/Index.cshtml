@@ -1,0 +1,195 @@
+﻿@model OzonOrdersWeb.Areas.Studio2.ViewModels.FileUploadRecordViewModels.FileUploadRecordViewModel
+
+@{
+    ViewData["Title"] = "История загрузок файлов";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h2 class="mb-0">История загрузок файлов Dropbox</h2>
+                </div>
+                <div class="card-body">
+                    <!-- Таблица с фильтрами -->
+                    <form id="filterForm" method="get">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-striped align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Имя файла</th>
+                                        <th>Дата загрузки</th>
+                                        <th>Результат</th>
+                                    </tr>
+                                    <tr>
+                                        <th></th>
+                                        <th>
+                                            <input type="text" class="form-control" name="nameFilter"
+                                                   value="@Model.NameFilter"
+                                                   placeholder="Фильтр по имени..."
+                                                   onkeypress="handleKeyPress(event)" />
+                                        </th>
+                                        <th>
+                                            <div class="d-flex">
+                                                <input type="date" class="form-control me-1" name="dateFrom"
+                                                       value="@(Model.DateFromFilter?.ToString("yyyy-MM-dd"))"
+                                                       onkeypress="handleKeyPress(event)" />
+                                                <input type="date" class="form-control" name="dateTo"
+                                                       value="@(Model.DateToFilter?.ToString("yyyy-MM-dd"))"
+                                                       onkeypress="handleKeyPress(event)" />
+                                            </div>
+                                        </th>
+                                        <th>
+                                            <button type="button" class="btn btn-link" onclick="clearForm()" style="margin-top: -5px;">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-trash-fill" viewBox="0 0 16 16">
+                                                    <path d="M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5M8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5m3 .5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 1 0"/>
+                                                </svg>
+                                                <span class="visually-hidden">Очистить фильтры</span>
+                                            </button>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var record in Model.Items.OrderByDescending(x => x.Date))
+                                    {
+                                        <tr>
+                                            <td>@record.Id</td>
+                                            <td>@record.FileName</td>
+                                            <td>@record.Date.ToString("yyyy-MM-dd HH:mm")</td>
+                                            <td>@record.Result</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                        <input type="hidden" name="pageSize" value="@Model.PageSize" />
+                    </form>
+
+                   @if (Model.TotalPages > 1)
+                    {
+                        <nav aria-label="Навигация по страницам">
+                            <ul class="pagination justify-content-center">
+                                @if (Model.PageNumber > 1)
+                                {
+                                    <li class="page-item">
+                                        <a class="page-link"
+                                           href="@Url.Action("Index", new {
+                                               pageNumber = Model.PageNumber - 1,
+                                               pageSize = Model.PageSize,
+                                               nameFilter = Model.NameFilter,
+                                               dateFrom = Model.DateFromFilter?.ToString("yyyy-MM-dd"),
+                                               dateTo = Model.DateToFilter?.ToString("yyyy-MM-dd")
+                                           })">Назад</a>
+                                    </li>
+                                }
+
+                                @{
+                                    int totalPages = Model.TotalPages;
+                                    int currentPage = Model.PageNumber;
+
+                                    int range = 2; // количество страниц до и после текущей
+                                    int startPage = Math.Max(1, currentPage - range);
+                                    int endPage = Math.Min(totalPages, currentPage + range);
+                                }
+
+                                @* Первая страница *@
+                                @if (startPage > 1)
+                                {
+                                    <li class="page-item @(currentPage == 1 ? "active" : "")">
+                                        <a class="page-link"
+                                           href="@Url.Action("Index", new {
+                                               pageNumber = 1,
+                                               pageSize = Model.PageSize,
+                                               nameFilter = Model.NameFilter,
+                                               dateFrom = Model.DateFromFilter?.ToString("yyyy-MM-dd"),
+                                               dateTo = Model.DateToFilter?.ToString("yyyy-MM-dd")
+                                           })">1</a>
+                                    </li>
+
+                                    @if (startPage > 2)
+                                    {
+                                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                                    }
+                                }
+
+                                @* Основной диапазон *@
+                                @for (int i = startPage; i <= endPage; i++)
+                                {
+                                    <li class="page-item @(i == currentPage ? "active" : "")">
+                                        <a class="page-link"
+                                           href="@Url.Action("Index", new {
+                                               pageNumber = i,
+                                               pageSize = Model.PageSize,
+                                               nameFilter = Model.NameFilter,
+                                               dateFrom = Model.DateFromFilter?.ToString("yyyy-MM-dd"),
+                                               dateTo = Model.DateToFilter?.ToString("yyyy-MM-dd")
+                                           })">@i</a>
+                                    </li>
+                                }
+
+                                @* Последняя страница *@
+                                @if (endPage < totalPages)
+                                {
+                                    if (endPage < totalPages - 1)
+                                    {
+                                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                                    }
+
+                                    <li class="page-item @(currentPage == totalPages ? "active" : "")">
+                                        <a class="page-link"
+                                           href="@Url.Action("Index", new {
+                                               pageNumber = totalPages,
+                                               pageSize = Model.PageSize,
+                                               nameFilter = Model.NameFilter,
+                                               dateFrom = Model.DateFromFilter?.ToString("yyyy-MM-dd"),
+                                               dateTo = Model.DateToFilter?.ToString("yyyy-MM-dd")
+                                           })">@totalPages</a>
+                                    </li>
+                                }
+
+                                @if (Model.PageNumber < Model.TotalPages)
+                                {
+                                    <li class="page-item">
+                                        <a class="page-link"
+                                           href="@Url.Action("Index", new {
+                                               pageNumber = Model.PageNumber + 1,
+                                               pageSize = Model.PageSize,
+                                               nameFilter = Model.NameFilter,
+                                               dateFrom = Model.DateFromFilter?.ToString("yyyy-MM-dd"),
+                                               dateTo = Model.DateToFilter?.ToString("yyyy-MM-dd")
+                                           })">Вперёд</a>
+                                    </li>
+                                }
+                            </ul>
+                        </nav>
+                    }
+
+
+                                        <div class="text-muted text-center">
+                                            Показано @Model.Items.Count из @Model.TotalCount записей
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    @section Scripts {
+                        <script>
+                            function handleKeyPress(event) {
+                                if (event.key === 'Enter') {
+                                    document.getElementById('filterForm').submit();
+                                    event.preventDefault();
+                                }
+                            }
+
+                            function clearForm() {
+                                const form = document.getElementById('filterForm');
+                                form.querySelectorAll('input[type="text"], input[type="date"]').forEach(input => input.value = '');
+                                form.submit();
+                            }
+                        </script>
+                    }

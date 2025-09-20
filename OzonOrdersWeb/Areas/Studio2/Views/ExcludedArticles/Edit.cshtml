@@ -1,0 +1,44 @@
+﻿@model OzonDomains.Models.ExcludedArticle
+@{
+    ViewData["Title"] = "Редактировать артикул";
+    var clients = ViewBag.OzonClients as List<OzonDomains.Models.OzonClient>;
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>@ViewData["Title"]</h2>
+        <a asp-action="Index" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Назад
+        </a>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <form asp-area="Studio2" asp-controller="ExcludedArticles" asp-action="Edit" method="post" asp-antiforgery="true">
+                <input type="hidden" asp-for="Id" />
+
+                <div class="mb-3">
+                    <label asp-for="Article" class="form-label"></label>
+                    <input asp-for="Article" class="form-control" />
+                    <span asp-validation-for="Article" class="text-danger"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="OzonClientId" class="form-label">Клиент</label>
+                    <select asp-for="OzonClientId" class="form-select"
+                            asp-items="@(new SelectList(clients, "Id", "Name", Model.OzonClientId))">
+                        <option value="">-- выберите клиента --</option>
+                    </select>
+                    <span asp-validation-for="OzonClientId" class="text-danger"></span>
+                </div>
+
+                <button type="submit" class="btn btn-success">
+                    <i class="bi bi-check-circle"></i> Сохранить
+                </button>
+                <a asp-action="Index" class="btn btn-outline-secondary ms-2">
+                    Отмена
+                </a>
+            </form>
+        </div>
+    </div>
+</div>

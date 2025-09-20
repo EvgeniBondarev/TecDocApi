@@ -1,0 +1,148 @@
+﻿<style>
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0, 0, 0, 0.5); /* Полупрозрачный фон */
+    }
+
+    .modal-content {
+        background-color: #fefefe;
+        margin: 15% auto;
+        padding: 20px;
+        border: 1px solid #888;
+        width: 80%; /* Ширина контента */
+    }
+</style>
+
+@{
+string erorrResult = (string)ViewData["ErorrResult"];
+}
+
+@if (erorrResult != null)
+{
+<div class="alert alert-dismissible alert-danger">
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <p>@Html.Raw(erorrResult)</p>
+</div>
+}
+
+<h1>Заказы</h1>
+<hr />
+<div class="container mt-5">
+    <h1>Загрузка периода</h1>
+    <hr />
+    <div class="row">
+        <div class="col-md-6">
+            <form method="post" id="uploadForm">
+                <div class="form-group">
+                    <label for="period">Выберите период:</label>
+                    <select class="form-control" id="period" name="Period">
+                        <option value="1">Сегодня</option>
+                        <option value="2">Два дня</option>
+                        <option value="7">Неделя</option>
+                        <option value="14">Две недели</option>
+                        <option value="30">Месяц</option>
+                    </select>
+                </div>
+                <br />
+                <div class="form-group">
+                    <label for="clientType">Выберите тип клиента:</label>
+                    <select class="form-control" id="clientType" name="ClientType">
+                        <option value="0">Все</option>
+                        <option value="1">Ozon</option>
+                        <option value="2">Yandex</option>
+                    </select>
+                </div>
+                <br />
+                <button type="submit" class="btn btn-primary">Загрузить</button>
+            </form>
+        </div>
+    </div>
+    <div>
+        <a asp-action="Index">Назад</a>
+    </div>
+</div>
+
+
+<div class="container mt-5">
+    <h1 class="mb-4">Загрузка файла</h1>
+    <hr />
+
+    @using (Html.BeginForm("UploadExcelFile", "Orders", FormMethod.Post, new { enctype = "multipart/form-data", @class = "needs-validation", novalidate = "novalidate" }))
+    {
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label for="fileInput" class="form-label">Выберите файл для загрузки</label>
+            <input type="file" class="form-control" id="fileInput" name="file" accept=".xlsx,.csv" required>
+            <div class="invalid-feedback">
+                Пожалуйста, выберите файл для загрузки.
+            </div>
+        </div>
+    </div>
+
+
+    <div id="startInputs" style="display: none;" class="col-md-6 mb-3">
+        <div class="row">
+            <div class="col-md-6">
+                <label for="startRowInput" class="form-label">Начальная строка</label>
+                <input type="number" class="form-control" id="startRowInput" name="startRow" value="1">
+            </div>
+            <div class="col-md-6">
+                <label for="startColumnInput" class="form-label">Начальный столбец</label>
+                <input type="number" class="form-control" id="startColumnInput" name="startColumn" value="1">
+            </div>
+        </div>
+    </div>
+
+    <div id="delimiterInput" style="display: none;" class="col-md-6 mb-3">
+        <label for="delimiter" class="form-label">Знак разделения (CSV)</label>
+        <input type="text" class="form-control" id="delimiter" name="delimiter" value=";">
+    </div>
+
+
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <button type="submit" class="btn btn-primary" id="submitBtn" disabled>Загрузить</button>
+        </div>
+    </div>
+    }
+
+    @if (!string.IsNullOrEmpty(ViewBag.Message))
+    {
+    <div class="alert alert-info mt-4">
+        @ViewBag.Message
+    </div>
+    }
+</div>
+
+<script>
+    document.getElementById('fileInput').addEventListener('change', function () {
+        var file = this.files[0];
+        if (file) {
+            var extension = file.name.split('.').pop().toLowerCase();
+            if (extension === 'csv') {
+                document.getElementById('delimiterInput').style.display = 'block';
+                document.getElementById('startInputs').style.display = 'block';
+            } else {
+                document.getElementById('delimiterInput').style.display = 'none';
+                document.getElementById('startInputs').style.display = 'block';
+            }
+        }
+    });
+</script>
+
+
+<script>
+    document.getElementById('fileInput').addEventListener('change', function() {
+        // Показываем блок с полями ввода начальных значений после выбора файла
+        document.getElementById('startInputs').style.display = 'block';
+        // Активируем кнопку "Загрузить"
+        document.getElementById('submitBtn').disabled = false;
+    });
+</script>

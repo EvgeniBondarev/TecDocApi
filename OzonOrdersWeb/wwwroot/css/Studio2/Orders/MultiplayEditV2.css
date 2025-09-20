@@ -1,0 +1,134 @@
+﻿/* Адаптивная таблица */
+#shipmentTable {
+    table-layout: auto;
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#shipmentTable th,
+#shipmentTable td {
+    padding: 0.3rem 0.4rem;
+    vertical-align: middle;
+    word-break: break-word;
+}
+
+/* Инпуты и селекты в заголовке таблицы */
+#shipmentTable thead th input[type="text"],
+#shipmentTable thead th input[type="number"],
+#shipmentTable thead th input[type="date"],
+#shipmentTable thead th select:not(#universalSelect) {
+    width: 100%;
+    min-width: 50px;
+    box-sizing: border-box;
+}
+
+/* Поля с фиксированными ограничениями — убираем max-width */
+#deliveryPeriodInput,
+#timeLeftDayInput,
+#shipmentTable tbody td input.purchase-price-field,
+#shipmentTable tbody td input.ozon-commission-field,
+#shipmentTable tbody td input.product-weight-field {
+    width: 100%;
+    max-width: none;
+    text-align: right;
+}
+
+/* Универсальный select — если нужно задать фиксированную ширину */
+#universalSelect,
+.supplier-select {
+    min-width: 103px;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+/* Ячейки с продуктами */
+.product-cell {
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+    width: 100%;
+}
+
+/* Обертка для прокрутки на узких экранах */
+.table-responsive {
+    overflow-x: auto;
+    width: 100%;
+}
+
+/* Заголовки могут переноситься */
+th {
+    white-space: normal;
+    word-wrap: break-word;
+}
+
+/* Селекты в теле таблицы */
+#shipmentTable tbody .status-select {
+    width: 100%;
+    min-width: 80px;
+}
+
+/* Прочие элементы */
+a { text-decoration: none; }
+
+.custom-white { background-color: #fff; }
+.custom-gray { background-color: #585858; color: #fff; }
+.custom-gray:hover { color: #fff; }
+.custom-red { background-color: #DC143C; color: #fff; }
+.custom-red:hover { color: #fff; }
+
+.product-popup { display: none; position: absolute; z-index: 1; }
+.product-cell:hover .product-popup { display: block; }
+
+.nowrap { white-space: nowrap; }
+.link-option { color: blue; text-decoration: underline; cursor: pointer; }
+
+.highlight-error { border: 3px solid rgba(220, 53, 69, 0.5); }
+.highlight-null { border: 3px solid rgba(128, 128, 128, 0.5); }
+.highlight-success { border: 3px solid rgba(40, 167, 69, 0.5); }
+.bg-green-300 { background-color: #73c487 !important; }
+
+/* Стили, оставленные на случай использования */
+.horizontal-line,
+#infoWindow,
+th.active,
+.button-container,
+.horizontal-inputs,
+.vertical-align,
+.checkbox-column,
+.clear-btn,
+.btn-container,
+.highlight-warning,
+.form-check-label {
+    /* Без изменений */
+}
+
+/* Фильтры с ограничением ширины */
+#shipmentTable thead #processingDateFilter,
+#shipmentTable thead #shippingDateFilter,
+#shipmentTable thead #deliveryPeriodInput,
+#shipmentTable thead #timeLeftDayInput,
+#shipmentTable thead #currentPriceWithDiscountFilter,
+#shipmentTable thead #quantityFilter,
+#shipmentTable thead #priceFilter,
+#shipmentTable thead #shipmentAmountFilter,
+#shipmentTable thead #purchasePriceFilter,
+#shipmentTable thead #costPriceFilter,
+#shipmentTable thead #ozonCommissionFilter,
+#shipmentTable thead #profitFilter,
+#shipmentTable thead #discountFilter {
+    max-width: none;
+    width: 100%;
+}
+
+/* Селект со статусами */
+#shipmentTable thead #statusSelect {
+    max-width: none;
+    width: 100%;
+}
+
+/* Поставщик — минимальная ширина */
+#shipmentTable th:has(#thSupplier) {
+    min-width: 120px;
+}

@@ -1,0 +1,68 @@
+﻿@model OzonDomains.Models.WarehouseMapping
+@{
+    ViewData["Title"] = "Создание связи складов";
+}
+
+<div class="container mt-4">
+    <h2>Создание новой связи складов</h2>
+
+    <form asp-area="Studio2" asp-controller="WarehouseMapping" asp-action="Create" method="post">
+        @Html.AntiForgeryToken()
+
+        <!-- Добавляем выбор клиента -->
+        <div class="row mb-3">
+            <div class="col-md-12">
+                <label asp-for="OzonClientId" class="form-label fw-bold">Клиент</label>
+                <select asp-for="OzonClientId" asp-items="ViewBag.Clients" class="form-select">
+                    <option value="">-- Выберите клиента --</option>
+                </select>
+                <span asp-validation-for="OzonClientId" class="text-danger"></span>
+            </div>
+        </div>
+
+        <div class="row align-items-center mb-3">
+            <div class="col-md-5">
+                <label asp-for="BitrixWarehouseName" class="form-label fw-bold">Склад Bitrix</label>
+                <input asp-for="BitrixWarehouseName" class="form-control" list="BitrixWarehouseList" placeholder="Выберите или введите склад" />
+                <datalist id="BitrixWarehouseList">
+                    @foreach (var wh in ViewBag.Warehouses)
+                    {
+                        <option value="@wh.Text"></option>
+                    }
+                </datalist>
+                <span asp-validation-for="BitrixWarehouseName" class="text-danger"></span>
+            </div>
+
+            <div class="col-md-2 text-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor"
+                     class="bi bi-arrow-right text-primary" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd" 
+                          d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 
+                             .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 
+                             8.5H1.5A.5.5 0 0 1 1 8z"/>
+                </svg>
+            </div>
+
+            <div class="col-md-5">
+                <label asp-for="OzonWarehouseName" class="form-label fw-bold">Склад Ozon</label>
+                <input asp-for="OzonWarehouseName" class="form-control" list="OzonWarehouseList" placeholder="Выберите или введите склад" />
+                <datalist id="OzonWarehouseList">
+                    @foreach (var wh in ViewBag.Warehouses)
+                    {
+                        <option value="@wh.Text"></option>
+                    }
+                </datalist>
+                <span asp-validation-for="OzonWarehouseName" class="text-danger"></span>
+            </div>
+        </div>
+
+        <div class="form-group mt-3">
+            <button type="submit" class="btn btn-success">Создать</button>
+            <a asp-action="Index" class="btn btn-secondary">Отмена</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+}

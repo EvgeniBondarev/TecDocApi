@@ -1,0 +1,36 @@
+﻿@model OzonDomains.Models.OzonClient
+
+@{
+    ViewData["Title"] = "Details";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h1>Подробно о клиенте</h1>
+
+<div>
+    <h4>OzonClient</h4>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.Name)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.Name)
+        </dd>
+        <dt class = "col-sm-2">
+            @Html.DisplayNameFor(model => model.ClientId)
+        </dt>
+        <dd class = "col-sm-10">
+            @Html.DisplayFor(model => model.DecryptClientId)
+        </dd>
+        <dt class = "col-sm-2">
+            @Html.DisplayNameFor(model => model.ApiKey)
+        </dt>
+        <dd class = "col-sm-10">
+            @Html.DisplayFor(model => model.DecryptApiKey)
+        </dd>
+    </dl>
+</div>
+<div>
+    <a asp-area="Studio2" asp-controller="OzonClients" asp-action="Edit" asp-route-id="@Model?.Id">Изменить</a> |
+</div>

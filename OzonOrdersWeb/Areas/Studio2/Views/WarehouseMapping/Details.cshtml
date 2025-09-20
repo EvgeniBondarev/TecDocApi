@@ -1,0 +1,16 @@
+﻿@model OzonDomains.Models.WarehouseMapping
+@{
+    ViewData["Title"] = "Детали связи складов";
+}
+
+<div class="container mt-4">
+    <h2>Детали связи складов</h2>
+
+    <div class="mb-3">
+        <p><strong>Клиент:</strong> @(Model.OzonClient?.Name ?? "Не указан")</p>
+        <p><strong>Склад Bitrix:</strong> @Model.BitrixWarehouseName</p>
+        <p><strong>Склад Ozon:</strong> @Model.OzonWarehouseName</p>
+    </div>
+
+    <a  asp-area="Studio2" asp-controller="WarehouseMapping"  asp-action="Index" class="btn btn-secondary">Назад</a>
+</div>

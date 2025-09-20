@@ -1,0 +1,80 @@
+﻿@model OzonDomains.Models.Product
+
+@{
+    ViewData["Title"] = "Edit";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h1>Edit</h1>
+
+<h4>Product</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-area="Studio2" asp-controller="Products" asp-action="Edit">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="Id" />
+            <div class="form-group">
+                <label asp-for="Article" class="control-label"></label>
+                <input asp-for="Article" class="form-control" />
+                <span asp-validation-for="Article" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="OzonProductId" class="control-label"></label>
+                <input asp-for="OzonProductId" class="form-control" />
+                <span asp-validation-for="OzonProductId" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="FboOzonSkuId" class="control-label"></label>
+                <input asp-for="FboOzonSkuId" class="form-control" />
+                <span asp-validation-for="FboOzonSkuId" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="FbsOzonSkuId" class="control-label"></label>
+                <input asp-for="FbsOzonSkuId" class="form-control" />
+                <span asp-validation-for="FbsOzonSkuId" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="CommercialCategory" class="control-label"></label>
+                <input asp-for="CommercialCategory" class="form-control" />
+                <span asp-validation-for="CommercialCategory" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Volume" class="control-label"></label>
+                <input asp-for="Volume" class="form-control" />
+                <span asp-validation-for="Volume" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="VolumetricWeight" class="control-label"></label>
+                <input asp-for="VolumetricWeight" class="form-control" />
+                <span asp-validation-for="VolumetricWeight" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="CurrentPriceWithDiscount" class="control-label"></label>
+                <input asp-for="CurrentPriceWithDiscount" class="form-control" />
+                <span asp-validation-for="CurrentPriceWithDiscount" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Save" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">Back to List</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        $.validator.methods.range = function (value, element, param) {
+            var globalizedValue = value.replace(",", ".");
+            return this.optional(element) || (globalizedValue >= param[0] && globalizedValue <= param[1]);
+        }
+
+        $.validator.methods.number = function (value, element) {
+            return this.optional(element) || /^-?(?:\d+|\d{1,3}(?:[\s\.,]\d{3})+)(?:[\.,]\d+)?$/.test(value);
+        }
+    </script>
+}

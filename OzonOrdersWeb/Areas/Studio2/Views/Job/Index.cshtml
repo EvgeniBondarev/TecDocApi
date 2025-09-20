@@ -1,0 +1,99 @@
+﻿@using OzonOrdersWeb.ViewModels.JobViewModels
+@model JobResultViewModel
+
+<div class="container">
+    <div class="row">
+        <div>
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">Настройка периода обновления заказов</h5>
+                </div>
+                <div class="card-body">
+                    <form asp-area="Studio2" asp-controller="Job" method="post" asp-action="SetEverydayUpdate">
+                        <div class="form-group">
+                            <label for="monthsCount">Период обновления заказов (в месяцах):</label>
+                            <input type="number" class="form-control" name="monthsCount" id="monthsCount" min="1" max="3" style="width: 140px;" value="3"/>
+                        </div>
+                        <div class="form-group">
+                            <label for="updateTime">Время обновления (ЧЧ:ММ):</label>
+                            <div class="d-flex align-items-center">
+                                <input type="number" class="form-control" name="updateHour" id="updateHour" min="0" max="23" style="width: 70px;" value="5"/>
+                                <span class="mx-2">:</span>
+                                <input type="number" class="form-control" name="updateMinute" id="updateMinute" min="0" max="59" style="width: 70px;" value="00"/>
+                            </div>
+                        </div>
+                        <br />
+                        <button type="submit" class="btn btn-primary">Отправить</button>
+                    </form>
+                </div>
+            </div>
+
+
+            <br />
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">Настройка периодаподгрузки заказов</h5>
+                </div>
+                <div class="card-body">
+                    <form asp-area="Studio2" asp-controller="Job" method="post" asp-action="SetOzonRecurring">
+                        <div class="form-group">
+                            <label for="delay">Период обновления заказов (в минутах от 1 до 60) для клиентов Ozon:</label>
+                            <input type="number" class="form-control" name="delay" id="delay" min="1" max="60" style="width: 140px;" value="15"/>
+                        </div>
+                        <br />
+                        <button type="submit" class="btn btn-primary">Отправить</button>
+                    </form>
+                </div>
+                <div class="card-body">
+                    <form asp-area="Studio2" asp-controller="Job" method="post" asp-action="SetYandexRecurring">
+                        <div class="form-group">
+                            <label for="delay">Период обновления заказов (в минутах от 1 до 60) для клиентов Yandex:</label>
+                            <input type="number" class="form-control" name="delay" id="delay" min="1" max="60" style="width: 140px;" value="15" />
+                        </div>
+                        <br />
+                        <button type="submit" class="btn btn-primary">Отправить</button>
+                    </form>
+                </div>
+                <div class="card-body">
+                    <form asp-area="Studio2" asp-controller="Job" method="post" asp-action="SetOzonFileUploadRecurring">
+                        <div class="form-group">
+                            <label for="delay">Период обновления заказов (в минутах от 1 до 60) из файла:</label>
+                            <input type="number" class="form-control" name="delay" id="delay" min="1" max="60" style="width: 140px;" value="15" />
+                        </div>
+                        <br />
+                        <button type="submit" class="btn btn-primary">Отправить</button>
+                    </form>
+                </div>
+                <div class="card-body">
+                    <form asp-area="Studio2" asp-controller="Job" method="post" asp-action="SetStatusUpdateRecurring">
+                        <div class="form-group">
+                            <label for="delay">Период обновления статусов (в минутах от 1 до 60):</label>
+                            <input type="number" class="form-control" name="delay" id="delay" min="1" max="60" style="width: 140px;" value="15"/>
+                            <label for="delay">Кол. последних заказов для обновления:</label>
+                            <input type="number" class="form-control" name="count" id="count" min="1" max="1000" style="width: 140px;" value="50"/>
+                        </div>
+                        <br />
+                        <button type="submit" class="btn btn-primary">Отправить</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row mt-3">
+        <div>
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">Результаты выполнения</h5>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        @foreach (var result in Model.Results)
+                        {
+                            <li>@Html.Raw(result)</li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

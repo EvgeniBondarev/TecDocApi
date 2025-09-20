@@ -1,0 +1,515 @@
+﻿@using OzonOrdersWeb.ViewModels.MatchFileDataViewModel
+
+@model MatchedRowViewModel
+
+<style>
+    .bg-green-300 {
+        background-color: #73c487 !important; /* Bootstrap's 'bg-success' color */
+    }
+
+    .selected-row {
+        background-color: #cce5ff !important; /* Голубой цвет */
+    }
+
+    .loader {
+        border: 5px solid #f3f3f3;
+        border-top: 5px solid #3498db;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        animation: spin 1s linear infinite;
+        display: flex; /* Скрыто по умолчанию */
+        position: absolute;
+        top: 50%; /* Центр по вертикали */
+        left: 50%; /* Центр по горизонтали */
+        transform: translate(-50%, -50%); /* Центрирование */
+    }
+
+    @@keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .spinner-overlay {
+        display: flex;
+        position: fixed;
+        top: 50%; /* Центрируем по вертикали */
+        left: 50%; /* Центрируем по горизонтали */
+        transform: translate(-50%, -50%); /* Смещаем на половину ширины и высоты спиннера */
+        z-index: 1050; /* Убедимся, что он выше всех элементов */
+    }
+
+    .spinner-border {
+        width: 3rem;
+        height: 3rem;
+        color: #007bff; /* Синий цвет Bootstrap */
+    }
+
+
+</style>
+
+<div class="container-fluid">
+    <!-- Спиннер загрузки -->
+    <div id="loadingSpinner" class="spinner-overlay">
+        <div class="spinner-border text-primary" role="status"></div>
+    </div>
+
+
+
+    @if (ViewBag.Message != null)
+    {
+        <div class="alert alert-dismissible alert-success">
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <p>@ViewBag.Message</p>
+        </div>
+    }
+
+    <div id="messageContainer" class="position-fixed top-0 end-0 p-3" style="z-index: 1050;">
+        <div id="flashMessage" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <strong class="me-auto">Сообщение</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body">
+                <span id="flashMessageText"></span>
+            </div>
+        </div>
+    </div>
+
+
+    <nav class="navbar navbar-expand-lg navbar-light sticky-top">
+        <button class="btn btn-primary me-2" onclick="submitMatchedRows()">Сохранить</button>
+        <div class="container">
+            <div class="input-group mb-3">
+                <button class="btn btn-secondary" onclick="previousMatch()">←</button>
+                <input type="text" id="searchInput" placeholder="Поиск..." class="form-control" onkeyup="searchInTables()" />
+                <span id="matchCount" class="input-group-text" style="display: none;">Найдено: 0</span>
+                <button class="btn btn-secondary" onclick="nextMatch()">→</button>
+            </div>
+        </div>
+        <div class="d-block">
+            <label class="me-2">
+                <input type="checkbox" id="showFilled" checked onchange="filterTables()"> Не сопоставленные
+            </label>
+            <br>
+            <label class="me-2">
+                <input type="checkbox" id="showEmpty" checked onchange="filterTables()"> Сопоставленные
+            </label>
+        </div>
+    </nav>
+
+
+
+
+    <div class="row">
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th style="width: 50%;">
+                        <h3>Заказы</h3>
+                        @Model.MainFileName
+                    </th>
+                    <th style="width: 50%;">
+                        <h2>Платежи</h2>
+                        @Model.ScondaryFileName
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var matchedRow in Model.MatchedResults.Select((value, index) => new { value, index }))
+                {
+                    <tr class="@(matchedRow.value.File1Data != null && matchedRow.value.File1Data.Any() &&
+                                 matchedRow.value.File2Data != null && matchedRow.value.File2Data.Any() ? 
+                                 "full-file-data" : "empty-file-data")">
+                        <td style="max-height: 300px; max-width: 300px; overflow-y: auto; overflow-x: auto; white-space: nowrap;">
+                            @if (matchedRow.value.File1Data != null && matchedRow.value.File1Data.Any())
+                            {
+                                <table class="table table-sm filled-file1" style="width: 100%;">
+                                    <thead>
+                                        <tr>
+                                            @foreach (var kvp in matchedRow.value.File1Data)
+                                            {
+                                                bool isInMatchingColumns = Model.MatchingColumns.Any(mc => mc.Item1 == kvp.Key);
+                                                <th style="@(isInMatchingColumns ? "background-color: #73c487;" : "")">
+                                                    <strong>@kvp.Key</strong>
+                                                </th>
+                                            }
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr onclick="selectTargetRow(this, @matchedRow.index)">
+                                            @foreach (var kvp in matchedRow.value.File1Data)
+                                            {
+                                                <td>@kvp.Value</td>
+                                            }
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            }
+                            else
+                            {
+                                <span class="empty-file1">Нет записей</span>
+                            }
+                        </td>
+
+                        <td id="payment-block-@matchedRow.index" style="max-height: 300px; max-width: 300px; overflow-y: auto; overflow-x: auto; white-space: nowrap;">
+                            @if (matchedRow.value.File2Data != null && matchedRow.value.File2Data.Any())
+                            {
+                                <table class="table table-sm filled-file2" style="width: 100%;">
+                                    <thead>
+                                        <tr>
+                                            @foreach (var kvp in matchedRow.value.File2Data[0])
+                                            {
+                                                bool isInMatchingColumns = Model.MatchingColumns.Any(mc => mc.Item2 == kvp.Key);
+                                                <th style="@(isInMatchingColumns ? "background-color: #73c487;" : "")">
+                                                    <strong>@kvp.Key</strong>
+                                                </th>
+                                            }
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var file2Row in matchedRow.value.File2Data)
+                                        {
+                                            <tr onclick="selectPaymentRow(this)">
+                                                @foreach (var kvp in file2Row)
+                                                {
+                                                    <td>@kvp.Value</td>
+                                                }
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            }
+                            else
+                            {
+                                <span class="empty-file2">Нет соответствий</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    function filterTables() {
+        var showFilled = document.getElementById('showFilled').checked;
+        var showEmpty = document.getElementById('showEmpty').checked;
+
+        var filledTables = document.querySelectorAll('.empty-file-data');
+        filledTables.forEach(function (table) {
+            table.style.display = showFilled ? '' : 'none';
+        });
+
+        var emptyTables = document.querySelectorAll('.full-file-data');
+        emptyTables.forEach(function (table) {
+            table.style.display = showEmpty ? '' : 'none';
+        });
+    }
+</script>
+
+
+<script>
+    // Скрываем спиннер после полной загрузки страницы
+    window.addEventListener('load', function () {
+        const loader = document.getElementById('loadingSpinner');
+        loader.style.display = 'none'; // Скрываем спиннер
+    });
+
+    function showToast(message) {
+        const toastBody = document.getElementById('flashMessageText');
+        toastBody.textContent = message;
+        const toast = new bootstrap.Toast(document.getElementById('flashMessage'));
+        toast.show();
+    }
+</script>
+
+<script>
+    function gatherMatchedRowsData() {
+        const matchedRows = [];
+
+        // Перебираем строки таблицы
+        document.querySelectorAll("tbody tr").forEach(row => {
+            const tables = row.querySelectorAll("td table");
+            let file1Data = null; // Изначально задаём null
+            let file2Data = null; // Изначально задаём null
+
+            const file1Table = tables[0]; // Первая таблица (File1Data), если она есть
+            const file2Table = tables[1]; // Вторая таблица (File2Data), если она есть
+
+            // Проверяем на наличие записей в File1Data, если таблица существует
+            if (file1Table) {
+                const noRecords = file1Table.querySelector("tbody tr td span")?.textContent.trim();
+                if (noRecords === "Нет записей" || noRecords === "Нет соответствий") {
+                    file1Data = null; // Если нет записей, оставляем null
+                } else {
+                    file1Data = {}; // Инициализируем объект
+                    // Получаем данные для File1Data из первой таблицы
+                    file1Table.querySelectorAll('tbody tr').forEach(subRow => {
+                        const rowData = {};
+                        subRow.querySelectorAll('td').forEach((td, index) => {
+                            const key = file1Table.querySelectorAll('thead th')[index]?.textContent.trim();
+                            if (key) {
+                                rowData[key] = td.textContent.trim();
+                            }
+                        });
+                        // Добавляем данные только если есть содержимое
+                        if (Object.keys(rowData).length > 0) {
+                            Object.assign(file1Data, rowData);
+                        }
+                    });
+                }
+            }
+
+            // Проверяем на наличие записей в File2Data, если таблица существует
+            if (file2Table) {
+                const noRecords = file2Table.querySelector("tbody tr td span")?.textContent.trim();
+                if (noRecords === "Нет записей" || noRecords === "Нет соответствий") {
+                    file2Data = null; // Если нет записей, оставляем null
+                } else {
+                    file2Data = []; // Инициализируем массив
+                    // Получаем данные для File2Data из второй таблицы
+                    file2Table.querySelectorAll('tbody tr').forEach(subRow => {
+                        const rowData = {};
+                        subRow.querySelectorAll('td').forEach((td, index) => {
+                            const key = file2Table.querySelectorAll('thead th')[index]?.textContent.trim();
+                            if (key) {
+                                rowData[key] = td.textContent.trim();
+                            }
+                        });
+                        // Добавляем данные в массив только если есть содержимое
+                        if (Object.keys(rowData).length > 0) {
+                            file2Data.push(rowData);
+                        }
+                    });
+                }
+            }
+
+            // Проверяем, чтобы не добавлять объект с двумя значениями null
+            if (file1Data !== null || file2Data !== null) {
+                matchedRows.push({
+                    File1Data: file1Data,
+                    File2Data: file2Data
+                });
+            }
+        });
+
+        console.log(matchedRows.length);
+        return matchedRows;
+    }
+
+
+    function submitMatchedRows() {
+        const matchedRowsData = gatherMatchedRowsData(); // Собираем данные
+        const loader = document.getElementById('loadingSpinner'); // Получаем элемент загрузки
+        const matchedResultsId = @Model.MatchedResultsId;
+
+        loader.style.display = 'block'; // Показываем анимацию загрузки
+
+        // Включаем MatchedResultsId в отправляемый объект
+        const dataToSend = {
+            matchedResultsId: matchedResultsId,
+            matchedRows: matchedRowsData
+        };
+
+        fetch("/MatchFileData/ProcessMatchedRows", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(dataToSend) // Отправляем данные в JSON формате
+        })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(error => { throw new Error(error.message); });
+                }
+                return response.json(); // Получаем ответ от сервера
+            })
+            .then(data => {
+                loader.style.display = 'none'; // Скрываем анимацию загрузки
+
+                if (data.message) {
+                    // Выводим сообщение от сервера
+                    showToast(data.message);
+                }
+            })
+            .catch(error => {
+                loader.style.display = 'none'; // Скрываем анимацию загрузки
+
+                // Обработка ошибки
+                console.error("Ошибка:", error);
+                showToast("Произошла ошибка при отправке данных: " + error.message);
+            });
+    }
+
+
+
+</script>
+
+
+<script>
+    let selectedPaymentRow = null;
+
+    function selectPaymentRow(row) {
+        if (selectedPaymentRow) {
+            selectedPaymentRow.classList.remove('selected-row');
+        }
+        selectedPaymentRow = row;
+        selectedPaymentRow.classList.add('selected-row'); 
+        showToast("Выбрана строка из 'Платежи'. Теперь выберите строку в соответствующем блоке 'Заказы'.");
+    }
+
+    function selectTargetRow(targetRow, index) {
+        if (selectedPaymentRow) {
+            const targetBlockId = `payment-block-${index}`;
+            const targetCell = document.getElementById(targetBlockId);
+
+            if (targetCell.innerHTML.includes('Нет соответствий')) {
+                targetCell.innerHTML = '';
+
+                const newTable = document.createElement('table');
+                newTable.className = 'table table-sm';
+                newTable.style.width = '100%';
+                const thead = document.createElement('thead');
+                const tbody = document.createElement('tbody');
+                const originalTable = selectedPaymentRow.closest('table');
+                const originalHeader = originalTable.querySelector('thead');
+                
+                if (originalHeader) {
+                    thead.innerHTML = originalHeader.innerHTML;
+                }
+
+                newTable.appendChild(thead);
+                tbody.appendChild(selectedPaymentRow);
+                newTable.appendChild(tbody);
+                targetCell.appendChild(newTable);
+                const originalTableBody = originalTable.querySelector('tbody');
+
+                if (originalTableBody.children.length === 0) {
+                    originalTable.innerHTML = '<span>Нет соответствий</span>';
+                }
+
+            } else {
+                const originalTable = selectedPaymentRow.closest('table');
+                const originalTableBody = originalTable.querySelector('tbody');
+                const targetTableBody = targetCell.querySelector('tbody');
+                targetTableBody.appendChild(selectedPaymentRow);
+                
+                if (originalTableBody.children.length === 0) {
+                    originalTable.innerHTML = '<span>Нет соответствий</span>';
+                }
+            }
+
+            // Убираем класс выделенной строки
+            selectedPaymentRow.classList.remove('selected-row');
+            selectedPaymentRow = null;
+
+
+            showToast("Строка успешно перемещена в соответствующий блок 'Платежи'.");
+        } else {
+            showToast("Сначала выберите строку из 'Платежи'.");
+        }
+    }
+
+
+
+</script>
+
+<script>
+    let currentMatchIndex = -1; // Индекс текущего совпадения
+    let matches = []; // Массив для хранения совпадений
+
+    function searchInTables() {
+        const input = document.getElementById('searchInput');
+        const filter = input.value.toLowerCase();
+        const tables = document.querySelectorAll('.table-sm');
+        matches = []; // Сброс массива совпадений
+
+        // Проверка, если поле ввода пустое
+        if (filter === "") {
+            // Если поле пустое, сбрасываем все выделения
+            const cells = document.querySelectorAll('td');
+            cells.forEach(cell => {
+                cell.style.backgroundColor = ''; // Сброс выделения
+                cell.style.border = ''; // Сброс границ
+            });
+
+            // Сброс окраски строк
+            const rows = document.querySelectorAll('tbody tr');
+            rows.forEach(row => {
+                row.style.backgroundColor = ''; // Сброс цвета строки
+            });
+
+            // Сброс количества найденных записей
+            document.getElementById('matchCount').innerText = "Найдено: 0";
+            document.getElementById('matchCount').style.display = 'none'; // Скрытие счетчика
+
+            currentMatchIndex = -1; // Сброс индекса текущего совпадения
+            return; // Выход из функции
+        }
+
+        tables.forEach(table => {
+            const rows = table.querySelectorAll('tbody tr');
+
+            rows.forEach((row) => {
+                let rowContainsText = false; // Флаг для проверки наличия текста в строке
+                const cells = row.querySelectorAll('td');
+
+                cells.forEach(cell => {
+                    if (cell.textContent.toLowerCase().includes(filter)) {
+                        rowContainsText = true; // Если найдено совпадение
+                        matches.push({ cell, index: currentMatchIndex }); // Добавление совпадения в массив
+                        cell.style.backgroundColor = '#ffeb3b'; // Выделение совпадений желтым цветом
+                        row.style.backgroundColor = '#ff5722'; // Выделение всей строки цветом #ff5722
+                    } else {
+                        cell.style.backgroundColor = ''; // Сброс выделения
+                    }
+                });
+
+                // Сброс цвета строки, если нет совпадений
+                if (!rowContainsText) {
+                    row.style.backgroundColor = ''; // Сброс цвета строки
+                }
+            });
+        });
+
+        // Обновление количества найденных записей
+        document.getElementById('matchCount').innerText = `Найдено: ${matches.length}`;
+
+        // Показ счетчика, если есть совпадения
+        document.getElementById('matchCount').style.display = matches.length > 0 ? 'inline' : 'none';
+
+        // Сброс текущего индекса при новом поиске
+        currentMatchIndex = -1;
+    }
+
+    function highlightMatch(index) {
+        if (matches.length === 0) return;
+        // Сброс фона и границ для всех совпадений
+        matches.forEach(match => {
+            match.cell.style.backgroundColor = '#ffeb3b'; // Сохранение желтого фона
+            match.cell.style.border = ''; // Сброс границ
+        });
+
+        // Подсветка текущего совпадения
+        const currentMatch = matches[index];
+        if (currentMatch) {
+            currentMatch.cell.style.border = '3px solid black'; // Толстая черная рамка для текущего совпадения
+            currentMatch.cell.style.borderRadius = '5px'; // Скругление углов рамки
+            currentMatch.cell.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+    }
+
+    function previousMatch() {
+        if (matches.length === 0) return;
+        currentMatchIndex = (currentMatchIndex <= 0) ? matches.length - 1 : currentMatchIndex - 1;
+        highlightMatch(currentMatchIndex);
+    }
+
+    function nextMatch() {
+        if (matches.length === 0) return;
+        currentMatchIndex = (currentMatchIndex >= matches.length - 1) ? 0 : currentMatchIndex + 1;
+        highlightMatch(currentMatchIndex);
+    }
+</script>

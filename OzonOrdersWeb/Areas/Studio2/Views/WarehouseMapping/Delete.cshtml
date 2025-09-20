@@ -1,0 +1,21 @@
+﻿@model OzonDomains.Models.WarehouseMapping
+@{
+    ViewData["Title"] = "Удаление связи складов";
+}
+
+<div class="container mt-4">
+    <h2>Удалить связь складов?</h2>
+
+    <div class="mb-3">
+        <p><strong>Клиент:</strong> @(Model.OzonClient?.Name ?? "Не указан")</p>
+        <p><strong>Склад Bitrix:</strong> @Model.BitrixWarehouseName</p>
+        <p><strong>Склад Ozon:</strong> @Model.OzonWarehouseName</p>
+    </div>
+
+    <form  asp-area="Studio2" asp-controller="WarehouseMapping"  asp-action="Delete" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Id" />
+        <button type="submit" class="btn btn-danger">Удалить</button>
+        <a asp-action="Index" class="btn btn-secondary">Отмена</a>
+    </form>
+</div>

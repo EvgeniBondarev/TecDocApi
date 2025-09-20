@@ -1,0 +1,62 @@
+﻿@using System.Web
+@model Tuple<List<TreeGrouping.Application.DbService.Models.CategoryModel>, string>
+
+@{
+    var categories = Model.Item1;
+    var treeType = Model.Item2;
+}
+<ul>
+    @foreach (var category in categories)
+    {
+        string linkTypeClass =  treeType;
+        
+        <li>
+            @if (category.Children.Any())
+            {
+                <details @(category.IsFiltred ? "open" : "")>
+                    <summary class="category-link @linkTypeClass">
+                        @category.Name
+                    </summary>
+
+                    <partial name="_CategoryTree" model="Tuple.Create(category.Children, treeType)" />
+                </details>
+            }
+            else
+            {
+                <div>
+                    <div>
+                        <a href="#" class="category-link @linkTypeClass"
+                           data-id="@category.Id" 
+                           data-tree="@treeType"
+                           data-name="@HttpUtility.HtmlEncode(category.Name)"
+                           onclick="handleLeftClick(event, this)"
+                           oncontextmenu="handleRightClick(event, this)">
+                            @category.Name
+                        </a>
+                        
+                        <span style="font-size: 0.8em; color: gray;" title="@category.Id">
+                            [Id: @category.DisplayId] @category.Translation
+                        </span>
+                    </div>
+
+                    <div style="font-size: 0.8em; color: gray; margin-top: 3px;">
+                        @foreach (var link in category.Links)
+                        {
+                            <div class="@link.CategoryLinkType link-item"
+                                 data-type="@link.CategoryLinkType"
+                                 data-id="@link.CategoryId">
+                                [@link.CategoryLinkType: @link.CategoryId]
+                                
+                                <a href="javascript:void(0);"
+                                   onclick="unlinkCategory(@link.Id)"
+                                   style="color: red; font-size: 0.8em;">
+                                    отвязать
+                                </a>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </li>
+    }
+</ul>

@@ -1,0 +1,177 @@
+﻿body {
+    background-color: #f7f8fa;
+}
+nav {
+    background-color: #ffffff;
+    border-bottom: 1px solid #ddd;
+}
+.nav-wrapper .brand-logo img {
+    height: 50px;
+    margin-top: 5px;
+}
+.search-wrapper {
+    margin-top: 15px;
+}
+.search-wrapper .input-field {
+    width: 100%;
+}
+.search-wrapper input {
+    height: 2.5rem;
+}
+.product-card {
+    display: flex;
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+    align-items: center;
+}
+.product-card img {
+    height: 90px;
+    margin-right: 20px;
+}
+.product-info {
+    flex: 1;
+}
+.product-title {
+    font-weight: bold;
+    font-size: 16px;
+    margin-bottom: 5px;
+}
+.product-desc {
+    color: #555;
+}
+.price-button {
+    background-color: #d82c2c;
+}
+
+/* Полное переопределение стилей Materialize для полей ввода */
+.input-field input[type=text]:focus,
+.input-field input[type=password]:focus,
+.input-field input[type=email]:focus,
+.input-field input[type=url]:focus,
+.input-field input[type=time]:focus,
+.input-field input[type=date]:focus,
+.input-field input[type=datetime-local]:focus,
+.input-field input[type=tel]:focus,
+.input-field input[type=number]:focus,
+.input-field input[type=search]:focus,
+.input-field textarea.materialize-textarea:focus {
+    border-bottom: 1px solid #d82c2c !important;
+    box-shadow: 0 1px 0 0 #d82c2c !important;
+}
+
+.input-field input[type=text]:focus + label,
+.input-field input[type=password]:focus + label,
+.input-field input[type=email]:focus + label,
+.input-field input[type=url]:focus + label,
+.input-field input[type=time]:focus + label,
+.input-field input[type=date]:focus + label,
+.input-field input[type=datetime-local]:focus + label,
+.input-field input[type=tel]:focus + label,
+.input-field input[type=number]:focus + label,
+.input-field input[type=search]:focus + label,
+.input-field textarea.materialize-textarea:focus + label {
+    color: #d82c2c !important;
+}
+
+/* Для префиксов и активного состояния */
+.input-field .prefix.active {
+    color: #d82c2c !important;
+}
+.rating-stars {
+    color: #FFD700;
+    font-size: 16px;
+}
+.product-card img {
+    min-width: 150px;
+    min-height: 150px;
+    max-width: 150px;
+    max-height: 150px;
+    object-fit: contain;
+}
+.product-card-link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+}
+
+/* Обновленные стили для выпадающего списка */
+.autocomplete-dropdown {
+    position: absolute;
+    z-index: 1000;
+    width: 100%; /* Теперь 100% ширины родителя */
+    max-height: 600px;
+    overflow-y: auto;
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 0 0 4px 4px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    margin-top: -1px;
+    display: none;
+    box-sizing: border-box; /* Учитываем padding и border в ширине */
+}
+
+.autocomplete-dropdown .autocomplete-item {
+    padding: 12px 16px;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.autocomplete-dropdown .autocomplete-item:hover {
+    background-color: #f9f9f9;
+}
+
+/* Упрощенная структура строки с номером и брендом */
+.item-main-line {
+    display: flex;
+    align-items: center;
+    margin-bottom: 4px;
+    white-space: nowrap; /* Запрещаем перенос строк */
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.item-number {
+    font-weight: 600;
+    color: #333;
+    margin-right: 8px; /* Просто пробел между номером и брендом */
+}
+
+.item-brand {
+    color: #666;
+}
+
+.item-description {
+    font-size: 12px;
+    color: #999;
+    line-height: 1.4;
+    white-space: normal; /* Разрешаем перенос для описания */
+}
+
+.no-results {
+    padding: 12px 16px;
+    color: #999;
+    text-align: center;
+}
+
+/* Для родительского контейнера */
+.search-container {
+    position: relative;
+    width: 100%;
+}
+
+.input-field {
+    width: 100%;
+}
+#autocomplete-results {
+    max-height: 250px;
+    overflow-y: auto;
+    width: 100%;
+}
+#autocomplete-results li {
+    font-size: 14px;
+    line-height: 1.4;
+}

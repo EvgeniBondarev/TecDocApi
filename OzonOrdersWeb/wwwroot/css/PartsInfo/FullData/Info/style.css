@@ -1,0 +1,643 @@
+﻿body {
+    background-color: #f7f8fa;
+    font-family: Arial, sans-serif;
+}
+nav {
+    background-color: #ffffff;
+    border-bottom: 1px solid #ddd;
+}
+.nav-wrapper .brand-logo img {
+    height: 45px;
+    margin-top: 10px;
+}
+.breadcrumb {
+    font-size: 14px;
+    color: #666;
+    padding: 15px 0;
+}
+.breadcrumb:before {
+    color: #666;
+}
+.product-container {
+    background: white;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    padding: 20px;
+    margin-bottom: 20px;
+}
+.product-container-addon {
+    background: white;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    padding: 20px;
+    margin-bottom: 20px;
+}
+.product-title {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 15px;
+    color: #333;
+}
+.product-code {
+    font-size: 16px;
+    color: #666;
+    margin-bottom: 15px;
+}
+
+/* Основные изменения для выравнивания высоты */
+.row.equal-height {
+    display: flex;
+    flex-wrap: wrap;
+}
+.row.equal-height > [class*="col"] {
+    display: flex;
+    flex-direction: column;
+}
+.gc-fotorama, .price-box {
+    flex: 1;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Стили для галереи */
+.gc-fotorama {
+    position: relative;
+    margin-bottom: 20px;
+    border: 1px solid #eee;
+    border-radius: 4px;
+    overflow: hidden;
+}
+.photo-main {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+}
+.container-img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.3s ease;
+}
+.container-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+.arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 30px;
+    height: 30px;
+    background: rgba(0,0,0,0.5);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 10;
+    font-size: 14px;
+}
+.left-arrow {
+    left: 10px;
+}
+.right-arrow {
+    right: 10px;
+}
+.thumbnails {
+    display: flex;
+    padding: 10px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    background: #f5f5f5;
+    height: 70px;
+    align-items: center;
+    scrollbar-width: thin;
+    scrollbar-color: #d82c2c #f5f5f5;
+}
+.thumbnails::-webkit-scrollbar {
+    height: 4px;
+}
+.thumbnails::-webkit-scrollbar-track {
+    background: #f5f5f5;
+}
+.thumbnails::-webkit-scrollbar-thumb {
+    background-color: #d82c2c;
+    border-radius: 2px;
+}
+.thumbnail {
+    width: 50px;
+    height: 50px;
+    margin-right: 10px;
+    flex-shrink: 0;
+    border: 1px solid #ddd;
+    cursor: pointer;
+    transition: border-color 0.3s;
+}
+.thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.thumbnail.active {
+    border-color: #d82c2c;
+}
+.pagination-dots {
+    display: flex;
+    justify-content: center;
+    padding: 5px 0;
+    background: #f5f5f5;
+}
+.dot {
+    width: 8px;
+    height: 8px;
+    margin: 0 3px;
+    background: #ccc;
+    border-radius: 50%;
+    cursor: pointer;
+}
+.active-dot {
+    background: #d82c2c;
+}
+
+/* Стили для блока характеристик */
+.price-box {
+    padding: 15px;
+    border: 1px solid #eee;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.details-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed; /* обязательное условие для фиксированной ширины столбцов */
+}
+
+.details-table tr:nth-child(even) {
+    background: #f9f9f9;
+}
+
+.details-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid #eee;
+    overflow: hidden;          /* скрывает выходящий текст */
+    text-overflow: ellipsis;   /* добавляет троеточие при обрезке */
+}
+
+.details-table td:first-child {
+    width: 70%;
+    color: #555;
+}
+
+.details-table td:last-child {
+    width: 30%;
+    color: #333;
+}
+
+/* Стили для блока производителя */
+.manufacturer-box {
+    margin-bottom: 20px;
+}
+.manufacturer-info {
+    padding: 10px 0;
+}
+.manufacturer-field {
+    display: flex;
+    margin-bottom: 8px;
+    align-items: center;
+}
+.field-label {
+    color: #555;
+    min-width: 80px;
+    margin-right: 10px;
+}
+.field-value {
+    color: #333;
+    flex: 1;
+}
+.field-value a {
+    color: #d82c2c;
+    text-decoration: none;
+}
+.field-value a:hover {
+    text-decoration: underline;
+}
+.rating-stars {
+    color: #FFD700;
+    font-size: 16px;
+}
+
+/* Выравнивание высоты боковых блоков */
+.col.s12.m4 {
+    display: flex;
+    flex-direction: column;
+}
+.col.s12.m4 > .product-container {
+    flex: 1;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+}
+.col.s12.m4 > .product-container > .section-title,
+.col.s12.m4 > .product-container > .manufacturer-info {
+    flex-shrink: 0;
+}
+.col.s12.m4 > .product-container > .alternative-product,
+.col.s12.m4 > .product-container > .alternative-products {
+    flex: 1;
+}
+
+.col.s12.m4 > .product-container {
+    flex: 1;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+}
+.col.s12.m4 > .product-container-addon > .section-title,
+.col.s12.m4 > .product-container-addon > .manufacturer-info {
+    flex-shrink: 0;
+}
+.col.s12.m4 > .product-container-addon > .alternative-product,
+.col.s12.m4 > .product-container-addon > .alternative-products {
+    flex: 1;
+}
+.col.s12.m4 > .product-container-addon
+{
+    flex: 1;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Остальные стили */
+.product-details {
+    margin-top: 30px;
+}
+.details-title {
+    font-size: 18px;
+    font-weight: bold;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+}
+.tab-content {
+    display: none;
+}
+.tab-content.active {
+    display: block;
+}
+.tabs .tab a {
+    color: #d82c2c;
+}
+.tabs .tab a.active {
+    color: #d82c2c;
+}
+.tabs .indicator {
+    background-color: #d82c2c;
+}
+.alternative-products {
+    margin-top: 30px;
+}
+.alternative-product {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+}
+.alternative-product img {
+    width: 50px;
+    margin-right: 15px;
+}
+.alternative-product-info {
+    flex-grow: 1;
+    font-size: 14px;
+}
+.alternative-product-title {
+    font-size: 14px;
+}
+.alternative-product-price {
+    color: #d82c2c;
+    font-weight: bold;
+    font-size: 14px;
+}
+.section-title {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 15px;
+}
+
+.modal-gallery {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.9);
+    overflow: hidden;
+}
+.modal-gallery-content {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    width: 100%;
+    position: relative;
+}
+.modal-gallery-img-container {
+    position: relative;
+    max-width: 90%;
+    max-height: 90%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.modal-gallery-img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+.modal-gallery-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    color: #f1f1f1;
+    font-size: 40px;
+    font-weight: bold;
+    transition: 0.3s;
+    cursor: pointer;
+    z-index: 1001;
+    background: rgba(0,0,0,0.5);
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+.modal-gallery-close:hover {
+    color: #d82c2c;
+    background: rgba(0,0,0,0.8);
+}
+.modal-gallery-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 60px;
+    height: 60px;
+    background: rgba(0,0,0,0.5);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 24px;
+    z-index: 10;
+}
+.modal-gallery-prev {
+    left: 30px;
+}
+.modal-gallery-next {
+    right: 30px;
+}
+.modal-gallery-thumbnails {
+    position: absolute;
+    bottom: 20px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    padding: 10px;
+    overflow-x: auto;
+    background: rgba(0,0,0,0.5);
+}
+.modal-thumbnail {
+    width: 60px;
+    height: 60px;
+    margin: 0 5px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    opacity: 0.6;
+    transition: opacity 0.3s, border-color 0.3s;
+}
+.modal-thumbnail:hover {
+    opacity: 1;
+}
+.modal-thumbnail.active {
+    border-color: #d82c2c;
+    opacity: 1;
+}
+.modal-thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+/* Стили для списка совместимости */
+.substitutes-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.model-item {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-bottom: 15px;
+    overflow: hidden;
+}
+
+.model-header {
+    padding: 12px 15px;
+    background-color: #f5f5f5;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.model-header:hover {
+    background-color: #eee;
+}
+
+.model-name {
+    font-weight: bold;
+    font-size: 16px;
+    color: #333;
+}
+
+.toggle-icon {
+    font-weight: bold;
+    font-size: 18px;
+    transition: transform 0.2s;
+}
+
+.model-content {
+    padding: 0;
+}
+
+.substitute-block {
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.substitute-block:last-child {
+    border-bottom: none;
+}
+
+.substitute-info p {
+    margin: 8px 0;
+    line-height: 1.4;
+}
+
+.attributes-header {
+    padding: 10px 0;
+    margin: 15px 0 5px 0;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #d82c2c;
+    font-weight: bold;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 8px;
+}
+
+.attributes-header:hover {
+    color: #b02020;
+}
+
+.attributes-content {
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+}
+
+.loading, .error, .no-data {
+    padding: 15px;
+    text-align: center;
+    color: #666;
+}
+
+.error {
+    color: #d82c2c;
+}
+
+.search-box {
+    margin-bottom: 15px;
+    max-width: 100%;
+}
+
+.search-input {
+    width: 100%;
+    padding: 10px 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.details-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.details-table tr:nth-child(even) {
+    background: #f9f9f9;
+}
+
+.details-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid #eee;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.details-table td:first-child {
+    width: 70%;
+    color: #555;
+}
+
+.details-table td:last-child {
+    width: 30%;
+    color: #333;
+}
+/* Полное переопределение стилей Materialize для полей ввода */
+.input-field input[type=text]:focus,
+.input-field input[type=password]:focus,
+.input-field input[type=email]:focus,
+.input-field input[type=url]:focus,
+.input-field input[type=time]:focus,
+.input-field input[type=date]:focus,
+.input-field input[type=datetime-local]:focus,
+.input-field input[type=tel]:focus,
+.input-field input[type=number]:focus,
+.input-field input[type=search]:focus,
+.input-field textarea.materialize-textarea:focus {
+    border-bottom: 1px solid #d82c2c !important;
+    box-shadow: 0 1px 0 0 #d82c2c !important;
+}
+
+.input-field input[type=text]:focus + label,
+.input-field input[type=password]:focus + label,
+.input-field input[type=email]:focus + label,
+.input-field input[type=url]:focus + label,
+.input-field input[type=time]:focus + label,
+.input-field input[type=date]:focus + label,
+.input-field input[type=datetime-local]:focus + label,
+.input-field input[type=tel]:focus + label,
+.input-field input[type=number]:focus + label,
+.input-field input[type=search]:focus + label,
+.input-field textarea.materialize-textarea:focus + label {
+    color: #d82c2c !important;
+}
+
+/* Для префиксов и активного состояния */
+.input-field .prefix.active {
+    color: #d82c2c !important;
+}
+
+/* Дополнительные стили для табов совместимости */
+.compatibility-tabs {
+    margin-bottom: 15px;
+}
+
+.compatibility-tabs .tab a {
+    color: #666;
+    padding: 0 20px;
+}
+
+.compatibility-tabs .tab a:hover {
+    color: #d82c2c;
+}
+
+.compatibility-tabs .tab a.active {
+    color: #d82c2c;
+}
+
+.compatibility-tabs .indicator {
+    background-color: #d82c2c;
+    height: 2px;
+}
+
+#search-container {
+    margin: 15px 0;
+}
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+}

@@ -1,0 +1,138 @@
+﻿@using System.Web
+@model List<Servcies.HangfireService.Models.JobDto>
+
+<!-- Модальное окно для результатов -->
+<div class="modal fade" id="resultModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Результат выполнения</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <pre id="modalResultContent" class="p-3 bg-light rounded" style="white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word;"></pre>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style> 
+    .modal-pre-wrap {
+        white-space: pre-wrap;     
+        word-break: break-all;    
+        overflow-wrap: break-word;  
+    }
+    .duration-tooltip {
+        cursor: help;
+        border-bottom: 1px dotted #999;
+    }
+    .modal-pre-wrap {
+         white-space: pre-wrap;
+         word-break: break-all;
+         overflow-wrap: break-word;
+     }
+    .json-short {
+        font-family: monospace;
+        background-color: #f8f9fa;
+        padding: 2px 4px;
+        border-radius: 3px;
+        display: inline-block;
+        max-width: 200px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .action-link {
+        cursor: pointer;
+    }
+    .action-link:hover {
+        text-decoration: underline;
+    }
+</style>
+
+<div class="table-responsive">
+    <table class="table table-bordered table-striped align-middle">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Задание</th>
+            <th>Успешно завершено</th>
+            <th>Длительность</th>
+            <th>Результат</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var job in Model)
+        {
+            var shortResult = job.Result?.Length > 10 ? job.Result.Substring(0, 10) + "..." : job.Result;
+            var resultId = "result-" + Guid.NewGuid().ToString("N");
+            var durationInMinutes = job.Duration.HasValue ? (job.Duration.Value / 60000).ToString("0.00") : "N/A";
+            var durationTooltip = job.Duration.HasValue ? $"{job.Duration.Value} ms" : "Нет данных";
+
+            // Выбираем цвет строки по статусу
+            string rowClass = job.State == "Succeeded" ? "table-success" :
+                job.State == "Failed" ? "table-danger" : "";
+
+            <tr class="@rowClass">
+                <td>@job.Id</td>
+                <td>@job.MethodName</td>
+                <td>@job.SucceededAt?.ToString("HH:mm dd.MM.yyyy")</td>
+                <td>
+                    <span class="duration-tooltip" title="@durationTooltip">
+                        @(job.Duration.HasValue ? $"{durationInMinutes} мин" : "N/A")
+                    </span>
+                </td>
+                <td>
+                    @if (!string.IsNullOrEmpty(job.Result))
+                    {
+                        <div id="@resultId" class="d-none">@job.Result</div>
+                        <a href="#" class="text-decoration-none show-result" data-result-id="@resultId">
+                            <pre class="mb-0 d-inline  json-short">@shortResult</pre>
+                        </a>
+                    }
+                    else
+                    {
+                        <span class="text-muted">N/A</span>
+                    }
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">Нет выполненных заданий</div>
+}
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Инициализация tooltip'ов для времени выполнения
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+
+        // Обработка кликов по результатам
+        document.querySelectorAll('.show-result').forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                const resultId = this.getAttribute('data-result-id');
+                const resultContent = document.getElementById(resultId).textContent;
+
+                const modal = new bootstrap.Modal(document.getElementById('resultModal'));
+                const preElement = document.getElementById('modalResultContent');
+
+                // Применяем стили для переноса
+                preElement.className = 'p-3 bg-light rounded modal-pre-wrap';
+                preElement.textContent = resultContent;
+
+                modal.show();
+            });
+        });
+    });
+</script>

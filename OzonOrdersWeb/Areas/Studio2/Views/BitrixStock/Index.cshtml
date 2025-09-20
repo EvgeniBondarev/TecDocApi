@@ -1,0 +1,3130 @@
+﻿@model OzonOrdersWeb.Areas.Studio2.ViewModels.Bitrix.RemainingStockViewModel
+@{
+    ViewData["Title"] = $"Остатки Bitrix    Найдено {@Model.Result.TotalCount} записей";
+    
+    // Получаем параметры сортировки из модели
+    var currentSortColumn = Model.Filter.SortColumn;
+    var currentSortDirection = Model.Filter.SortDirection;
+    string GetSortDirection(string column)
+    {
+        if (currentSortColumn == column)
+        {
+            return currentSortDirection == "asc" ? "desc" : "asc";
+        }
+        return "asc";
+    }
+    string GetSortIcon(string column)
+    {
+        if (currentSortColumn == column)
+        {
+            return currentSortDirection == "asc" ? "↑" : "↓";
+        }
+        return "";
+    }
+    string FormatDateTime(DateTime? dateTime)
+    {
+        return dateTime?.ToString("yyyy-MM-dd HH:mm:ss") ?? "";
+    }
+}
+
+<style>
+    .table th, .table td {
+        white-space: nowrap; /* Запрет переноса на новую строку */
+        overflow: hidden; /* Скрытие выходящего за границы контента */
+        text-overflow: ellipsis; /* Добавление многоточия */
+        padding: 8px; /* Отступы для лучшего вида */
+        max-width:200px;
+    }
+    /* Компактные строки для stock-trade-table */
+    .table.table-bordered.table-striped.stock-trade-table {
+        table-layout: fixed;
+        width: 100%;
+    }
+
+    .table.table-bordered.table-striped.stock-trade-table tr {
+        line-height: 1.2;
+        height: 35px; /* Фиксированная высота строк */
+    }
+
+    .table.table-bordered.table-striped.stock-trade-table td,
+    .table.table-bordered.table-striped.stock-trade-table th {
+        padding: 4px 8px !important;
+        font-size: 0.85rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        vertical-align: middle;
+    }
+
+    /* Уменьшаем отступы для элементов внутри таблицы */
+    .table.table-bordered.table-striped.stock-trade-table .btn-sm {
+        padding: 0.2rem 0.4rem;
+        font-size: 0.75rem;
+    }
+
+    .table.table-bordered.table-striped.stock-trade-table .form-control-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.8rem;
+        height: calc(1.5em + 0.5rem + 2px);
+    }
+
+    .table.table-bordered.table-striped.stock-trade-table .bi {
+        font-size: 0.9rem;
+    }
+    .warehouse-link {
+        text-decoration: none;
+        color: #007bff;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .warehouse-link:hover {
+        text-decoration: underline;
+        color: #0056b3;
+    }
+
+    .bitrix-stock {
+        text-decoration: none;
+        color: #007bff;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .bitrix-stock:hover {
+        text-decoration: underline;
+        color: #0056b3;
+    }
+    
+    .warehouse-link.selected {
+        color: #dc3545 !important;
+        font-weight: bold !important;
+    }
+    .warehouse-name.fw-bold {
+        font-weight: 600 !important;
+    }
+
+    .text-success {
+        color: #007bff !important;
+    }
+
+    .fas.fa-link {
+        font-size: 0.8em;
+    }
+    [data-active-id] {
+        cursor: pointer;
+        transition: opacity 0.3s ease;
+    }
+
+    [data-active-id]:hover {
+        opacity: 0.7;
+        text-decoration: underline;
+    }
+
+    [data-active-id].loading {
+        opacity: 0.6;
+        cursor: wait;
+    }
+    .warehouse-set-link {
+        text-decoration: none;
+        color: #007bff;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .warehouse-set-link:hover {
+        color: #0056b3; 
+    }
+</style>
+<script src="~/js/Studio2/Orders/CreateOrderToSupplierTransactionV2/generateInfoRow.js"></script>
+<div class="modal fade" id="bitrixModal" tabindex="-1" aria-labelledby="bitrixModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="bitrixModalLabel">Данные Bitrix</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <div class="modal-body">
+                <div id="bitrixModalContent">
+                    <div class="d-flex justify-content-center align-items-center" style="height:200px;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Загрузка...</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Блок для данных Bitrix -->
+                <div id="bitrixDataSection" class="mb-4" style="display: none;">
+                    <div id="bitrixTableContainer"></div>
+                </div>
+                
+                <div class="mt-4">
+                    <strong style="color: #DC143C;">История цен</strong>
+                    <form id="priceHistoryForm">
+                        <table class="table table-bordered table-striped" style="table-layout: fixed; width: 100%; margin-bottom: 0;">
+                            <colgroup>
+                                <col style="width: 12%">
+                                <col style="width: 12%">
+                                <col style="width: 12%">
+                                <col style="width: 24%">
+                                <col style="width: 20%">
+                                <col style="width: 10%">
+                                <col style="width: 10%">
+                                <col style="width: 10%">
+                            </colgroup>
+                            <thead class="table-light">
+                            <tr>
+                                <th>Bitrix ID</th>
+                                <th>Артикул</th>
+                                <th>Цена</th>
+                                <th>Источник</th>
+                                <th>Автор</th>
+                                <th>Дата создания</th>
+                                <th>Действия</th>
+                                <th>Очистка</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr>
+                                <!-- Bitrix ID -->
+                                <td>
+                                    <input name="BitrixId" class="form-control form-control-sm" id="modalBitrixId"/>
+                                    <span class="text-danger small" id="bitrixIdError"></span>
+                                </td>
+
+                                <!-- Артикул -->
+                                <td>
+                                    <input name="Article" class="form-control form-control-sm" id="modalArticle" readonly/>
+                                    <span class="text-danger small" id="articleError"></span>
+                                </td>
+
+                                <!-- Цена -->
+                                <td>
+                                    <input name="PriceValue" class="form-control form-control-sm text-end" value="" type="number" step="0.01" placeholder="0.00" style="text-align: right;"/>
+                                    <span class="text-danger small" id="priceValueError"></span>
+                                    <input type="hidden" name="Currency" value="RUB">
+                                    <input type="hidden" name="RegistrationPrice" class="form-control form-control-sm text-end" value="" step="0.01" placeholder="0.00" style="text-align: right;"/>
+                                </td>
+
+                                <!-- Источник -->
+                                <td>
+                                    <input list="suppliersList" 
+                                           name="ValueSource" 
+                                           class="form-control form-control-sm" 
+                                           placeholder="Источник" />
+                                    <datalist id="suppliersList">
+                                        @foreach (var supplier in Model.AllSuppliers)
+                                        {
+                                            <option value="@supplier.Name" data-url="@supplier.Site"></option>
+                                        }
+                                    </datalist>
+                                    <span class="text-danger small" id="valueSourceError"></span>
+                                </td>
+
+                                <!-- Автор -->
+                                <td>
+                                    <input name="Author" 
+                                           class="form-control form-control-sm" 
+                                           placeholder="Автор" 
+                                           value="@User.Identity?.Name" />
+                                    <span class="text-danger small" id="authorError"></span>
+                                </td>
+
+                                <!-- Дата создания -->
+                                <td>
+                                    <input name="CreateDateTime" class="form-control form-control-sm" type="datetime-local"
+                                           id="modalCreateDateTime"/>
+                                    <span class="text-danger small" id="createDateTimeError"></span>
+                                </td>
+
+                                <!-- Действия -->
+                                <td>
+                                    <button type="submit" class="btn btn-success btn-sm w-100">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" class="bi bi-plus-circle" viewBox="0 0 16 16">
+                                            <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                                            <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
+                                        </svg>
+                                        Добавить
+                                    </button>
+                                </td>
+                                
+                                <!-- Очистка -->
+                                <td>
+                                    <button type="reset" class="btn btn-outline-secondary btn-sm w-100">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" class="bi bi-x-circle" viewBox="0 0 16 16">
+                                            <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                                            <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
+                                        </svg>
+                                        Очистить
+                                    </button>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </form>
+                </div>
+                
+                <!-- Блок для истории цен -->
+                <div id="priceHistorySection" style="display: none;">
+                    <div class="d-flex justify-content-center">
+                        <div class="spinner-border spinner-border-sm text-primary" id="historySpinner" role="status">
+                            <span class="visually-hidden">Загрузка истории...</span>
+                        </div>
+                    </div>
+                    <div id="priceHistoryTableContainer" class="mt-2"></div>
+                </div>
+                
+                <!-- Блок для данных Ozon -->
+                <div id="ozonDataSection" class="mb-4" style="display: none;">
+                    <div id="ozonTableContainer"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="container-fluid mt-4"> 
+    <h2>@ViewData["Title"]</h2>
+    <table class="table table-bordered table-striped">
+        <thead class="table-light">
+        <tr>
+        <th>
+            <div class="row mb-2">
+                <div class="col-4">
+                    <a href="@Url.Action("Index", new
+                             {
+                                 SortColumn = "article",
+                                 SortDirection = GetSortDirection("article"),
+                                 ProductId = Model.Filter.ProductId,
+                                 Article = Model.Filter.Article,
+                                 PreviewText = Model.Filter.PreviewText,
+                                 Active = Model.Filter.Active,
+                                 Available = Model.Filter.Available,
+                                 Supplier = Model.Filter.Supplier,
+                                 QuantityFrom = Model.Filter.QuantityFrom,
+                                 QuantityTo = Model.Filter.QuantityTo,
+                                 DateFrom = Model.Filter.DateFrom?.ToString("yyyy-MM-dd"),
+                                 DateTo = Model.Filter.DateTo?.ToString("yyyy-MM-dd"),
+                                 Page = Model.Filter.Page,
+                                 PageSize = Model.Filter.PageSize,
+                                 LoadOzonWarehouses = Model.Filter.LoadOzonWarehouses
+                             })" class="text-dark text-decoration-none">
+                        Артикул @GetSortIcon("article")
+                    </a>
+                </div>
+                <div class="col-4">
+                    <a href="@Url.Action("Index", new
+                             {
+                                 SortColumn = "productid",
+                                 SortDirection = GetSortDirection("productid"),
+                                 ProductId = Model.Filter.ProductId,
+                                 Article = Model.Filter.Article,
+                                 PreviewText = Model.Filter.PreviewText,
+                                 Active = Model.Filter.Active,
+                                 Available = Model.Filter.Available,
+                                 Supplier = Model.Filter.Supplier,
+                                 QuantityFrom = Model.Filter.QuantityFrom,
+                                 QuantityTo = Model.Filter.QuantityTo,
+                                 DateFrom = Model.Filter.DateFrom?.ToString("yyyy-MM-dd"),
+                                 DateTo = Model.Filter.DateTo?.ToString("yyyy-MM-dd"),
+                                 Page = Model.Filter.Page,
+                                 PageSize = Model.Filter.PageSize,
+                                 LoadOzonWarehouses = Model.Filter.LoadOzonWarehouses
+                             })" class="text-dark text-decoration-none">
+                        ID @GetSortIcon("productid")
+                    </a>
+                </div>
+                <div class="col-4">
+                    <a href="@Url.Action("Index", new
+                             {
+                                 SortColumn = "supplier",
+                                 SortDirection = GetSortDirection("supplier"),
+                                 ProductId = Model.Filter.ProductId,
+                                 Article = Model.Filter.Article,
+                                 PreviewText = Model.Filter.PreviewText,
+                                 Active = Model.Filter.Active,
+                                 Available = Model.Filter.Available,
+                                 Supplier = Model.Filter.Supplier,
+                                 QuantityFrom = Model.Filter.QuantityFrom,
+                                 QuantityTo = Model.Filter.QuantityTo,
+                                 DateFrom = Model.Filter.DateFrom?.ToString("yyyy-MM-dd"),
+                                 DateTo = Model.Filter.DateTo?.ToString("yyyy-MM-dd"),
+                                 Page = Model.Filter.Page,
+                                 PageSize = Model.Filter.PageSize,
+                                 LoadOzonWarehouses = Model.Filter.LoadOzonWarehouses
+                             })" class="text-dark text-decoration-none">
+                        Производитель @GetSortIcon("supplier")
+                    </a>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-12">
+                    <a href="@Url.Action("Index", new
+                             {
+                                 SortColumn = "previewtext",
+                                 SortDirection = GetSortDirection("previewtext"),
+                                 ProductId = Model.Filter.ProductId,
+                                 Article = Model.Filter.Article,
+                                 PreviewText = Model.Filter.PreviewText,
+                                 Active = Model.Filter.Active,
+                                 Available = Model.Filter.Available,
+                                 Supplier = Model.Filter.Supplier,
+                                 QuantityFrom = Model.Filter.QuantityFrom,
+                                 QuantityTo = Model.Filter.QuantityTo,
+                                 DateFrom = Model.Filter.DateFrom?.ToString("yyyy-MM-dd"),
+                                 DateTo = Model.Filter.DateTo?.ToString("yyyy-MM-dd"),
+                                 Page = Model.Filter.Page,
+                                 PageSize = Model.Filter.PageSize,
+                                 LoadOzonWarehouses = Model.Filter.LoadOzonWarehouses
+                             })" class="text-dark text-decoration-none">
+                        Название @GetSortIcon("previewtext")
+                    </a>
+                </div>
+            </div>
+        </th>
+        <th>
+            <div class="row mb-2">
+                <div class="col-6">
+                    <a href="@Url.Action("Index", new
+                             {
+                                 SortColumn = "active",
+                                 SortDirection = GetSortDirection("active"),
+                                 ProductId = Model.Filter.ProductId,
+                                 Article = Model.Filter.Article,
+                                 PreviewText = Model.Filter.PreviewText,
+                                 Active = Model.Filter.Active,
+                                 Available = Model.Filter.Available,
+                                 Supplier = Model.Filter.Supplier,
+                                 QuantityFrom = Model.Filter.QuantityFrom,
+                                 QuantityTo = Model.Filter.QuantityTo,
+                                 DateFrom = Model.Filter.DateFrom?.ToString("yyyy-MM-dd"),
+                                 DateTo = Model.Filter.DateTo?.ToString("yyyy-MM-dd"),
+                                 Page = Model.Filter.Page,
+                                 PageSize = Model.Filter.PageSize,
+                                 LoadOzonWarehouses = Model.Filter.LoadOzonWarehouses
+                             })" class="text-dark text-decoration-none">
+                        Активность @GetSortIcon("active")
+                    </a>
+                </div>
+                <div class="col-6">
+                    <a href="@Url.Action("Index", new
+                             {
+                                 SortColumn = "available",
+                                 SortDirection = GetSortDirection("available"),
+                                 ProductId = Model.Filter.ProductId,
+                                 Article = Model.Filter.Article,
+                                 PreviewText = Model.Filter.PreviewText,
+                                 Active = Model.Filter.Active,
+                                 Available = Model.Filter.Available,
+                                 Supplier = Model.Filter.Supplier,
+                                 QuantityFrom = Model.Filter.QuantityFrom,
+                                 QuantityTo = Model.Filter.QuantityTo,
+                                 DateFrom = Model.Filter.DateFrom?.ToString("yyyy-MM-dd"),
+                                 DateTo = Model.Filter.DateTo?.ToString("yyyy-MM-dd"),
+                                 Page = Model.Filter.Page,
+                                 PageSize = Model.Filter.PageSize,
+                                 LoadOzonWarehouses = Model.Filter.LoadOzonWarehouses
+                             })" class="text-dark text-decoration-none">
+                        Доступность @GetSortIcon("available")
+                    </a>
+                </div>
+            </div>
+            <a href="@Url.Action("Index", new
+                     {
+                         SortColumn = "quantity",
+                         SortDirection = GetSortDirection("quantity"),
+                         ProductId = Model.Filter.ProductId,
+                         Article = Model.Filter.Article,
+                         PreviewText = Model.Filter.PreviewText,
+                         Active = Model.Filter.Active,
+                         Available = Model.Filter.Available,
+                         Supplier = Model.Filter.Supplier,
+                         QuantityFrom = Model.Filter.QuantityFrom,
+                         QuantityTo = Model.Filter.QuantityTo,
+                         DateFrom = Model.Filter.DateFrom?.ToString("yyyy-MM-dd"),
+                         DateTo = Model.Filter.DateTo?.ToString("yyyy-MM-dd"),
+                         Page = Model.Filter.Page,
+                         PageSize = Model.Filter.PageSize,
+                         LoadOzonWarehouses = Model.Filter.LoadOzonWarehouses
+                     })" class="text-dark text-decoration-none">
+                Количество @GetSortIcon("quantity")
+            </a>
+        </th>
+        <th>
+            <div class="row mb-2">
+                <div class="col-6">
+                    <a href="@Url.Action("Index", new {
+                                 SortColumn = "storetitle",
+                                 SortDirection = GetSortDirection("storetitle"),
+                                 ProductId = Model.Filter.ProductId,
+                                 Article = Model.Filter.Article,
+                                 PreviewText = Model.Filter.PreviewText,
+                                 Active = Model.Filter.Active,
+                                 Available = Model.Filter.Available,
+                                 Supplier = Model.Filter.Supplier,
+                                 QuantityFrom = Model.Filter.QuantityFrom,
+                                 QuantityTo = Model.Filter.QuantityTo,
+                                 DateFrom = Model.Filter.DateFrom?.ToString("yyyy-MM-dd"),
+                                 DateTo = Model.Filter.DateTo?.ToString("yyyy-MM-dd"),
+                                 Page = Model.Filter.Page,
+                                 PageSize = Model.Filter.PageSize,
+                                 LoadOzonWarehouses = Model.Filter.LoadOzonWarehouses
+                             })" class="text-dark text-decoration-none">
+                        Склад @GetSortIcon("storetitle")
+                    </a>
+                </div>
+                <div class="col-6">
+                    <a href="@Url.Action("Index", new {
+                                 SortColumn = "amount",
+                                 SortDirection = GetSortDirection("amount"),
+                                 ProductId = Model.Filter.ProductId,
+                                 Article = Model.Filter.Article,
+                                 PreviewText = Model.Filter.PreviewText,
+                                 Active = Model.Filter.Active,
+                                 Available = Model.Filter.Available,
+                                 Supplier = Model.Filter.Supplier,
+                                 QuantityFrom = Model.Filter.QuantityFrom,
+                                 QuantityTo = Model.Filter.QuantityTo,
+                                 DateFrom = Model.Filter.DateFrom?.ToString("yyyy-MM-dd"),
+                                 DateTo = Model.Filter.DateTo?.ToString("yyyy-MM-dd"),
+                                 Page = Model.Filter.Page,
+                                 PageSize = Model.Filter.PageSize,
+                                 LoadOzonWarehouses=Model.Filter.LoadOzonWarehouses
+                             })" class="text-dark text-decoration-none">
+                        Остаток @GetSortIcon("amount")
+                    </a>
+                </div>
+            </div>
+        </th>
+        @if (Model.Filter.LoadOzonWarehouses)
+        {
+            <th>
+                <div class="row mb-2">
+                    <div class="col-6">
+                            Склад Ozon
+                    </div>
+                    <div class="col-6">
+                            Остаток
+                    </div>
+                </div>
+            </th>
+        }
+        <th>
+            <!-- Первый ряд: Время | Учетная цена | Пользователь -->
+            <div class="row mb-2">
+                <div class="col-4">
+                    <a href="@Url.Action("Index", new { SortColumn = "timestampx", SortDirection = GetSortDirection("timestampx"), ProductId = Model.Filter.ProductId, Article = Model.Filter.Article, PreviewText = Model.Filter.PreviewText, Active = Model.Filter.Active, Available = Model.Filter.Available, Supplier = Model.Filter.Supplier, QuantityFrom = Model.Filter.QuantityFrom, QuantityTo = Model.Filter.QuantityTo, DateFrom = Model.Filter.DateFrom?.ToString("yyyy-MM-dd"), DateTo = Model.Filter.DateTo?.ToString("yyyy-MM-dd"), PriceValueFrom = Model.Filter.PriceValueFrom, PriceValueTo = Model.Filter.PriceValueTo, RegistrationPriceFrom = Model.Filter.RegistrationPriceFrom, RegistrationPriceTo = Model.Filter.RegistrationPriceTo, Page = Model.Filter.Page, PageSize = Model.Filter.PageSize })"
+                       class="text-dark text-decoration-none">
+                        Время @GetSortIcon("timestampx")
+                    </a>
+                </div>
+                <div class="col-4">
+                    <a href="@Url.Action("Index", new { SortColumn = "pricevalue", SortDirection = GetSortDirection("pricevalue"), ProductId = Model.Filter.ProductId, Article = Model.Filter.Article, PreviewText = Model.Filter.PreviewText, Active = Model.Filter.Active, Available = Model.Filter.Available, Supplier = Model.Filter.Supplier, QuantityFrom = Model.Filter.QuantityFrom, QuantityTo = Model.Filter.QuantityTo, DateFrom = Model.Filter.DateFrom?.ToString("yyyy-MM-dd"), DateTo = Model.Filter.DateTo?.ToString("yyyy-MM-dd"), PriceValueFrom = Model.Filter.PriceValueFrom, PriceValueTo = Model.Filter.PriceValueTo, RegistrationPriceFrom = Model.Filter.RegistrationPriceFrom, RegistrationPriceTo = Model.Filter.RegistrationPriceTo, Page = Model.Filter.Page, PageSize = Model.Filter.PageSize })"
+                       class="text-dark text-decoration-none">
+                        Учетная цена @GetSortIcon("pricevalue")
+                    </a>
+                </div>
+                <div class="col-4">
+                    Пользователь
+                </div>
+            </div>
+
+            <!-- Второй ряд: Дата обновления | Себестоимость | пусто убрали -->
+            <div class="row">
+                <div class="col-4">
+                    Дата обновления
+                </div>
+                <div class="col-4">
+                    <a href="@Url.Action("Index", new { SortColumn = "registrationprice", SortDirection = GetSortDirection("registrationprice"), ProductId = Model.Filter.ProductId, Article = Model.Filter.Article, PreviewText = Model.Filter.PreviewText, Active = Model.Filter.Active, Available = Model.Filter.Available, Supplier = Model.Filter.Supplier, QuantityFrom = Model.Filter.QuantityFrom, QuantityTo = Model.Filter.QuantityTo, DateFrom = Model.Filter.DateFrom?.ToString("yyyy-MM-dd"), DateTo = Model.Filter.DateTo?.ToString("yyyy-MM-dd"), PriceValueFrom = Model.Filter.PriceValueFrom, PriceValueTo = Model.Filter.PriceValueTo, RegistrationPriceFrom = Model.Filter.RegistrationPriceFrom, RegistrationPriceTo = Model.Filter.RegistrationPriceTo, Page = Model.Filter.Page, PageSize = Model.Filter.PageSize })"
+                       class="text-dark text-decoration-none">
+                        Себестоимость @GetSortIcon("registrationprice")
+                    </a>
+                </div>
+                <div class="col-4">
+                    <!-- пустой блок убран -->
+                </div>
+            </div>
+        </th>
+        </thead>
+        <tbody>
+        <tr>
+            <form method="get" class="row g-3 mb-4" id="filterForm">
+                <div class="form-check mt-2">
+                    <input type="checkbox" class="form-check-input" id="LoadOzonWarehouses"
+                           name="LoadOzonWarehouses"
+                           value="true"
+                           @(Model.Filter.LoadOzonWarehouses ? "checked" : "") 
+                           onchange="this.form.submit()" />
+                    <label class="form-check-label" for="LoadOzonWarehouses">
+                        Подгружать склады Ozon
+                    </label>
+                </div>
+                <th>
+                    <div class="row mb-2">
+                        <div class="col-4">
+                            <input type="text" name="Article" value="@Model.Filter.Article" class="form-control form-control-sm mt-1" placeholder="Артикул" onkeypress="handleEnter(event)"/>
+                        </div>
+                        <div class="col-4">
+                            <input type="text" name="ProductId" value="@Model.Filter.ProductId" class="form-control form-control-sm mt-1" placeholder="ID" onkeypress="handleEnter(event)"/>
+                        </div>
+                        <div class="col-4">
+                            <input type="text" name="Supplier" value="@Model.Filter.Supplier" class="form-control form-control-sm mt-1" placeholder="Поставщик" onkeypress="handleEnter(event)"/>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <input type="text" name="PreviewText" value="@Model.Filter.PreviewText" class="form-control form-control-sm mt-1" placeholder="Название" onkeypress="handleEnter(event)"/>
+                        </div>
+                    </div>
+                </th>
+                <th>
+                    <div class="row mb-2">
+                        <div class="col-6">
+                            <select name="Active" class="form-select form-select-sm mt-1" onchange="this.form.submit()">
+                                <option value="">Все</option>
+                                <option value="Y" selected="@(Model.Filter.Active == "Y")">Активные</option>
+                                <option value="N" selected="@(Model.Filter.Active == "N")">Неактивные</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <select name="Available" class="form-select form-select-sm mt-1" onchange="this.form.submit()">
+                                <option value="">Все</option>
+                                <option value="Y" selected="@(Model.Filter.Available == "Y")">Доступен</option>
+                                <option value="N" selected="@(Model.Filter.Available == "N")">Недоступен</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-6">
+                            <input type="number" name="QuantityFrom" value="@Model.Filter.QuantityFrom" class="form-control form-control-sm mt-1" placeholder="Кол-во от" onkeypress="handleEnter(event)"/>
+                        </div>
+                        <div class="col-6">
+                            <input type="number" name="QuantityTo" value="@Model.Filter.QuantityTo" class="form-control form-control-sm mt-1" placeholder="Кол-во до" onkeypress="handleEnter(event)"/>
+                        </div>
+                    </div>
+                </th>
+                <th>
+                    <div class="mb-2">
+                        <select name="StoreTitle" class="form-control form-control-sm mt-1" onchange="this.form.submit()">
+                            <option value="">Все склады</option>
+                            @foreach (var store in Model.ActiveStores)
+                            {
+                                <option value="@store" selected="@(Model.Filter.StoreTitle == store ? "selected" : null)">
+                                    @store
+                                </option>
+                            }
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-6">
+                            <input type="number" name="AmountFrom" value="@Model.Filter.AmountFrom"
+                                   class="form-control form-control-sm mt-1"
+                                   placeholder="От"
+                                   onkeypress="handleEnter(event)"/>
+                        </div>
+                        <div class="col-6">
+                            <input type="number" name="AmountTo" value="@Model.Filter.AmountTo"
+                                   class="form-control form-control-sm mt-1"
+                                   placeholder="До"
+                                   onkeypress="handleEnter(event)"/>
+                        </div>
+                    </div>
+                </th>
+                @if (Model.Filter.LoadOzonWarehouses)
+                {
+                    <th>
+                        <div class="mb-2">
+                            <input type="text" name="OzonStoreTitle" value="@Model.Filter.OzonStoreTitle"
+                                   class="form-control form-control-sm mt-1"
+                                   placeholder="Склад Ozon"
+                                   onkeypress="handleEnter(event)"/>
+                        </div>
+                        <div class="row">
+                            <div class="col-6">
+                                <input type="number" name="OzonAmountFrom" value="@Model.Filter.OzonAmountFrom"
+                                       class="form-control form-control-sm mt-1"
+                                       placeholder="Кол-во от"
+                                       onkeypress="handleEnter(event)"/>
+                            </div>
+                            <div class="col-6">
+                                <input type="number" name="OzonAmountTo" value="@Model.Filter.OzonAmountTo"
+                                       class="form-control form-control-sm mt-1"
+                                       placeholder="Кол-во до"
+                                       onkeypress="handleEnter(event)"/>
+                            </div>
+                        </div>
+                    </th>
+                }
+                <th>
+                    <div class="row mb-2">
+                        <!-- Фильтр по дате -->
+                        <div class="col-4">
+                            <input type="date" name="DateFrom" value="@Model.Filter.DateFrom?.ToString("yyyy-MM-dd")"
+                                   class="form-control form-control-sm mt-1" placeholder="Дата от"
+                                   onkeypress="handleEnter(event)"/>
+                            <input type="date" name="DateTo" value="@Model.Filter.DateTo?.ToString("yyyy-MM-dd")"
+                                   class="form-control form-control-sm mt-1" placeholder="Дата до"
+                                   onkeypress="handleEnter(event)"/>
+                        </div>
+
+                        <!-- Фильтр по цене и себестоимости -->
+                        <div class="col-4">
+                            <div class="d-flex gap-2 mt-1">
+                                <input type="number" step="0.01" name="PriceValueFrom" value="@Model.Filter.PriceValueFrom"
+                                       class="form-control form-control-sm" placeholder="Цена от"
+                                       onkeypress="handleEnter(event)"/>
+                                <input type="number" step="0.01" name="PriceValueTo" value="@Model.Filter.PriceValueTo"
+                                       class="form-control form-control-sm" placeholder="Цена до"
+                                       onkeypress="handleEnter(event)"/>
+                            </div>
+
+                            <div class="d-flex gap-2 mt-1">
+                                <input type="number" step="0.01" name="RegistrationPriceFrom" value="@Model.Filter.RegistrationPriceFrom"
+                                       class="form-control form-control-sm" placeholder="Себест. от"
+                                       onkeypress="handleEnter(event)"/>
+                                <input type="number" step="0.01" name="RegistrationPriceTo" value="@Model.Filter.RegistrationPriceTo"
+                                       class="form-control form-control-sm" placeholder="Себест. до"
+                                       onkeypress="handleEnter(event)"/>
+                            </div>
+                        </div>
+
+                        <!-- Фильтр по пользователю -->
+                        <div class="col-4">
+
+                        </div>
+                    </div>
+                </th>
+            </form>
+        </tr>
+        @foreach (var item in Model.Result.Items)
+        {
+            <tr>
+                <td>
+                    <div class="row mb-2">
+                        <div class="col-4">
+                            <a href="javascript:void(0);"
+                               class="show-bitrix-data text-decoration-underline text-primary"
+                               data-article="@item.Article"
+                               data-article-with-key="@item.ArticleWithKey"
+                               data-productid="@item.ProductId"
+                               data-supplier="@item.Supplier"
+                               data-previewtext="@item.PreviewText"
+                               data-articleblock="@($"{item.Article}={item.MarketPrefix}")">
+                                @item.Article=@item.MarketPrefix
+                            </a>
+                        </div>
+                        <div class="col-4">
+                            @item.ProductId
+                        </div>
+                        <div class="col-4">
+                            @item.Supplier
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            @item.PreviewText
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <div class="row mb-2">
+                        <div class="col-6" data-active-id="@item.ProductId" style="cursor: pointer;">
+                            @item.ActiveDisplay
+                        </div>
+                        <div class="col-6">
+                            @item.AvailableDisplay
+                        </div>
+                    </div>
+                    @item.Quantity
+                </td>
+                <td>
+                    @if (item.Stores != null && item.Stores.Any())
+                    {
+                        <div class="mb-0">
+                            @foreach (var ws in item.Stores)
+                            {
+                                <div class="row">
+                                    <div class="col-6">
+                                        @ws.Title
+                                    </div>
+                                    <div class="col-6">
+                                        @ws.Amount
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <span class="text-muted">нет данных</span>
+                    }
+                </td>
+                @if (Model.Filter.LoadOzonWarehouses)
+                {
+                    <td>
+                        @if (item.OzonStores != null && item.OzonStores.Any())
+                        {
+                            <div class="mb-0">
+                                @foreach (var ws in item.OzonStores)
+                                {
+                                    <div class="row">
+                                        <div class="col-4">
+                                            @ws.Title
+                                        </div>
+                                        <div class="col-4 text-end">
+                                            @ws.Amount
+                                        </div>
+                                        <div class="col-4">
+                                            <small class="text-muted">@ws.ClientName</small>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <span class="text-muted">нет данных</span>
+                        }
+                    </td>
+                }
+                <td>
+                    <!-- первый ряд: Время | Учетная цена | Пользователь -->
+                    <div class="row">
+                        <div class="col-4">
+                            @FormatDateTime(item.TimestampX)
+                        </div>
+                        <div class="col-4 text-end">
+                            <span>
+                                @(Math.Round(item.Price ?? 0, 0)
+                                    .ToString("N0", System.Globalization.CultureInfo.InvariantCulture)
+                                    .Replace(",", " "))
+                            </span>
+                        </div>
+                        <div class="col-4">
+                            @if (item.PriceHistory != null)
+                            {
+                                @item.PriceHistory.Author
+                            }
+                        </div>
+                    </div>
+
+                    <!-- второй ряд: Дата обновления | Себестоимость | пусто убрали -->
+                    <div class="row mb-2">
+                        <div class="col-4">
+                            @if (item.PriceHistory != null)
+                            {
+                                @FormatDateTime(item.PriceHistory.CreateDateTime)
+                            }
+                        </div>
+                        <div class="col-4 text-end">
+                            @if (item.PriceHistory != null)
+                            {
+                                <span>@item.PriceHistory.PriceValue.ToString("N0").Replace(",", " ")</span>
+                            }
+                        </div>
+                        <div class="col-4">
+                            <!-- пустой блок убран -->
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+    
+    @functions {
+        string BuildPageUrl(int page)
+        {
+            var query = new Dictionary<string, object?>
+            {
+                ["Page"] = page,
+                ["PageSize"] = Model.Filter.PageSize,
+                ["ProductId"] = Model.Filter.ProductId,
+                ["Article"] = Model.Filter.Article,
+                ["PreviewText"] = Model.Filter.PreviewText,
+                ["Active"] = Model.Filter.Active,
+                ["Available"] = Model.Filter.Available,
+                ["Supplier"] = Model.Filter.Supplier,
+                ["QuantityFrom"] = Model.Filter.QuantityFrom,
+                ["QuantityTo"] = Model.Filter.QuantityTo,
+                ["DateFrom"] = Model.Filter.DateFrom?.ToString("yyyy-MM-dd"),
+                ["DateTo"] = Model.Filter.DateTo?.ToString("yyyy-MM-dd"),
+                ["PriceValueFrom"] = Model.Filter.PriceValueFrom,
+                ["PriceValueTo"] = Model.Filter.PriceValueTo,
+                ["RegistrationPriceFrom"] = Model.Filter.RegistrationPriceFrom,
+                ["RegistrationPriceTo"] = Model.Filter.RegistrationPriceTo,
+                ["StoreId"] = Model.Filter.StoreId,
+                ["StoreTitle"] = Model.Filter.StoreTitle,
+                ["AmountFrom"] = Model.Filter.AmountFrom,
+                ["AmountTo"] = Model.Filter.AmountTo,
+                ["SortColumn"] = Model.Filter.SortColumn,
+                ["SortDirection"] = Model.Filter.SortDirection,
+                ["LoadOzonWarehouses"] = Model.Filter.LoadOzonWarehouses ? "true" : "false",
+                ["OzonStoreTitle"] = Model.Filter.OzonStoreTitle,
+                ["OzonAmountFrom"] = Model.Filter.OzonAmountFrom,
+                ["OzonAmountTo"] = Model.Filter.OzonAmountTo
+            };
+
+            var queryString = string.Join("&", query
+                .Where(kv => kv.Value != null)
+                .Select(kv => $"{kv.Key}={Uri.EscapeDataString(kv.Value.ToString()!)}"));
+
+            return Url.Action("Index") + "?" + queryString;
+        }
+    }
+    
+    @{
+        int totalPages = (int)Math.Ceiling((double)Model.Result.TotalCount / Model.Result.PageSize);
+        int currentPage = Model.Result.Page;
+    }
+
+    <div class="pagination-wrapper d-flex justify-content-center">
+        <div class="pagination-controls">
+            @if (totalPages > 15)
+            {
+                int start, end;
+
+                if (currentPage <= 8)
+                {
+                    start = 1;
+                    end = 15;
+                }
+                else if (currentPage >= totalPages - 7)
+                {
+                    start = totalPages - 14;
+                    end = totalPages;
+                }
+                else
+                {
+                    start = currentPage - 6;
+                    end = currentPage + 8;
+                }
+
+                if (start > 1)
+                {
+                    <a href="@BuildPageUrl(1)" class="btn btn-primary">1</a>
+                    <span>...</span>
+                }
+
+                for (int i = start; i <= end; i++)
+                {
+                    <a href="@BuildPageUrl(i)" class="btn btn-primary @(i == currentPage ? "active" : "")">@i</a>
+                }
+
+                if (end < totalPages)
+                {
+                    <span>...</span>
+                    <a href="@BuildPageUrl(totalPages)" class="btn btn-primary">@totalPages</a>
+                }
+            }
+            else
+            {
+                for (int i = 1; i <= totalPages; i++)
+                {
+                    <a href="@BuildPageUrl(i)" class="btn btn-primary @(i == currentPage ? "active" : "")">@i</a>
+                }
+            }
+        </div>
+    </div>
+
+
+</div>
+
+<script>
+    window.suppliersData = @Html.Raw(Json.Serialize(Model.Suppliers));
+    window.warehouseMappings = [
+        @foreach (var mapping in Model.WarehousesmMappings)
+        {
+        <text>{ Id: @mapping.Id, 
+                BitrixWarehouseName: "@mapping.BitrixWarehouseName", 
+                OzonWarehouseName: "@mapping.OzonWarehouseName",
+                OzonClientName: "@mapping.OzonClient.Name" },</text>
+        }
+    ];
+    const rates = {
+        'RUB': 1,
+        'USD': parseFloat('@Model.RateUSD'.replace(',', '.')),
+        'EUR': parseFloat('@Model.RateEUR'.replace(',', '.')),
+        'BYN': parseFloat('@Model.RateBYN'.replace(',', '.'))
+    };
+    const ozonClientHistory = {};
+    
+    
+    function handleEnter(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            document.getElementById('filterForm').submit();
+        }
+    }
+
+    function fetchOzonData(article) {
+        return $.ajax({
+            url: '@Url.Action("GetOzonPrices", "BitrixStock")', // путь к вашему контроллеру
+            type: "GET",
+            data: { article: article }
+        }).catch(error => {
+            if (error.status === 500) {
+                console.error('Ошибка 500 при получении данных из Ozon:', error.responseText);
+            }
+            return null;
+        });
+    }
+
+    function GetTradesoftDataForBitrix(article, producer) {
+        return $.ajax({
+            url: '@Url.Action("GetTradesoftDataForBitrix", "Tradesoft")',
+            type: "GET",
+            data: { article: article, producer: producer }
+        }).catch(error => {
+            if (error.status === 500 || error.status === 404) {
+                console.error('Ошибка 500 при получении данных от Tradesoft:', error);
+            }
+            return [];
+        });
+    }
+
+    function GetZzapDataForBitrix(article, producer, regionCode = 1) {
+        return $.ajax({
+            url: '@Url.Action("GetZzapDataForBitrix", "Tradesoft")',
+            type: "GET",
+            data: { article: article, producer: producer, regionCode: regionCode }
+        }).catch(error => {
+            if (error.status === 500 || error.status === 404) {
+                console.error('Ошибка 500 при получении данных от Zzap:', error);
+            }
+            return [];
+        });
+    }
+
+    function GetAbcpDataForBitrix(article, producer) {
+        return $.ajax({
+            url: '@Url.Action("GetAbcpDataForBitrix", "Tradesoft")',
+            type: "GET",
+            data: { article: article, producer: producer }
+        }).catch(error => {
+            if (error.status === 500) {
+                console.error('Ошибка 500 при получении данных от Abcp:', error);
+            }
+            return [];
+        });
+    }
+
+    function GetAvdDataForBitrix(orderId) {
+        return $.ajax({
+            url: '@Url.Action("GetAvdDataForBitrix", "Tradesoft")',
+            type: "GET",
+            data: { orderId: orderId }
+        }).catch(error => {
+            if (error.status === 500 || error.status === 404) {
+                console.error('Ошибка 500 при получении данных от Avd:', error);
+            }
+            return [];
+        });
+    }
+
+    function GetCombinedDataForBitrix(article, producer, regionCode = 1, orderId = null) {
+        let deferred = $.Deferred();
+
+        $.when(
+            GetTradesoftDataForBitrix(article, producer),
+            GetZzapDataForBitrix(article, producer, regionCode),
+            GetAbcpDataForBitrix(article, producer),
+            orderId ? GetAvdDataForBitrix(orderId) : $.Deferred().resolve([]) 
+        ).done(function (tradesoftItems, zzapItems, abcpItems, avdItems) {
+            try {
+                let tItems = Array.isArray(tradesoftItems?.[0]) ? tradesoftItems[0] : tradesoftItems || [];
+                let zItems = Array.isArray(zzapItems?.[0]) ? zzapItems[0] : zzapItems || [];
+                let aItems = Array.isArray(abcpItems?.[0]) ? abcpItems[0] : abcpItems || [];
+                let vItems = Array.isArray(avdItems?.[0]) ? avdItems[0] : avdItems || [];
+
+                deferred.resolve([...tItems, ...zItems, ...aItems, ...vItems]);
+            } catch (e) {
+                console.error("Ошибка при объединении данных:", e);
+                deferred.resolve([]);
+            }
+        }).fail(function (error1, error2, error3, error4) {
+            console.error("Не удалось загрузить данные от одного или нескольких источников");
+
+            let tItems = (error1 && (error1.status === 500 || error1.status === 404)) ? [] : (error1 || []);
+            let zItems = (error2 && (error2.status === 500 || error2.status === 404)) ? [] : (error2 || []);
+            let aItems = (error3 && (error3.status === 500 || error3.status === 404)) ? [] : (error3 || []);
+            let vItems = (error4 && (error4.status === 500 || error4.status === 404)) ? [] : (error4 || []);
+
+            if (tItems.length > 0 || zItems.length > 0 || aItems.length > 0 || vItems.length > 0) {
+                deferred.resolve([...tItems, ...zItems, ...aItems, ...vItems]);
+            } else {
+                deferred.reject(error1 || error2 || error3 || error4);
+            }
+        });
+
+        return deferred.promise();
+    }
+
+
+    function fetchBitrixData(orderArticle) {
+        return $.ajax({
+            url: '@Url.Action("GetBitrixData", "Bitrix")',
+            type: "GET",
+            data: { article: orderArticle }
+        }).catch(error => {
+            if (error.status === 500) {
+                console.error('Ошибка 500 при получении данных из Bitrix:', error.responseText);
+            }
+            return null;
+        });
+    }
+
+    function renderBitrixTable(data) {
+        if (!data || data.length === 0) {
+            return "<p class='text-muted'>Нет данных</p>";
+        }
+
+        let html = `
+    <strong style="color: #DC143C;">Данные Bitrix</strong>
+    <table class="table table-bordered table-striped" style="table-layout: fixed; width: 100%;">
+        <colgroup>
+            <col style="width: 12%">
+            <col style="width: 12%">
+            <col style="width: 12%">
+            <col style="width: 24%">
+            <col style="width: 20%">
+            <col style="width: 10%">
+            <col style="width: 10%">
+            <col style="width: 10%">
+        </colgroup>
+        <thead class="table-light">
+            <tr>
+                <th></th>
+                <th>Цена</th>
+                <th class="text-end">Значение</th>
+                <th></th>
+                <th>Склад</th>
+                <th class="text-end">Всего</th>
+                <th></th>
+                <th>Валюта</th>
+            </tr>
+        </thead>
+        <tbody>
+`;
+
+        data.forEach(item => {
+            if (item.group === "Учетная цена") {
+                document.querySelector('input[name="RegistrationPrice"]').value = item.price;
+            }
+            if (item.stores && Object.keys(item.stores).length) {
+                Object.entries(item.stores).forEach(([name, amount], index) => {
+                    html += `
+        <tr>
+            ${index === 0 ? `
+            <td></td>
+            <td>${item.group}</td>
+            <td class="text-end"  data-price-name=">${item.group}" data-price-value=">${item.price}">${item.price ? formatNumber(item.price) : ""}</td>
+            <td></td>` : `<td colspan="5"></td>`}
+            <td>
+                <a href="#" 
+                   class="bitrix-stock"
+                   data-amount="${amount}" 
+                   data-name="${name}">
+                    ${name}
+                </a>
+            </td>
+            <td class="text-end">${amount}</td>
+            <td></td>
+            <td>${item.currency}</td>
+        </tr>
+        `;
+                });
+            } else {
+                html += `
+    <tr>
+        <td></td>
+        <td>${item.group}</td>
+        <td class="text-end" data-price-name=">${item.group}" data-price-value=">${item.price}">${item.price ? formatNumber(item.price) : ""}</td>
+        <td></td>
+        <td></td>
+        <td colspan="2">Нет данных</td>
+        <td></td>
+        <td>${item.currency}</td>
+    </tr>
+    `;
+            }
+        });
+
+        html += "</tbody></table>";
+        return html;
+    }
+
+    function getOzonHistory() {
+        try {
+            return JSON.parse(localStorage.getItem("ozonClientHistory")) || {};
+        } catch {
+            return {};
+        }
+    }
+    function saveOzonHistory(data) {
+        localStorage.setItem("ozonClientHistory", JSON.stringify(data));
+    }
+
+    function renderOzonTable(data) {
+        if (!data || data.length === 0) {
+            return "<p class='text-muted'>Нет данных Ozon</p>";
+        }
+
+        let history = getOzonHistory(); 
+        
+        let html = `
+        <strong style="color: #DC143C; display: inline-flex; align-items: center; gap: 0.5rem;">
+            Данные Ozon 
+            <button type="button" class="btn btn-sm btn-link p-0 refreshOzon" data-article="${data[0].Article}" title="Обновить" style="outline: none; border: none;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-clockwise text-primary" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/>
+                    <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/>
+                </svg>
+            </button>
+        </strong>
+        <table class="table table-bordered table-striped" style="table-layout: fixed; width: 100%;">
+            <colgroup>
+                <col style="width: 12%">
+                <col style="width: 12%">
+                <col style="width: 12%">
+                <col style="width: 16%">
+                <col style="width: 8%">
+                <col style="width: 20%">
+                <col style="width: 10%">
+                <col style="width: 10%">
+                <col style="width: 10%">
+            </colgroup>
+            <tr>
+                <th>Клиент</th>
+                <th>Цена</th>
+                <th>Значение</th>
+                <th>Комиссия</th>
+                <th>Значение</th>
+                <th>Склад</th>
+                <th>Всего</th>
+                <th>Резерв</th>
+                <th>Валюта</th>
+            </tr>
+        </thead>
+        <tbody>
+        `;
+
+        data.forEach((entry, clientIndex) => {
+            const item = entry.Item || {};
+            const clientName = entry.Client ?? "-";
+            const currency = item.price?.currency_code ?? "-";
+            const clientId = `client-${clientIndex}`;
+            const article = data[0].Article;
+            const storageKey = `${article}_${clientId}`;
+            const priceValue = item.price?.price;
+
+            const currentPrice = Number(item.price?.true_price ?? 0);
+            const currentIndex = Number(item.price_indexes?.ozon_index_data?.price_index_value ?? 0);
+
+            let oldIndexNote = "";
+            if (history[storageKey]) {
+                const prev = history[storageKey];
+                if (prev.price !== currentPrice && prev.index === currentIndex) {
+                    oldIndexNote = `<span style="color: gray; font-size: 0.85em;">(${prev.index})</span>`;
+                }
+            }
+            
+            history[storageKey] = { price: currentPrice, index: currentIndex };
+
+            // Цены с классами для раскраски
+            const priceTypes = [
+                { key: "true_price", name: "Цена с Ozon Картой", value: item.price?.true_price ?? "-" },
+                { key: "price", name: "Цена (со скидками)", value: item.price?.price ?? "-" },
+                { key: "old_price", name: "Старая цена", value: item.price?.old_price ?? "-" },
+                { key: "marketing_price", name: "Цена с акциями Ozon", value: item.price?.marketing_price ?? "-" },
+                { key: "marketing_seller_price", name: "Цена с акциями продавца", value: item.price?.marketing_seller_price ?? "-" },
+                { key: "min_price", name: "Мин. цена после скидок", value: item.price?.min_price ?? "-" },
+                { key: "net_price", name: "Себестоимость", value: item.price?.net_price ?? "-" },
+                { key: "retail_price", name: "Цена поставщика", value: item.price?.retail_price ?? "-" },
+                { key: "vat", name: "Ставка НДС", value: item.price?.vat ?? "-" },
+                { key: "ozon_reward", name: "Вознаграждение Ozon", value: item.price?.ozon_reward ?? "-" },
+                {
+                    key: "max_commission",
+                    name: "Комиссия макс.",
+                    value: item.price?.max_commission ?? "-",
+                    nameCssClass: "text-success",
+                    valueCssClass: "text-success"
+                },
+                {
+                    key: "min_commission",
+                    name: "Комиссия мин.",
+                    value: item.price?.min_commission ?? "-",
+                    nameCssClass: "text-danger",
+                    valueCssClass: "text-danger"
+                },
+                {
+                    key: "price_range_max",
+                    name: "Прибыль макс.",
+                    value: "-",
+                    nameCssClass: "text-success",
+                    valueCssClass: "text-success"
+                },
+                {
+                    key: "price_range_min",
+                    name: "Прибыль мин.",
+                    value: "-",
+                    nameCssClass: "text-danger",
+                    valueCssClass: "text-danger"
+                },
+
+                { key: "currency_code", name: "Валюта", value: item.price?.currency_code ?? "-" },
+                { key: "auto_action_enabled", name: "Автоприменение акций", value: item.price?.auto_action_enabled ? "Да" : "Нет" },
+                { key: "auto_add_to_ozon_actions_list_enabled", name: "Автодобавление в акции", value: item.price?.auto_add_to_ozon_actions_list_enabled ? "Да" : "Нет" }
+            ];
+
+
+            const c = item.commissions || {};
+            const indx = item.price_indexes || {};
+            const commissionTypes = [
+                { key: "ozon_reward", name: "Комиссия за продажу (FBS)", value: item.price?.ozon_reward ?? "-" },
+                { key: "sales_percent_fbs", name: "Процент комиссии за продажу (FBS)", value: c.sales_percent_fbs ?? "-" },
+                { key: "acquiring", name: "Эквайринг", value: item.acquiring ? Number(item.acquiring).toFixed(2) : "-" },
+                { key: "fbs_first_mile_max", name: "Максимальная комиссия за обработку отправления (FBS)", value: c.fbs_first_mile_max_amount ?? "-" },
+                { key: "fbs_first_mile_min", name: "Минимальная комиссия за обработку отправления (FBS)", value: c.fbs_first_mile_min_amount ?? "-" },
+                { key: "fbs_direct_flow_trans_max", name: "Магистраль до (FBS)", value: c.fbs_direct_flow_trans_max_amount ?? "-" },
+                { key: "fbs_deliv_to_customer", name: "Последняя миля (FBS)", value: c.fbs_deliv_to_customer_amount ?? "-" },
+                { key: "fbs_return_flow", name: "Комиссия за возврат и отмену, обработка отправления (FBS)", value: c.fbs_return_flow_amount ?? "-" },
+                { key: "fbs_direct_flow_trans_min", name: "Магистраль от (FBS)", value: c.fbs_direct_flow_trans_min_amount ?? "-" },
+                {
+                    key: "price_index",
+                    name: "Индекс цены",
+                    value: indx.color_index ?? "WITHOUT_INDEX",
+                    description: getColorIndexDescription(indx.color_index),
+                    color: getColorIndexColor(indx.color_index)
+                },
+                {
+                    key: "ozon_min_price",
+                    name: "Мин. цена у конкурентов на Ozon",
+                    value: indx.ozon_index_data?.min_price ?? "-"
+                },
+                {
+                    key: "ozon_index_value",
+                    name: "Индекс цены на Ozon",
+                    value: indx.ozon_index_data?.price_index_value ?? "-"
+                },
+
+                {
+                    key: "external_min_price",
+                    name: "Мин. цена у конкурентов на другой площадке",
+                    value: indx.external_index_data?.min_price ?? "-"
+                },
+                {
+                    key: "external_index_value",
+                    name: "Индекс цены на другой площадке",
+                    value: indx.external_index_data?.price_index_value ?? "-"
+                },
+
+                {
+                    key: "self_marketplaces_min_price",
+                    name: "Мин. цена вашего товара на других площадках",
+                    value: indx.self_marketplaces_index_data?.min_price ?? "-"
+                },
+                {
+                    key: "self_marketplaces_index_value",
+                    name: "Индекс цены на ваших площадках",
+                    value: indx.self_marketplaces_index_data?.price_index_value ?? "-"
+                },
+            ];
+
+            let warehouseTypes = [];
+            if (entry.WarehouseInfo?.result && entry.WarehouseInfo.result.length > 0) {
+                warehouseTypes = entry.WarehouseInfo.result
+                    .map(w => {
+                        const present = w.present ?? 0;
+                        const reserved = w.reserved ?? 0;
+                        const hasConnection = w.hasBitrixConnection ?? false;
+                        return {
+                            key: w.warehouse_id ?? "",
+                            name: w.warehouse_name ?? "-",
+                            total: present,
+                            reserved: reserved,
+                            offer_id: item.offer_id,
+                            product_id: item.product_id,
+                            client: entry.Client,
+                            hasBitrixConnection: hasConnection
+                        };
+                    })
+                    .sort((a, b) => {
+                        const aHasStock = a.total > 0;
+                        const bHasStock = b.total > 0;
+                        const aHasConnection = a.hasBitrixConnection;
+                        const bHasConnection = b.hasBitrixConnection;
+
+                        // Сначала склады с наличием и связью с Bitrix
+                        if (aHasStock && aHasConnection && (!bHasStock || !bHasConnection)) return -1;
+                        if (bHasStock && bHasConnection && (!aHasStock || !aHasConnection)) return 1;
+
+                        // Затем склады с наличием
+                        if (aHasStock && !bHasStock) return -1;
+                        if (!aHasStock && bHasStock) return 1;
+
+                        // Затем склады со связью с Bitrix
+                        if (aHasConnection && !bHasConnection) return -1;
+                        if (!aHasConnection && bHasConnection) return 1;
+
+                        return a.name.localeCompare(b.name);
+                    });
+            }
+            
+            const maxRows = Math.max(priceTypes.length, commissionTypes.length, warehouseTypes.length);
+
+            for (let i = 0; i < maxRows; i++) {
+                const price = priceTypes[i];
+
+                const commission = commissionTypes[i];
+                let commissionValue = commission?.value ?? "";
+
+                if (commission?.key === "price_index" && commission.color) {
+                    commissionValue = `<span style="color: ${commission.color}; font-weight: bold;" 
+            title="${commission.description}">
+            ${commission.description}
+        </span>`;
+                }
+
+                const warehouse = warehouseTypes[i];
+                const hasConnection = warehouse?.hasBitrixConnection ?? false;
+
+                const priceNameClass = price?.nameCssClass ? `price-name ${price.nameCssClass}` : 'price-name';
+                const priceCellClass = price?.valueCssClass ? `price-cell text-end ${price.valueCssClass}` : 'price-cell text-end';
+
+                const warehouseNameClass = hasConnection ? 'warehouse-name fw-bold text-success' : 'warehouse-name';
+                const warehouseTotalClass = hasConnection ? 'warehouse-total text-end fw-bold text-success' : 'warehouse-total text-end';
+                const warehouseReservedClass = hasConnection ? 'warehouse-reserved text-end fw-bold text-success' : 'warehouse-reserved text-end';
+                
+                const connectionIcon = hasConnection ?
+                    '<i class="fas fa-link ms-1 text-success" title="Связан с Bitrix"></i>' :
+                    '';
+                html += `
+                    <tr data-row="${i}" data-client="${clientId}">
+                        ${i === 0 ? `
+                        <td rowspan="${maxRows}" class="client-cell" data-type="client" data-client-id="${clientId}" title="Клиент">
+                            ${clientName}
+                            <br>
+                            <a href="#"
+                               class="update_price text-decoration-none"
+                               data-offer-id="${warehouse?.offer_id ?? ""}"
+                               data-product-id="${warehouse?.product_id ?? ""}"
+                               data-client="${clientName}"
+                               data-constant-index="0.91"
+                               data-percent="2">
+                                Обновить цены 
+                                <small class="text-muted">
+                                    (<span class="constant-index" contenteditable="true">0.91</span> / 
+                                     <span class="percent" contenteditable="true">2</span>%)
+                                </small>
+                            </a>
+                            <br>
+                            <a href="#"
+                               class="set_price text-decoration-none"
+                               data-offer-id="${warehouse?.offer_id ?? ""}"
+                               data-product-id="${warehouse?.product_id ?? ""}"
+                               data-client="${clientName}"
+                               data-price-value="${priceValue}">
+                                Установить цену
+                            </a>
+                        </td>
+                        ` : ""}
+                        
+                        <td class="${priceNameClass}" 
+                            data-type="price-name" 
+                            data-key="${price?.key ?? ""}" 
+                            data-index="${i}" 
+                            title="${price?.name ?? ""}"
+                            style="${price?.key === 'true_price' ? 'color: orange !important;' : ''}">
+                            ${price?.name ?? ""}
+                        </td>
+                        
+                        <td class="${priceCellClass}"  
+                            data-type="price" 
+                            data-key="${price?.key ?? ""}" 
+                            data-index="${i}" 
+                            data-value="${price?.value ?? ""}" 
+                            title="${price?.value ?? ""}"
+                            style="${price?.key === 'true_price' ? 'color: orange !important;' : ''}">
+                            ${
+                                            price?.key === "price_range_min"
+                                                ? `<span class="price-range-min" data-index="${i}">-</span>`
+                                                : price?.key === "price_range_max"
+                                                    ? `<span class="price-range-max" data-index="${i}">-</span>`
+                                                    : (price?.value ? formatNumber(price.value) : "")
+                                        }
+                        </td>
+                   
+                        <td class="commission-name" 
+                            data-type="commission-name" 
+                            data-key="${commission?.key ?? ""}" 
+                            data-index="${i}" 
+                            title="${commission?.name ?? ""}">
+                            ${commission?.name ?? ""}
+                        </td>
+                        <td class="commission-cell text-end" 
+                            style="${commission?.key === 'ozon_index_value' && !isNaN(+commission?.value)
+                                    ? (+commission.value <= 1 ? 'color:green!important;' : 'color:red!important;')
+                                    : ''}" 
+                            data-type="commission" 
+                            data-key="${commission?.key ?? ""}" 
+                            data-index="${i}" 
+                            data-value="${commission?.value ?? ""}" 
+                            title="${commission?.value ?? ""}">
+                            ${commissionValue} ${commission?.key === 'ozon_index_value' ? oldIndexNote : ""}
+                        </td>
+                        <td class="${warehouseNameClass}" 
+                            data-type="warehouse-name"
+                            data-has-connection="${hasConnection}">
+                            <a href="#" 
+                               class="warehouse-link ${hasConnection ? 'text-success' : ''}"
+                               data-key="${warehouse?.key ?? ""}"
+                               data-offer-id="${warehouse?.offer_id ?? ""}"
+                               data-product-id="${warehouse?.product_id ?? ""}"
+                               data-client="${clientName}"
+                               data-warehouse-id="${warehouse?.key ?? ""}"
+                               data-warehouse-name="${warehouse?.name ?? ""}"
+                               data-has-connection="${hasConnection}"
+                               title="${warehouse?.name ?? ""}">
+                                ${warehouse?.name ?? ""} ${connectionIcon}
+                            </a>
+                        </td>
+                    
+                        <td class="${warehouseTotalClass}" 
+                            data-type="warehouse-total" 
+                            data-key="${warehouse?.key ?? ""}" 
+                            data-index="${i}" 
+                            data-value="${warehouse?.total ?? ""}"
+                            data-has-connection="${hasConnection}"
+                            title="Всего: ${warehouse?.total ?? "-"}">
+                            <a href="#"
+                               class="warehouse-set-link ${hasConnection ? 'text-success' : ''}"
+                               data-key="${warehouse?.key ?? ""}"
+                               data-offer-id="${warehouse?.offer_id ?? ""}"
+                               data-product-id="${warehouse?.product_id ?? ""}"
+                               data-client="${clientName}"
+                               data-warehouse-id="${warehouse?.key ?? ""}"
+                               data-warehouse-name="${warehouse?.name ?? ""}"
+                               data-total="${warehouse?.total ?? 0}"
+                               data-has-connection="${hasConnection}"
+                               title="${warehouse?.name ?? ""}">
+                               ${warehouse?.total ?? ""}
+                            </a>
+                        </td>
+                        <td class="${warehouseReservedClass}" 
+                            data-type="warehouse-reserved" 
+                            data-key="${warehouse?.key ?? ""}" 
+                            data-index="${i}" 
+                            data-value="${warehouse?.reserved ?? ""}"
+                            data-has-connection="${hasConnection}"
+                            title="Зарезервировано: ${warehouse?.reserved ?? "-"}">
+                            ${warehouse?.reserved ?? ""}
+                        </td>
+                        
+                        ${i === 0 ? `<td rowspan="${maxRows}" class="currency-cell text-end" data-type="currency" data-value="${currency}" title="Валюта">${currency}</td>` : ""}
+                    </tr>
+                    `;
+
+            }
+        });
+        saveOzonHistory(history);
+        html += "</tbody></table>";
+        return html;
+    }
+
+    function renderOrderDetailedInformationForBitrix(response, pricesTradesoft) {
+        // Берем изображения из imageUrls (новое поле в конце ответа)
+        let allImages = response.imageUrls || [];
+
+        // Если imageUrls пустой, используем fallback изображение
+        if (allImages.length === 0) {
+            allImages = ["https://s3.timeweb.cloud/25f554fc-6f66254e-9650-4d17-8e13-77b5b7d3242e/AppData/Studio2/IMG/300x200no-image.svg"];
+        }
+
+        // Определяем главное изображение (первое в списке)
+        const mainImage = allImages[0];
+
+        // Миниатюры (все изображения кроме первого, ограничиваем до 4 штук)
+        const limitedMiniatures = allImages.slice(1, 5);
+        
+        const orderId = 1;
+
+        // Цветовая карта для поставщиков
+        const colorMap = {
+            'https://www.maxi.parts/': 'text-success',
+            'https://www.zzap.ru/': 'text-danger',
+            'https://www.abcp.ru/': 'text-primary',
+            'https://www.avdmotors.ru/': 'text-info'
+        };
+
+        return `
+    <div class="d-flex" style="align-items: stretch;">
+        <div class="main-content me-4" style="flex: 1;">
+            ${response.detailInfo?.description || response.productInfo?.description ? `
+                <p>
+                    ${(response.detailInfo?.description || response.productInfo?.description).length > 100
+            ? (response.detailInfo?.description || response.productInfo?.description).slice(0, 100) + '...'
+            : (response.detailInfo?.description || response.productInfo?.description)}
+                </p>
+            ` : ''}
+
+            <div class="d-flex justify-content-start align-items-start">
+                <div class="gallery float-start me-3">
+                    <div class="main-image mb-2">
+                        <img src="${mainImage}" alt="Main Image" class="img-fluid rounded border" style="width: 265px; height: 265px; cursor: pointer;" onclick="openImage('${mainImage}')">
+                    </div>
+                    ${limitedMiniatures.length > 0 ? `
+                        <div class="miniatures d-flex justify-content-start">
+                            ${limitedMiniatures.map((img, index) => `
+                                <div class="miniature mx-1">
+                                    <img src="${img}" alt="Thumbnail" class="img-thumbnail" style="width: 60px; height: 60px; cursor: pointer;" onclick="openImage('${img}')">
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : ''}
+                </div>
+
+                <div class="mb-3">
+                    ${response.detailInfo?.articleSchema?.dataSupplierArticleNumber || response.productInfo?.articlE_NUMBER || response.detailInfo?.supplier || response.productInfo?.manufacturer || response.detailInfo?.description || response.productInfo?.description
+            ? `
+                                <strong>Артикул:</strong> 
+                                ${response.detailInfo?.articleSchema?.dataSupplierArticleNumber || response.productInfo?.articlE_NUMBER || 'Нет данных'}
+                                ${response.detailInfo?.normalizedArticle && response.detailInfo.normalizedArticle !== (response.detailInfo?.articleSchema?.dataSupplierArticleNumber || response.productInfo?.articlE_NUMBER)
+                                ? `(${response.detailInfo.normalizedArticle})`
+                                : ''}
+                                                
+                                                ${response.detailInfo?.supplier?.name || response.productInfo?.manufacturer
+                                ? `: ${response.detailInfo?.supplier?.name || response.productInfo?.manufacturer}`
+                                : ''}
+                                                
+                                                ${response.detailInfo?.supplier?.code || response.productInfo?.manufacturer
+                                ? ` ${response.detailInfo?.supplier?.code || response.productInfo?.manufacturer}`
+                                : ''}
+                
+                                                ${response.detailInfo?.supplier?.rating !== undefined
+                                ? ` ${response.detailInfo.supplier.rating}`
+                                : ''}
+                                                
+                                                ${response.detailInfo?.supplier?.tecdocSupplierId || response.productInfo?.teC_DOC_PROD
+                                ? `(${response.detailInfo?.supplier?.tecdocSupplierId || response.productInfo?.teC_DOC_PROD})`
+                                : ''}
+                                                
+                                                ${response.detailInfo?.description || response.productInfo?.description
+                                ? ` ${(response.detailInfo?.description || response.productInfo?.description).length > 30
+                                    ? (response.detailInfo?.description || response.productInfo?.description).slice(0, 30) + '...'
+                                    : (response.detailInfo?.description || response.productInfo?.description)}`
+                                : ''}
+                                                <br/>
+                                            `
+                            : ''}
+                    <br/>
+                    ${response.productInfo ? `
+                        <strong>Доп. информация:</strong><br>
+                        <ul style="padding-left: 20px;">
+                            ${response.productInfo.shorT_DESCRIPTION ? `<li><strong>Категория:</strong> ${response.productInfo.shorT_DESCRIPTION}</li>` : ''}
+                            ${response.productInfo.barcodes ? `<li><strong>Штрих-коды:</strong> ${response.productInfo.barcodes}</li>` : ''}
+                            ${response.productInfo.packagE_WEIGHT ? `
+                                <li>
+                                    <strong>Вес:</strong>
+                                    <span class="weight-value"
+                                          style="cursor: pointer; text-decoration: underline; color: blue;"
+                                          data-weight="${response.productInfo.packagE_WEIGHT}"
+                                          data-order-id="${response.orderId || ''}">
+                                        ${response.productInfo.packagE_WEIGHT} кг
+                                    </span>
+                                </li>
+                            ` : ''}
+                            ${response.productInfo.packagE_LENGTH && response.productInfo.packagE_WIDTH && response.productInfo.packagE_HEIGHT ?
+            `<li><strong>Габариты упаковки:</strong> ${response.productInfo.packagE_LENGTH}×${response.productInfo.packagE_WIDTH}×${response.productInfo.packagE_HEIGHT} см</li>` : ''}
+                        </ul>
+                    ` : ''}
+                
+                    ${response.detailInfo?.detailAttributes?.length > 0 ? `
+                    <strong>Характеристики:</strong><br>
+                    <ul class="attributes-list" style="font-size: 18px; max-height: 200px; overflow-y: auto; padding-left: 20px;">
+                        ${response.detailInfo.detailAttributes
+                            .filter(attr => attr.displayTitle || attr.description || attr.displayValue)
+                            .map(attr => {
+                                const title = attr.displayTitle || attr.description || '';
+                                const value = attr.displayValue || '';
+                                const isWeight = /Вес \[кг\]|Масса/i.test(title);
+                
+                                const displayValue = isWeight && value
+                                    ? `<span class="weight-value"
+                                             style="cursor: pointer; text-decoration: underline; color: blue;"
+                                             data-weight="${value}"
+                                             data-order-id="${orderId}">
+                                           ${value} кг
+                                       </span>`
+                                    : value ? `- ${value.length > 15 ? value.slice(0, 15) + '...' : value}` : '';
+                
+                                return `<li title="${attr.description || ''} - ${value}">
+                                            ${title.length > 15 ? title.slice(0, 15) + '...' : title} ${displayValue}
+                                        </li>`;
+                            }).join('')}
+                    </ul>
+                ` : ''}
+
+                    <div class="form-group d-flex align-items-center gap-2">
+                        <label for="ProductWeight_${orderId}" class="form-label mb-0">Вес:</label>
+                        <input class="form-control form-control-sm product-weight-field" id="ProductWeight_${orderId}" style="width: 70px;" />
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="table-content" 
+             style="width: 60%; height: 400px; overflow-y: auto;">
+            ${generateStockTradeTable(orderId, [], pricesTradesoft, colorMap)}
+            ${applyColumnState('.stock-trade-table')}
+        </div>
+    </div>
+    `;
+    }
+
+    function deletePriceHistory(id, bitrixId) {
+        if (!confirm('Вы уверены, что хотите удалить эту запись?')) {
+            return false;
+        }
+
+        const token = $('input[name="__RequestVerificationToken"]').val();
+
+        $.ajax({
+            url: `/PriceHistory/Delete/${id}`,
+            type: 'POST',
+            headers: {
+                'RequestVerificationToken': token,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            success: function(response) {
+                if (response === 'ok') {
+                    showNotification('Запись успешно удалена!', 'success');
+                    loadPriceHistory(bitrixId); 
+                } else {
+                    showNotification('Ошибка при удалении записи', 'error');
+                }
+            },
+            error: function(xhr, status, error) {
+                showNotification('Ошибка сервера: ' + error, 'error');
+            }
+        });
+
+        return false; // Предотвращаем стандартную отправку формы
+    }
+
+    // Функция для отображения таблицы истории цен
+    function renderPriceHistoryTable(data) {
+        if (!data || data.length === 0) {
+            return `
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> История изменений цен не найдена
+                </div>
+            `;
+        }
+
+        let html = `
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped" style="table-layout: fixed; width: 100%; margin-bottom: 0;">
+                    <colgroup>
+                        <col style="width: 12%">
+                        <col style="width: 12%">
+                        <col style="width: 12%">
+                        <col style="width: 24%">
+                        <col style="width: 20%">
+                        <col style="width: 10%">
+                        <col style="width: 10%">
+                        <col style="width: 10%">
+                    </colgroup>
+                    <tbody>
+        `;
+
+        data.forEach(item => {
+            html += `
+                    <tr>
+                        <!-- Bitrix ID -->
+                        <td>
+                            <span class="form-control-plaintext form-control-sm">${item.bitrixId || 'Не указан'}</span>
+                        </td>
+                        
+                        <!-- Артикул -->
+                        <td>
+                            <span class="form-control-plaintext form-control-sm">${item.article || 'Не указан'}</span>
+                        </td>
+                        
+                        <!-- Цена -->
+                        <td style="text-align: right;">
+                            <span class="form-control-plaintext form-control-sm">${item.priceValue ? Math.round(parseFloat(item.priceValue)).toLocaleString('ru-RU') : '0'}</span>
+                        </td>
+
+                        <!-- Источник -->
+                        <td>
+                            <span class="form-control-plaintext form-control-sm">${item.valueSource || 'Не указан'}</span>
+                        </td>
+                        
+                        <!-- Автор -->
+                        <td>
+                            <span class="form-control-plaintext form-control-sm">${item.author || 'Не указан'}</span>
+                        </td>
+                        
+                        <!-- Дата создания -->
+                        <td>
+                            <small class="form-control-plaintext form-control-sm d-block">
+                                ${item.createDateTime ? new Date(item.createDateTime).toLocaleDateString() + ' ' + new Date(item.createDateTime).toLocaleTimeString() : ''}
+                            </small>
+                        </td>
+
+                         <!-- Детали -->
+                        <td>
+                            <a class="btn btn-outline-primary btn-sm w-100" 
+                               href="/PriceHistory/Details/${item.id}" 
+                               target="_blank" 
+                               title="Просмотреть детали">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" class="bi bi-eye" viewBox="0 0 16 16">
+                                    <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/>
+                                    <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/>
+                                </svg>
+                            </a>
+                        </td>
+                        
+                        <td>
+                            <button type="button" 
+                                    class="btn btn-outline-danger btn-sm w-100" 
+                                    title="Удалить запись"
+                                    onclick="deletePriceHistory(${item.id}, '${item.bitrixId}')">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
+                                    <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5Zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5Zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6Z"/>
+                                    <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1ZM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118ZM2.5 3h11V2h-11v1Z"/>
+                                </svg>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                });
+        
+                html += `
+                    </tbody>
+                </table>
+            </div>
+            <div class="text-end mt-2">
+                <small class="text-muted">Всего записей: ${data.length}</small>
+            </div>
+        `;
+
+        return html;
+    }
+
+
+    function openImage(imageUrl) {
+        window.open(imageUrl, '_blank');
+    }
+
+    $(document).on("click", ".show-bitrix-data", function () {
+        let article = $(this).data("article");
+        let article_with_key = $(this).data("article-with-key");
+        let productId = $(this).data("productid");
+        let supplier = $(this).data("supplier");
+        let previewText = $(this).data("previewtext");
+        let articleBlock = $(this).data("articleblock");
+
+        let headerHtml = `
+                            <div class="d-flex flex-wrap gap-4 mb-2">
+                                <div>${articleBlock}</div>
+                                <div>${productId}</div>
+                                <div>${supplier}</div>
+                            </div>
+                            <div class="mb-2">
+                                ${previewText}
+                            </div>
+                            <hr>
+                        `;
+
+        $("#bitrixModalContent").html(`
+            <div class="d-flex justify-content-center align-items-center" style="height:200px;">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Загрузка...</span>
+                </div>
+            </div>
+            <div class="text-center mt-3">
+                <a href="#" class="btn-load-tradesoft" 
+                   data-article="${article}" 
+                   data-supplier="${supplier}"
+                   style="display:none;">
+                    Загрузить доп. данные 
+                </a>
+            </div>
+        `);
+
+        $("#priceHistorySection").show();
+        $("#historySpinner").show();
+        $("#priceHistoryTableContainer").empty();
+
+        $("#bitrixModal").modal("show");
+
+        loadPriceHistory(productId);
+
+        $.when(
+            fetchBitrixData(article),
+            fetchOzonData(article_with_key)
+        ).done(function (bitrixResponse, ozonResponse) {
+            let bitrixData = bitrixResponse[0];
+            let ozonData = ozonResponse[0];
+
+            console.log(window.warehouseMappings);
+            if (ozonData && Array.isArray(ozonData)) {
+                let client = ozonData[0];
+                ozonData.forEach(clientData => {
+                    if (clientData.WarehouseInfo && clientData.WarehouseInfo.result) {
+                        clientData.WarehouseInfo.result.forEach(warehouse => {
+                            // Передаем название клиента в метод проверки связи
+                            warehouse.hasBitrixConnection = checkWarehouseConnection(
+                                warehouse.warehouse_name,
+                                bitrixData,
+                                clientData.Client // Передаем название клиента
+                            );
+                        });
+                    }
+                });
+            }
+            
+            console.log(ozonData);
+            let bitrixHtml = renderBitrixTable(bitrixData);
+            let ozonHtml = renderOzonTable(ozonData);
+
+            $("#bitrixModalContent").html(`
+                                            ${headerHtml}
+                                            <div class="tradesoft-section">
+                                                <div class="text-center mb-3">
+                                                    <a href="#" class="btn-load-tradesoft" 
+                                                       data-article="${article}" 
+                                                       data-supplier="${supplier}"
+                                                       style="display:none;">
+                                                        Загрузить доп. данные
+                                                    </a>
+                                                </div>
+                                                <div id="tradesoft-content"></div>
+                                            </div>
+                                            <hr>
+                                            `);
+
+            $("#ozonTableContainer").html(`
+                                            <div class="d-flex justify-content-center align-items-center" style="height:100px;">
+                                                <div class="spinner-border text-primary" role="status">
+                                                    <span class="visually-hidden">Загрузка Ozon...</span>
+                                                </div>
+                                            </div>
+                                        `);
+
+            if (bitrixHtml) {
+                $("#bitrixDataSection").show();
+                $("#bitrixTableContainer").html(bitrixHtml);
+            }
+
+            if (ozonHtml) {
+                $("#ozonDataSection").show();
+                $("#ozonTableContainer").html(ozonHtml);
+                const inputVal = parseFloat($('input[name="PriceValue"]').val()) || 0;
+                recalcRanges(inputVal);
+            }
+
+            // Показываем форму
+            $("#priceHistoryFormSection").show();
+
+            // Обновляем поля формы
+            updatePriceHistoryForm(article, productId);
+            clearValidationErrors();
+
+            $(".btn-load-tradesoft").fadeIn();
+
+        }).fail(function () {
+            console.error("Ошибка при получении данных Bitrix или Ozon");
+            $("#bitrixModalContent").html(`
+                                        ${headerHtml}
+                                        <div class="tradesoft-section">
+                                            <div class="text-center mb-3">
+                                                <a href="#" class="btn-load-tradesoft" 
+                                                   data-article="${article}" 
+                                                   data-supplier="${supplier}"
+                                                   style="display:none;">
+                                                    Загрузить доп. данные
+                                                </a>
+                                            </div>
+                                            <div id="tradesoft-content"></div>
+                                        </div>
+                                        <hr>
+                                        <strong class='text-danger'>Не удалось загрузить данные Bitrix/Ozon</strong>
+                                        `);
+
+            // Все равно показываем форму и историю
+            $("#priceHistoryFormSection").show();
+            updatePriceHistoryForm(article, productId);
+            clearValidationErrors();
+
+            $(".btn-load-tradesoft").fadeIn();
+        });
+    });
+
+
+    $(document).on("click", ".btn-load-tradesoft", function () {
+        let article = $(this).data("article");
+        let supplier = $(this).data("supplier");
+        let button = $(this);
+        
+        button.hide();
+        $("#tradesoft-content").html(`
+        <div class="d-flex justify-content-center align-items-center" style="height:100px;">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Загрузка Tradesoft...</span>
+            </div>
+        </div>
+    `);
+        
+        fetchOrderDetailedInformationForBitrix(article, supplier)
+            .done(function (tradesoftData) {
+                let tradesoftHtml = renderOrderDetailedInformationForBitrix(tradesoftData, []);
+                $("#tradesoft-content").html(tradesoftHtml);
+                
+                $(".table-content").html(`
+                    <div class="d-flex justify-content-center align-items-center" style="height:150px;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Загрузка цен...</span>
+                        </div>
+                    </div>
+                `);
+
+
+                GetCombinedDataForBitrix(article, supplier)
+                    .done(function (pricesTradesoft) {
+                        let orderId = tradesoftData.orderId || 1;
+                        const colorMap = {
+                            'https://www.maxi.parts/': 'text-success',
+                            'https://www.zzap.ru/': 'text-danger',
+                            'https://www.abcp.ru/': 'text-primary',
+                            'https://www.avdmotors.ru/': 'text-info'
+                        };
+
+                        $(".table-content").html(
+                            generateStockTradeTable(orderId, [], pricesTradesoft, colorMap)
+                        );
+                    })
+                    .fail(function (error) {
+                        $(".table-content").html(`
+                        <div class="alert alert-danger">
+                            Не удалось загрузить цены: ${error.statusText || 'Ошибка сервера'}
+                        </div>
+                    `);
+                    });
+
+            })
+            .fail(function (error) {
+                console.error("Ошибка при получении основных данных Tradesoft:", error);
+                $("#tradesoft-content").html(`
+                <div class="alert alert-danger">
+                    Не удалось загрузить данные: ${error.statusText || 'Ошибка сервера'}
+                </div>
+            `);
+            });
+    });
+
+    function checkWarehouseConnection(ozonWarehouseName, bitrixData, clientName) {
+       
+        if (!window.warehouseMappings || !Array.isArray(window.warehouseMappings)) {
+            return false;
+        }
+        console.log(ozonWarehouseName, bitrixData, clientName);
+
+        const mapping = window.warehouseMappings.find(mapping =>
+            mapping.OzonWarehouseName === ozonWarehouseName &&
+            mapping.OzonClientName === clientName 
+        );
+
+        if (!mapping) {
+            return false;
+        }
+        return true;
+    }
+
+    function updatePriceDisplay(orderId, indexRow) {
+        const $priceLink = $(`.price-link[data-order-id="${orderId}"][data-index-row="${indexRow}"]`);
+        const $priceBlock = $(`.cost-price-row[data-order-id="${orderId}"][data-index-row="${indexRow}"]`);
+        const $weightInput = $(`#ProductWeight_${orderId}`);
+        const $supplierSelect = $(`#SupplierId_${orderId}`);
+
+        const weight = parseFloat(($weightInput.val() || '0').replace(',', '.')) || 0;
+        const priceSite = $priceLink.data('site');
+
+        // Вывод в консоль исходных данных
+        console.log('====== РАСЧЕТ СТОИМОСТИ ======');
+        console.log(`Заказ: ${orderId}, Строка: ${indexRow}`);
+        console.log(`Сайт: ${priceSite}`);
+        console.log(`Вес товара: ${weight} кг`);
+
+        // Получаем данные из модели (предполагается, что suppliers доступен глобально)
+        const supplierFromModel = window.suppliersData.find(s => s.site === priceSite);
+        console.log(supplierFromModel);
+         let weightFactor = 0;
+        let costFactor = 1;
+        let weightCurrency = 'RUB';
+
+        if (supplierFromModel) {
+            weightFactor = parseFloat((supplierFromModel.weightFactor || '0').toString().replace(',', '.')) || 0;
+            costFactor = parseFloat((supplierFromModel.costFactor || '1').toString().replace(',', '.')) || 1;
+            weightCurrency = supplierFromModel.weightFactorCurrencyDisplayName || 'RUB';
+            console.log('Данные поставщика из модели:');
+            console.log(`• weightFactor: ${weightFactor}`);
+            console.log(`• costFactor: ${costFactor}`);
+            console.log(`• weightCurrency: ${weightCurrency}`);
+        } else {
+            const supplierOptionBySite = $supplierSelect.find(`option[data-site="${priceSite}"]`);
+            weightFactor = parseFloat((supplierOptionBySite.data('weight-factor') || '0').toString().replace(',', '.')) || 0;
+            costFactor = parseFloat((supplierOptionBySite.data('cost-factor') || '1').toString().replace(',', '.')) || 1;
+            weightCurrency = supplierOptionBySite.data('weight-currency-code') || 'RUB';
+            console.log('Данные поставщика из выпадающего списка:');
+            console.log(`• weightFactor: ${weightFactor}`);
+            console.log(`• costFactor: ${costFactor}`);
+            console.log(`• weightCurrency: ${weightCurrency}`);
+        }
+
+        const rawPrice = parseFloat(($priceLink.data('price') || '0').toString().replace(',', '.')) || 0;
+        const priceCurrency = $priceLink.data('currency-code') || 'RUB';
+
+        console.log('--- Данные о цене ---');
+        console.log(`• Базовая цена: ${rawPrice} ${priceCurrency}`);
+
+        const ratePrice = rates[priceCurrency] || 1;
+        const rateWeight = rates[weightCurrency] || 1;
+
+        console.log('--- Курсы валют ---');
+        console.log(`• Курс ${priceCurrency}/RUB: ${ratePrice}`);
+        console.log(`• Курс ${weightCurrency}/RUB: ${rateWeight}`);
+
+        // Промежуточные расчеты
+        const pricePerKgRUB = weightFactor * rateWeight;
+        const totalWeightCost = weight * pricePerKgRUB;
+        const purchasePriceRUB = rawPrice * costFactor * ratePrice;
+        const totalRUB = Math.round(totalWeightCost + purchasePriceRUB);
+
+        console.log('--- Промежуточные расчеты ---');
+        console.log(`• Стоимость кг (weightFactor): ${weightFactor} × ${rateWeight} = ${pricePerKgRUB} RUB/кг`);
+        console.log(`• Стоимость веса: ${weight} кг × ${pricePerKgRUB} RUB/кг = ${totalWeightCost} RUB`);
+        console.log(`• Цена закупки: ${rawPrice} × ${costFactor} × ${ratePrice} = ${purchasePriceRUB} RUB`);
+        console.log(`• Итоговая стоимость: ${totalWeightCost} + ${purchasePriceRUB} = ${totalRUB} RUB`);
+
+        const formattedTotalRUB = totalRUB.toLocaleString('ru-RU');
+        const displayText = `${formattedTotalRUB} ₽`;
+
+        console.log('--- Результат ---');
+        console.log(`• Отображаемая цена: ${displayText}`);
+        console.log('==============================');
+
+        $priceBlock.text(displayText);
+        $priceBlock.attr('data-value', totalRUB);
+
+        if (window.tradesofDataCache && window.tradesofDataCache[orderId] && window.tradesofDataCache[orderId][indexRow]) {
+            window.tradesofDataCache[orderId][indexRow].costPrice = totalRUB;
+            window.tradesofDataCache[orderId][indexRow].costPriceFormatted = displayText;
+        }
+    }
+
+    function updateAllPricesForOrder(orderId) {
+        $(`.price-link[data-order-id="${orderId}"]`).each(function () {
+            const indexRow = $(this).data('index-row');
+            updatePriceDisplay(orderId, indexRow);
+        });
+    }
+
+    $(document).on('input', '.product-weight-field', function () {
+        const orderId = $(this).attr('id').split('_')[1];
+        updateAllPricesForOrder(orderId);
+        sortAndRerenderTable(orderId, 'costPrice', 'number', 'asc');
+    });
+
+    function fetchOrderDetailedInformationForBitrix(article, supplier) {
+        return $.ajax({
+            url: '@Url.Action("OrderDetailedInformationForBitrix", "Orders")',
+            type: "GET",
+            data: { 
+                    article: article, 
+                    producer: supplier
+                  }
+        }).catch(error => {
+            if (error.status === 500) {
+                console.error('Ошибка 500 при получении данных от Tradesoft:', error);
+            }
+            return null;
+        });
+    }
+    
+    // Функция для получения описания color_index
+    function getColorIndexDescription(colorIndex) {
+        const descriptions = {
+            "WITHOUT_INDEX": "Нет индекса",
+            "GREEN": "Выгодный",
+            "YELLOW": "Умеренный",
+            "RED": "Невыгодный"
+        };
+        return descriptions[colorIndex] || "Неизвестный индекс";
+    }
+
+    // Функция для получения цвета для подсветки
+    function getColorIndexColor(colorIndex) {
+        const colors = {
+            "WITHOUT_INDEX": "gray",
+            "GREEN": "green",
+            "YELLOW": "orange",
+            "RED": "red"
+        };
+        return colors[colorIndex] || "gray";
+    }
+
+    // Функция для получения AntiForgeryToken
+    function getAntiXsrfToken() {
+        return document.querySelector('input[name="__RequestVerificationToken"]').value;
+    }
+
+    // Функция для обновления полей формы при открытии модального окна
+    function updatePriceHistoryForm(article, productId) {
+        $('#modalArticle').val(article || '');
+        $('#modalBitrixId').val(productId || '');
+
+        // Устанавливаем текущую дату и время
+        const now = new Date().toISOString().slice(0, 16);
+        $('#modalCreateDateTime').val(now);
+    }
+
+    // Очистка ошибок валидации
+    function clearValidationErrors() {
+        $('.text-danger small').text('');
+        $('.form-control').removeClass('is-invalid');
+    }
+
+    // Показать ошибки валидации
+    function showValidationErrors(errors) {
+        clearValidationErrors();
+
+        for (const field in errors) {
+            if (errors.hasOwnProperty(field)) {
+                const errorElement = $(`#${field.toLowerCase()}Error`);
+                const inputElement = $(`[name="${field}"]`);
+
+                if (errorElement.length && inputElement.length) {
+                    errorElement.text(errors[field].join(', '));
+                    inputElement.addClass('is-invalid');
+                }
+            }
+        }
+    }
+
+    $(document).on('submit', '#priceHistoryForm', function (e) {
+        e.preventDefault();
+
+        const form = $(this);
+        // Исправьте URL - добавьте слеш в начале и / перед Area
+        const url = '/Studio2/PriceHistory/Create';
+        const formData = form.serialize();
+
+        // Получаем productId из формы
+        const productId = $('#modalBitrixId').val(); // Или другого поля, где хранится productId
+        console.log('Product ID:', productId);
+        console.log('Отправка данных:', formData);
+        console.log('URL:', url);
+
+        // Показываем индикатор загрузки
+        const submitBtn = form.find('button[type="submit"]');
+        const originalText = submitBtn.html();
+        submitBtn.html(`
+        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+        Добавление...
+    `).prop('disabled', true);
+
+        $.ajax({
+            url: url,
+            type: 'POST',
+            data: formData,
+            headers: {
+                'RequestVerificationToken': getAntiXsrfToken(),
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            success: function (result) {
+                console.log('Успешный ответ:', result);
+                if (result.success) {
+                    showNotification('Запись успешно создана!', 'success');
+                    const now = new Date().toISOString().slice(0, 16);
+                    $('#modalCreateDateTime').val(now);
+                    clearValidationErrors();
+
+                    // Вызываем обновление истории цен после успешного добавления
+                    if (productId) {
+                        loadPriceHistory(productId);
+                    } else {
+                        console.warn('Product ID не найден для обновления истории');
+                    }
+                }
+            },
+            error: function (xhr, status, error) {
+                console.log('Ошибка AJAX:', status, error, xhr.responseText);
+
+                try {
+                    const errorData = JSON.parse(xhr.responseText);
+                    if (errorData.errors) {
+                        showValidationErrors(errorData.errors);
+                        showNotification('Пожалуйста, исправьте ошибки в форме', 'error');
+                    } else {
+                        showNotification(errorData.error || 'Ошибка при создании записи', 'error');
+                    }
+                } catch (e) {
+                    showNotification('Ошибка сервера: ' + xhr.status, 'error');
+                }
+            },
+            complete: function () {
+                submitBtn.html(originalText).prop('disabled', false);
+            }
+        });
+    });
+    
+    // Функция для показа уведомлений поверх всех окон
+    function showNotification(message, type = 'info') {
+        // Создаем контейнер для уведомлений если его нет
+        let notificationContainer = document.getElementById('notification-container');
+        if (!notificationContainer) {
+            notificationContainer = document.createElement('div');
+            notificationContainer.id = 'notification-container';
+            notificationContainer.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 99999; display: flex; flex-direction: column; gap: 10px;';
+            document.body.appendChild(notificationContainer);
+        }
+
+        // Создаем уведомление
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type} alert-dismissible fade show`;
+        toast.style.cssText = 'min-width: 300px; max-width: 400px; box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);';
+        toast.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+
+        // Добавляем уведомление в контейнер
+        notificationContainer.appendChild(toast);
+
+        // Инициализируем Bootstrap alert
+        const bsAlert = new bootstrap.Alert(toast);
+
+        // Автоматическое скрытие через 5 секунд
+        setTimeout(() => {
+            if (toast.parentNode) {
+                bsAlert.close();
+            }
+        }, 5000);
+
+        // Удаляем элемент из DOM после скрытия
+        toast.addEventListener('closed.bs.alert', function () {
+            if (toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+            }
+        });
+    }
+
+    // Инициализация при загрузке страницы
+    $(document).ready(function() {
+        // Устанавливаем текущую дату при загрузке
+        const now = new Date().toISOString().slice(0, 16);
+        $('#modalCreateDateTime').val(now);
+    });
+
+
+    document.addEventListener("click", function (e) {
+        const button = e.target.closest(".stok-order");
+        if (!button) return;
+
+        const orderId = button.dataset.orderId;
+        const indexRow = button.dataset.indexRow;
+        const supplierUrl = button.dataset.supplierUrl || "";
+
+        const priceDiv = document.querySelector(
+            `.cost-price-row[data-order-id="${orderId}"][data-index-row="${indexRow}"]`
+        );
+
+        let costPrice = "";
+        if (priceDiv) {
+            costPrice = priceDiv.innerText.trim();
+            costPrice = costPrice.replace(/[^\d.,-]/g, "").replace(",", ".");
+        }
+
+        const modal = button.closest(".modal");
+        const priceInput = modal?.querySelector('input[name="PriceValue"]');
+        const sourceInput = modal?.querySelector('input[name="ValueSource"]');
+
+        if (priceInput) {
+            priceInput.value = costPrice;
+            const inputVal = parseFloat(costPrice) || 0;
+            recalcRanges(inputVal);
+        }
+
+        if (sourceInput) {
+            // ищем option в datalist с совпадающим url
+            const option = document.querySelector(
+                `#suppliersList option[data-url="${supplierUrl}"]`
+            );
+
+            if (option) {
+                sourceInput.value = option.value; // ставим название из списка
+            } else {
+                sourceInput.value = supplierUrl; // если не нашли, вставляем url как есть
+            }
+        }
+    });
+
+
+
+    // Функция загрузки истории цен
+    function loadPriceHistory(bitrixId) {
+        if (!bitrixId) {
+            $("#historySpinner").hide();
+            $("#priceHistoryTableContainer").html(`
+            <div class="alert alert-warning">
+                Bitrix ID не указан для загрузки истории
+            </div>
+        `);
+            return;
+        }
+
+        $.ajax({
+            url: `/Studio2/PriceHistory/SearchByBitrixId?bitrixId=${bitrixId}`,
+            type: 'GET',
+            beforeSend: function() {
+                $("#historySpinner").show();
+                $("#priceHistoryTableContainer").empty();
+            },
+            success: function(data) {
+                $("#historySpinner").hide();
+                const historyHtml = renderPriceHistoryTable(data);
+                $("#priceHistoryTableContainer").html(historyHtml);
+                if (data && data.length > 0 && data[0].priceValue !== null) {
+                    const priceValue = parseFloat(data[0].priceValue);
+                    $('input[name="PriceValue"]').val(priceValue.toFixed(2));
+                }
+            },
+            error: function(xhr, status, error) {
+                $("#historySpinner").hide();
+                console.error("Ошибка при загрузке истории цен:", error);
+                $("#priceHistoryTableContainer").html(`
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    Ошибка при загрузке истории цен: ${xhr.status} ${xhr.statusText}
+                </div>
+            `);
+            }
+        });
+    }
+
+    function formatNumber(value) {
+        const number = parseFloat(value);
+        if (isNaN(number)) return value;
+        return Math.round(number).toLocaleString('ru-RU');
+    }
+    
+    
+    function recalcRanges(inputVal) {
+        console.log('=== Запуск recalcRanges ===', { inputVal });
+
+        // Проверяем, является ли значение 0, пустой строкой или null/undefined
+        const isEmptyValue = inputVal === 0 || inputVal === '' || inputVal === null || inputVal === undefined;
+
+        // Находим всех уникальных клиентов
+        const clientCells = document.querySelectorAll('.client-cell[data-client-id]');
+        const clients = Array.from(clientCells).map(cell => cell.getAttribute('data-client-id'));
+
+        console.log('Найдено клиентов:', clients.length);
+
+        clients.forEach(clientId => {
+            // Находим все строки данного клиента
+            const clientRows = document.querySelectorAll(`tr[data-client="${clientId}"]`);
+
+            // Ищем данные для расчета
+            let basePrice = 0;
+            let minComm = 0;
+            let maxComm = 0;
+
+            clientRows.forEach(row => {
+                const priceCell = row.querySelector('td.price-cell[data-key="price"]');
+                const minCell = row.querySelector('td.price-cell[data-key="min_commission"]');
+                const maxCell = row.querySelector('td.price-cell[data-key="max_commission"]');
+
+                if (priceCell) basePrice = parseFloat(priceCell.dataset.value) || 0;
+                if (minCell) minComm = parseFloat(minCell.dataset.value) || 0;
+                if (maxCell) maxComm = parseFloat(maxCell.dataset.value) || 0;
+            });
+
+            let minVal, maxVal;
+
+            if (isEmptyValue) {
+                // Если значение пустое - заполняем прочерками
+                minVal = '—';
+                maxVal = '—';
+            } else {
+                // Обычный расчет
+                minVal = Math.round(basePrice - inputVal - maxComm);
+                maxVal = Math.round(basePrice - inputVal - minComm);
+            }
+
+            console.log(`Клиент ${clientId}:`, {basePrice, minComm, maxComm, minVal, maxVal});
+
+            clientRows.forEach(row => {
+                const minRangeCell = row.querySelector('span.price-range-min');
+                const maxRangeCell = row.querySelector('span.price-range-max');
+
+                if (minRangeCell) {
+                    minRangeCell.textContent = minVal;
+                    // Сохраняем числовое значение только если это не прочерк
+                    if (!isEmptyValue) {
+                        minRangeCell.dataset.value = minVal;
+                    } else {
+                        // Очищаем data-value для прочерков
+                        delete minRangeCell.dataset.value;
+                    }
+                }
+                if (maxRangeCell) {
+                    maxRangeCell.textContent = maxVal;
+                    // Сохраняем числовое значение только если это не прочерк
+                    if (!isEmptyValue) {
+                        maxRangeCell.dataset.value = maxVal;
+                    } else {
+                        // Очищаем data-value для прочерков
+                        delete maxRangeCell.dataset.value;
+                    }
+                }
+            });
+        });
+    }
+    
+    document.addEventListener('input', function(e) {
+        if (e.target.matches('input[name="PriceValue"]')) {
+            const inputVal = parseFloat(e.target.value) || 0;
+            console.log("=== Пересчёт диапазонов === Введено:", inputVal);
+            recalcRanges(inputVal);
+        }
+    });
+
+    let selectedOzonWarehouse = null;
+
+    document.addEventListener('click', function(e) {
+        if (e.target.matches('.warehouse-link')) {
+            e.preventDefault();
+
+            const warehouseLink = e.target;
+
+            if (selectedOzonWarehouse === warehouseLink) {
+                resetOzonWarehouseSelection();
+                return;
+            }
+            resetOzonWarehouseSelection();
+            selectedOzonWarehouse = warehouseLink;
+            warehouseLink.style.color = '#dc3545';
+            warehouseLink.style.fontWeight = 'bold';
+            showNotification('Теперь нажмите на склад в таблице Bitrix', 'info');
+        }
+
+        if (e.target.matches('.bitrix-stock') && selectedOzonWarehouse) {
+            e.preventDefault();
+
+            const bitrixLink = e.target;
+            const ozonData = {
+                OzonClient: selectedOzonWarehouse.getAttribute('data-client'),
+                OfferId: selectedOzonWarehouse.getAttribute('data-offer-id'),
+                ProductId: Number(selectedOzonWarehouse.getAttribute('data-product-id')),
+                Stock: Number(bitrixLink.getAttribute('data-amount')),
+                WarehouseId: Number(selectedOzonWarehouse.getAttribute('data-warehouse-id'))
+            };
+
+            const bitrixData = {
+                amount: bitrixLink.getAttribute('data-amount'),
+                name: bitrixLink.getAttribute('data-name')
+            };
+
+
+            $("#ozonTableContainer").html(`
+                            <div class="d-flex justify-content-center align-items-center" style="height:100px;">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Загрузка Ozon...</span>
+                                </div>
+                            </div>
+                        `);
+
+            (async () => {
+                try {
+                    const response = await fetch('/BitrixStock/UpdateProductStocks', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(ozonData)
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        showNotification(data.message ?? "Остатки обновлены", 'success');
+                        
+
+                        let ozonResponse = await fetchOzonData(ozonData.OfferId);
+
+                        if (!ozonResponse || ozonResponse.length === 0) {
+                            console.warn('Данные от Ozon не получены');
+                            $("#ozonTableContainer").empty(); // убираем спиннер
+                            return;
+                        }
+
+                        let ozonHtml = renderOzonTable(ozonResponse);
+                        console.log(ozonHtml);
+
+                        if (ozonHtml) {
+                            $("#ozonDataSection").show();
+                            $("#ozonTableContainer").html(ozonHtml); 
+
+                            const inputVal = parseFloat($('input[name="PriceValue"]').val()) || 0;
+                            recalcRanges(inputVal);
+                        }
+                    } else {
+                        console.error('Ответ сервера (ошибка):', data);
+                        showNotification(data.message ?? "Ошибка при обновлении остатков", 'danger');
+                    }
+                } catch (error) {
+                    console.error('Ошибка запроса:', error);
+                    showNotification('Ошибка при отправке данных на сервер', 'danger');
+                }
+            })();
+
+            resetOzonWarehouseSelection();
+        }
+    });
+
+    document.addEventListener('click', function (e) {
+        if (e.target.matches('.warehouse-set-link')) {
+            e.preventDefault();
+
+            const link = e.target.closest('.warehouse-set-link');
+            const offerId = link.getAttribute('data-offer-id');
+            const productId = Number(link.getAttribute('data-product-id'));
+            const clientName = link.getAttribute('data-client');
+            const warehouseId = Number(link.getAttribute('data-warehouse-id'));
+            const warehouseName = link.getAttribute('data-warehouse-name');
+            const currentStock = Number(link.getAttribute('data-total')) || 0;
+
+            // Модалка Bootstrap
+            const modalHtml = `
+            <div class="modal fade" id="setStockModal" tabindex="-1">
+              <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title">Установить остатки</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                  </div>
+                  <div class="modal-body">
+                    <p>Склад: <b>${warehouseName}</b></p>
+                    <label for="newStockInput" class="form-label">Введите новый остаток</label>
+                    <input type="number" step="1" id="newStockInput" class="form-control" value="${currentStock}" />
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="button" class="btn btn-primary" id="confirmSetStock">Установить</button>
+                  </div>
+                </div>
+              </div>
+            </div>`;
+
+            // Если модалки нет — добавляем
+            if (!document.querySelector('#setStockModal')) {
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+            } else {
+                document.querySelector('#setStockModal .modal-body').innerHTML =
+                    `<p>Склад: <b>${warehouseName}</b></p>
+                 <label for="newStockInput" class="form-label">Введите новый остаток</label>
+                 <input type="number" step="1" id="newStockInput" class="form-control" value="${currentStock}" />`;
+            }
+
+            const modal = new bootstrap.Modal(document.getElementById('setStockModal'));
+            modal.show();
+
+            // Обработка кнопки "Установить"
+            document.getElementById('confirmSetStock').onclick = async function () {
+                const newStock = parseInt(document.getElementById('newStockInput').value, 10);
+                if (isNaN(newStock) || newStock < 0) {
+                    alert('Введите корректное количество остатков');
+                    return;
+                }
+
+                modal.hide();
+
+                const payload = {
+                    OzonClient: clientName,
+                    OfferId: offerId,
+                    ProductId: productId,
+                    Stock: newStock,
+                    WarehouseId: warehouseId
+                };
+
+                $("#ozonTableContainer").html(`
+                <div class="d-flex justify-content-center align-items-center" style="height:100px;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Загрузка Ozon...</span>
+                    </div>
+                </div>
+            `);
+
+                try {
+                    const response = await fetch('/BitrixStock/UpdateProductStocks', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        showNotification(data.message ?? "Остатки обновлены", 'success');
+
+                        let ozonResponse = await fetchOzonData(payload.OfferId);
+                        if (!ozonResponse || ozonResponse.length === 0) {
+                            $("#ozonTableContainer").empty();
+                            return;
+                        }
+
+                        let ozonHtml = renderOzonTable(ozonResponse);
+                        if (ozonHtml) {
+                            $("#ozonDataSection").show();
+                            $("#ozonTableContainer").html(ozonHtml);
+                        }
+                    } else {
+                        console.error('Ошибка сервера:', data);
+                        showNotification(data.message ?? "Ошибка при обновлении остатков", 'danger');
+                    }
+                } catch (error) {
+                    console.error('Ошибка запроса:', error);
+                    showNotification('Ошибка при отправке данных на сервер', 'danger');
+                }
+            };
+        }
+    });
+
+    // Функция сброса выбора склада Ozon
+    function resetOzonWarehouseSelection() {
+        if (selectedOzonWarehouse) {
+            selectedOzonWarehouse.style.color = '';
+            selectedOzonWarehouse.style.fontWeight = '';
+            selectedOzonWarehouse = null;
+        }
+    }
+
+    document.addEventListener('click', function(e) {
+        if (e.target.matches('.update_price')) {
+            e.preventDefault();
+
+            const link = e.target.closest('.update_price');
+            const offerId = link.getAttribute('data-offer-id');
+            const clientName = link.getAttribute('data-client');
+            const constantIndex = parseFloat(link.getAttribute('data-constant-index'));
+            const percent = parseFloat(link.getAttribute('data-percent'));
+
+            $("#ozonTableContainer").html(`
+                            <div class="d-flex justify-content-center align-items-center" style="height:100px;">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Загрузка Ozon...</span>
+                                </div>
+                            </div>
+                        `);
+            link.disabled = true;
+
+            (async () => {
+                try {
+                    const response = await fetch('/BitrixStock/UpdateProductPrice', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                                article: offerId,
+                            clientName: clientName,
+                            constantIndex: constantIndex,
+                            percent: percent
+                        })
+                    });
+
+                    const data = await response.json();
+                    let ozonResponse = await fetchOzonData(offerId);
+
+                    if (!ozonResponse || ozonResponse.length === 0) {
+                        console.warn('Данные от Ozon не получены');
+                        $("#ozonTableContainer").empty();
+                        return;
+                    }
+
+                    let ozonHtml = renderOzonTable(ozonResponse);
+                    console.log(ozonHtml);
+
+                    if (ozonHtml) {
+                        $("#ozonDataSection").show();
+                        $("#ozonTableContainer").html(ozonHtml);
+
+                        const inputVal = parseFloat($('input[name="PriceValue"]').val()) || 0;
+                        recalcRanges(inputVal);
+                    }
+
+                    if (response.ok) {
+                        if (data.result && data.result.length > 0) {
+                            data.result.forEach(item => {
+                                if (item.updated) {
+                                    showNotification(`Цена для товара ${item.offerId} успешно обновлена`, 'success');
+                                } else if (item.errors && item.errors.length > 0) {
+                                    const errorList = item.errors.map(e => e.message).join('; ');
+                                    showNotification(`Ошибка для ${item.offerId}: ${errorList}`, 'danger');
+                                } else {
+                                    showNotification(`Для ${item.offerId} не удалось обновить цену`, 'warning');
+                                }
+                            });
+                        } else {
+                            showNotification('Сервер вернул пустой результат', 'warning');
+                        }
+                    } else {
+                        showNotification(data.message ?? 'Ошибка при обновлении цены', 'danger');
+                    }
+                } catch (error) {
+                    console.error('Ошибка запроса:', error);
+                    showNotification('Ошибка при отправке данных на сервер', 'danger');
+                } finally {
+                    // Восстанавливаем исходный текст ссылки
+                    link.innerHTML = 'Обновить цены';
+                    link.disabled = false;
+                }
+            })();
+        }
+    });
+
+    document.addEventListener('click', function (e) {
+        if (e.target.matches('.set_price')) {
+            e.preventDefault();
+
+            const link = e.target.closest('.set_price');
+            const offerId = link.getAttribute('data-offer-id');
+            const clientName = link.getAttribute('data-client');
+            const priceValue = parseFloat(link.getAttribute('data-price-value')) || 0;
+
+            // Рассчитываем цену до скидки (на 25% больше)
+            const oldPriceValue = priceValue * 1.25;
+
+            const modalHtml = `
+        <div class="modal fade" id="setPriceModal" tabindex="-1">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">Установить цены для <b>${offerId}</b></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+              </div>
+              <div class="modal-body">
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <label for="yourPriceInput" class="form-label">Ваша цена, ₽</label>
+                    <input type="number" step="0.01" id="yourPriceInput" class="form-control" value="${priceValue.toFixed(2)}" />
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <label for="oldPriceInput" class="form-label">Цена до скидки, ₽</label>
+                    <input type="number" step="0.01" id="oldPriceInput" class="form-control" value="${oldPriceValue.toFixed(2)}" />
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <label for="minPriceInput" class="form-label">Минимальная цена, ₽</label>
+                    <input type="number" step="0.01" id="minPriceInput" class="form-control" value="${priceValue.toFixed(2)}" />
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <label for="costPriceInput" class="form-label">Себестоимость, ₽</label>
+                    <input type="number" step="0.01" id="costPriceInput" class="form-control" placeholder="0.00" />
+                  </div>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" id="confirmSetPrice">Установить цены</button>
+              </div>
+            </div>
+          </div>
+        </div>`;
+
+            if (!document.querySelector('#setPriceModal')) {
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+            } else {
+                document.querySelector('#setPriceModal .modal-body').innerHTML = `
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <label for="yourPriceInput" class="form-label">Ваша цена, ₽</label>
+                    <input type="number" step="0.01" id="yourPriceInput" class="form-control" value="${priceValue.toFixed(2)}" />
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <label for="oldPriceInput" class="form-label">Цена до скидки, ₽</label>
+                    <input type="number" step="0.01" id="oldPriceInput" class="form-control" value="${oldPriceValue.toFixed(2)}" />
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <label for="minPriceInput" class="form-label">Минимальная цена, ₽</label>
+                    <input type="number" step="0.01" id="minPriceInput" class="form-control" value="${priceValue.toFixed(2)}" />
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <label for="costPriceInput" class="form-label">Себестоимость, ₽</label>
+                    <input type="number" step="0.01" id="costPriceInput" class="form-control" placeholder="0.00" />
+                  </div>
+                </div>`;
+            }
+
+            const modal = new bootstrap.Modal(document.getElementById('setPriceModal'));
+            modal.show();
+
+            // Функция для перерасчета цены до скидки
+            function recalculateOldPrice() {
+                const yourPrice = parseFloat(document.getElementById('yourPriceInput').value);
+                if (!isNaN(yourPrice) && yourPrice > 0) {
+                    const oldPriceValue = yourPrice * 1.25; // +25%
+                    document.getElementById('oldPriceInput').value = oldPriceValue.toFixed(2);
+                }
+            }
+
+            // Обработчик изменения поля "Ваша цена"
+            document.getElementById('yourPriceInput').addEventListener('input', recalculateOldPrice);
+            document.getElementById('yourPriceInput').addEventListener('change', recalculateOldPrice);
+
+            // Обработка кнопки "Установить цены"
+            document.getElementById('confirmSetPrice').onclick = async function () {
+                const yourPrice = parseFloat(document.getElementById('yourPriceInput').value);
+                const oldPrice = parseFloat(document.getElementById('oldPriceInput').value);
+                const minPrice = parseFloat(document.getElementById('minPriceInput').value);
+                const costPrice = parseFloat(document.getElementById('costPriceInput').value);
+
+                // Валидация - хотя бы одна цена должна быть заполнена
+                if (isNaN(yourPrice) && isNaN(oldPrice) && isNaN(minPrice) && isNaN(costPrice)) {
+                    alert('Введите хотя бы одну цену');
+                    return;
+                }
+
+                modal.hide();
+
+                $("#ozonTableContainer").html(`
+                <div class="d-flex justify-content-center align-items-center" style="height:100px;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Загрузка Ozon...</span>
+                    </div>
+                </div>
+            `);
+
+                try {
+                    const response = await fetch('/BitrixStock/SetProductPrice', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            article: offerId,
+                            clientName: clientName,
+                            yourPrice: isNaN(yourPrice) ? 0 : yourPrice,
+                            oldPrice: isNaN(oldPrice) ? 0 : oldPrice,
+                            minPrice: isNaN(minPrice) ? 0 : minPrice,
+                            costPrice: isNaN(costPrice) ? 0 : costPrice
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    let ozonResponse = await fetchOzonData(offerId);
+
+                    if (!ozonResponse || ozonResponse.length === 0) {
+                        console.warn('Данные от Ozon не получены');
+                        $("#ozonTableContainer").empty();
+                        return;
+                    }
+
+                    let ozonHtml = renderOzonTable(ozonResponse);
+                    console.log(ozonHtml);
+
+                    if (ozonHtml) {
+                        $("#ozonDataSection").show();
+                        $("#ozonTableContainer").html(ozonHtml);
+
+                        const inputVal = parseFloat($('input[name="PriceValue"]').val()) || 0;
+                        recalcRanges(inputVal);
+                    }
+
+                    if (response.ok) {
+                        showNotification(`Цены для товара ${offerId} успешно установлены`, 'success');
+                    } else {
+                        showNotification(data.message ?? 'Ошибка при установке цен', 'danger');
+                    }
+                } catch (error) {
+                    console.error(error);
+                    showNotification('Ошибка при отправке данных на сервер', 'danger');
+                }
+            };
+        }
+    });
+
+    function recalculateOldPrice() {
+        const yourPrice = parseFloat(document.getElementById('yourPriceInput').value);
+        if (!isNaN(yourPrice) && yourPrice > 0) {
+            const oldPriceValue = yourPrice * 1.25; // +25%
+            document.getElementById('oldPriceInput').value = oldPriceValue.toFixed(2);
+        }
+    }
+
+    document.addEventListener('input', function(e) {
+        if (e.target.matches('.constant-index') || e.target.matches('.percent')) {
+            const link = e.target.closest('.update_price');
+            const constantIndex = parseFloat(link.querySelector('.constant-index').innerText.replace(',', '.')) || 0;
+            const percent = parseFloat(link.querySelector('.percent').innerText.replace(',', '.')) || 0;
+
+            // обновляем data-атрибуты
+            link.setAttribute('data-constant-index', constantIndex.toFixed(2));
+            link.setAttribute('data-percent', percent.toFixed(1));
+        }
+    });
+
+    document.addEventListener('click', function (e) {
+        if (e.target.classList.contains('weight-value')) {
+            let weight = e.target.getAttribute('data-weight') || '';
+            const orderId = e.target.getAttribute('data-order-id');
+            const weightInput = document.querySelector(`#ProductWeight_${orderId}`);
+
+            if (weightInput) {
+                // Очистка строки: убираем "кг" и пробелы
+                weight = weight.replace(/кг/gi, '').trim();
+
+                // Заменяем запятые на точки
+                weight = weight.replace(/,/g, '.');
+
+                // Берём первое число из строки (если несколько значений через запятую/пробел)
+                const match = weight.match(/[\d.]+/g);
+                const firstWeight = match ? match[0] : null;
+
+                if (firstWeight) {
+                    // Форматируем вес (parseFloat убирает лишние нули)
+                    const formattedWeight = parseFloat(firstWeight).toString();
+
+                    // Устанавливаем значение
+                    weightInput.value = formattedWeight;
+
+                    // Триггерим события
+                    const eventsToTrigger = ['input', 'change', 'blur'];
+                    eventsToTrigger.forEach(eventType => {
+                        const event = new Event(eventType, { bubbles: true, cancelable: true });
+                        weightInput.dispatchEvent(event);
+                    });
+
+                    // Для jQuery (если используется)
+                    if (typeof jQuery !== 'undefined') {
+                        $(weightInput).trigger('input').trigger('change');
+                    }
+
+                    // Подсвечиваем поле на 1 секунду
+                    
+                    weightInput.style.backgroundColor = '#e6ffe6';
+                    setTimeout(() => {
+                        weightInput.style.backgroundColor = '';
+                    }, 1000);
+
+                    // Фокусируем поле ввода
+                    weightInput.focus();
+                } else {
+                    console.warn(`Не удалось распарсить вес: "${weight}"`);
+                }
+
+                sortAndRerenderTable(orderId, 'costPrice', 'number', 'acs');
+            } else {
+                console.warn(`Не найдено поле ввода веса для orderId: ${orderId}`);
+            }
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('[data-active-id]').forEach(element => {
+            element.addEventListener('click', function(e) {
+                e.preventDefault();
+
+                const productId = this.getAttribute('data-active-id');
+                console.log(productId);
+                const currentStatus = this.textContent.trim();
+
+                const confirmationMessage = currentStatus === 'Да'
+                    ? 'Вы уверены, что хотите деактивировать этот элемент?'
+                    : 'Вы уверены, что хотите активировать этот элемент?';
+
+                if (!confirm(confirmationMessage)) {
+                    return;
+                }
+
+                const originalText = this.textContent;
+                this.textContent = 'Загрузка...';
+                this.style.opacity = '0.6';
+
+                fetch('@Url.Action("ToggleActiveStatus", "BitrixStock", new { area = "Studio2" })', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(parseInt(productId))
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showNotification(data.message, 'success');
+
+                            this.textContent = data.isActive ? 'Активен' : 'Неактивен';
+                            this.style.opacity = '1';
+
+                            setTimeout(() => {
+                                location.reload();
+                            }, 500);
+                        } else {
+                            // Показываем ошибку
+                            showNotification(data.message || 'Произошла ошибка', 'danger');
+                            this.textContent = originalText;
+                            this.style.opacity = '1';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        showNotification('Ошибка сети', 'danger');
+                        this.textContent = originalText;
+                        this.style.opacity = '1';
+                    });
+            });
+        });
+    });
+
+    $(document).on('click', '.refreshOzon', async function() {
+        const offerId = $(this).data("article");
+        if (!offerId) {
+            console.warn('Offer ID не найден');
+            return;
+        }
+
+        // Показываем спиннер
+        $("#ozonTableContainer").html(`
+        <div class="d-flex justify-content-center align-items-center" style="height:100px;">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Загрузка Ozon...</span>
+            </div>
+        </div>
+    `);
+
+        try {
+            let ozonResponse = await fetchOzonData(offerId);
+            if (!ozonResponse?.length) {
+                console.warn('Данные от Ozon не получены');
+                $("#ozonTableContainer").empty();
+                return;
+            }
+
+            let ozonHtml = renderOzonTable(ozonResponse);
+            if (ozonHtml) {
+                $("#ozonDataSection").show();
+                $("#ozonTableContainer").html(ozonHtml);
+
+                const inputVal = parseFloat($('input[name="PriceValue"]').val()) || 0;
+                recalcRanges(inputVal);
+            }
+        } catch (error) {
+            console.error('Ошибка при обновлении данных Ozon:', error);
+            $("#ozonTableContainer").empty();
+        }
+    });
+</script>

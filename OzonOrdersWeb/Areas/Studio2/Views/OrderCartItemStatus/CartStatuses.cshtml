@@ -1,0 +1,196 @@
+﻿@model IEnumerable<OzonDomains.Models.OrderCarts.ItemStatus>
+
+@{
+ViewData["Title"] = "Статусы товаров с цветами";
+Layout = "~/Views/Shared/_Layout.cshtml";
+var highlightId = ViewBag.HighlightId as int?;
+}
+
+<style>
+    .table td:first-child, .table th:first-child {
+        width: 1px;
+        white-space: nowrap;
+    }
+    .color-picker-cell {
+        width: 100px;
+    }
+    th.sortable {
+        cursor: pointer;
+    }
+    th.asc::after {
+        content: " ▲";
+        font-size: 0.8em;
+    }
+    th.desc::after {
+        content: " ▼";
+        font-size: 0.8em;
+    }
+    .highlight-row {
+        background-color: #fffde7 !important;
+        transition: background-color 0.5s ease;
+    }
+    .highlight-row:target {
+        animation: highlight 2s;
+    }
+    @@keyframes highlight {
+        from { background-color: #fff9c4; }
+        to { background-color: #fffde7; }
+    }
+</style>
+
+<div class="container">
+    <div class="row">
+        <div>
+            <div class="card">
+                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h2>@ViewData["Title"]</h2>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <table class="table" id="statusTable">
+                        <thead>
+                        <tr>
+                            <th class="sortable" data-sort="number">ID</th>
+                            <th class="sortable" data-sort="string">Название</th>
+                            <th class="sortable" data-sort="number">Заказы</th>
+                            <th class="color-picker-cell">Цвет</th>
+                            <th>Действия</th>
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td>
+                                <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Поиск..." />
+                            </td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var status in Model)
+                        {
+                        var color = status.StatusColor?.ColorCode ?? "#ffffff";
+                        <tr data-status-id="@status.Id" class="align-middle @(highlightId == status.Id ? "highlight-row" : "")" id="status-@status.Id">
+                            <td>@status.Id</td>
+                            <td>@status.Name</td>
+                            <td>
+                                @if (status.OrderItems.Any())
+                                {
+                                <a href="@Url.Action("ViewOrders", "Orders", new { area = "Studio2", ids = status.OrderItems.Select(x => x.StudioOrderId).ToArray() })"
+                                   class="btn btn-link p-0"
+                                   title="Просмотр выбранных позиций"
+                                   target="_blank">
+                                    @status.OrderItems.Count()
+                                </a>
+                                }
+                                else
+                                {
+                                @status.OrderItems.Count()
+                                }
+                            </td>
+                            <td class="color-picker-cell">
+                                <input type="color" class="form-control form-control-color status-color" value="@color" style="width: 75px;" title="Выберите цвет" />
+                            </td>
+                            <td>
+                                <button class="btn btn-danger btn-sm reset-color">Сбросить</button>
+                            </td>
+                        </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $(function () {
+        // ==== Поиск по названию ====
+        $('#searchInput').on('keyup', function () {
+            var value = $(this).val().toLowerCase();
+            $('#statusTable tbody tr').filter(function () {
+                $(this).toggle($(this).find('td:eq(1)').text().toLowerCase().indexOf(value) > -1);
+            });
+        });
+
+        // ==== Сортировка по клику ====
+        $('#statusTable thead th.sortable').on('click', function () {
+            var table = $(this).parents('table').eq(0);
+            var tbody = table.find('tbody');
+            var rows = tbody.find('tr').toArray();
+            var index = $(this).index();
+            var type = $(this).data('sort');
+            var asc = !$(this).hasClass('asc');
+
+            $('#statusTable thead th').removeClass('asc desc');
+            $(this).addClass(asc ? 'asc' : 'desc');
+
+            rows.sort(function (a, b) {
+                var A = $(a).children('td').eq(index).text().trim();
+                var B = $(b).children('td').eq(index).text().trim();
+
+                if (type === 'number') {
+                    A = parseFloat(A) || 0;
+                    B = parseFloat(B) || 0;
+                } else {
+                    A = A.toLowerCase();
+                    B = B.toLowerCase();
+                }
+
+                if (A < B) return asc ? -1 : 1;
+                if (A > B) return asc ? 1 : -1;
+                return 0;
+            });
+
+            tbody.append(rows);
+        });
+
+        // ==== Обновление цвета ====
+        $(document).on('change', '.status-color', function () {
+            let statusId = $(this).closest('tr').data('status-id');
+            let colorCode = $(this).val();
+
+            $.post('@Url.Action("UpdateStatusColor", "OrderCartItemStatus", new { area = "Studio2" })',
+                { statusId: statusId, colorCode: colorCode },
+                function (res) {
+                    if (!res.success) {
+                        alert("Ошибка сохранения цвета");
+                    }
+                });
+        });
+
+        // ==== Сброс цвета ====
+        $(document).on('click', '.reset-color', function () {
+            let statusId = $(this).closest('tr').data('status-id');
+            let colorInput = $(this).closest('tr').find('.status-color');
+
+            $.post('@Url.Action("ResetStatusColor", "OrderCartItemStatus", new { area = "Studio2" })',
+                { statusId: statusId },
+                function (res) {
+                    if (res.success) {
+                        colorInput.val('#ffffff');
+                    } else {
+                        alert("Ошибка сброса цвета");
+                    }
+                });
+        });
+
+        // ==== Скролл к выделенной строке ====
+        @if (highlightId != null)
+        {
+        <text>
+        var row = $('#status-@highlightId');
+        if (row.length) {
+            $('html, body').animate({
+                scrollTop: row.offset().top - 100
+            }, 500);
+        }
+        </text>
+        }
+    });
+</script>
+}

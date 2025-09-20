@@ -1,0 +1,181 @@
+﻿@using OzonOrdersWeb.ViewModels.OzonClientViewModels
+@model CreateOzonClientViewModel
+
+@{
+    ViewData["Title"] = "Create";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+@{
+    string status = (string)ViewData["CreateInfo"];
+}
+@if (status != null)
+{
+    <div class="alert alert-dismissible alert-danger">
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <p>@status</p>
+    </div>
+}
+
+<h1>Создание Клиента</h1>
+
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-area="Studio2" asp-action="Create" asp-controller="OzonClients" id="createForm">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    
+    <div class="form-group">
+        <label asp-for="OzonClient.Name" class="control-label"></label>
+        <input asp-for="OzonClient.Name" class="form-control" />
+        <span asp-validation-for="OzonClient.Name" class="text-danger"></span>
+    </div>
+    
+    <br />
+    
+    <div class="form-group">
+        <label asp-for="OzonClient.CurrencyCode" class="control-label"></label>
+        <select asp-for="OzonClient.CurrencyCode" class="form-control" asp-items="Model.CurrencyCodes"></select>
+        <span asp-validation-for="OzonClient.CurrencyCode" class="text-danger"></span>
+    </div>
+    
+    <div class="form-group">
+        <label asp-for="OzonClient.ClientType" class="control-label"></label>
+        <select asp-for="OzonClient.ClientType" class="form-control" asp-items="Model.ClientTypes" onchange="handleClientTypeChange()"></select>
+        <span asp-validation-for="OzonClient.ClientType" class="text-danger"></span>
+    </div>
+    
+    <br />
+    
+    <div id="ozonApiClientFields" style="display: none;">
+        <div class="form-group">
+            <label asp-for="OzonClient.ClientId" class="control-label"></label>
+            <input asp-for="OzonClient.ClientId" class="form-control" id="ClientId" />
+            <span asp-validation-for="OzonClient.ClientId" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="OzonClient.ApiKey" class="control-label"></label>
+            <input asp-for="OzonClient.ApiKey" class="form-control" id="ApiKey"/>
+            <span asp-validation-for="OzonClient.ApiKey" class="text-danger"></span>
+        </div>
+        <br />
+    </div>
+    
+    <div id="yandexApiClientFields" style="display: none;">
+        <div class="form-group">
+            <label for="OzonClient.ClientId" class="control-label">Yandex Client</label>
+            <select id="OzonClient.ClientId" name="OzonClient.ClientId" class="form-control">
+                @foreach (var client in Model.YandexClients)
+                {
+                    <option value="@client.CompanyId">@client.BusinessName (@client.BusinessId / @client.WarehouseName)</option>
+                }
+            </select>
+            <span class="text-danger"></span>
+            </div>
+                <div class="form-group">
+                    <label asp-for="OzonClient.ApiKey" class="control-label"></label>
+                    <div class="input-group">
+                        <!-- Displayed field for masked API key -->
+                        <input class="form-control" id="ApiKeyYandexDisplay" value="@Model.YandexApiKey" type="password" />
+
+                        <!-- Hidden field for actual API key submission -->
+                        <input asp-for="OzonClient.ApiKey" type="hidden" class="form-control" id="ApiKeyYandex" value="@Model.YandexApiKey" />
+
+                        <!-- Button to toggle visibility -->
+                        <div class="input-group-append">
+                            <button class="btn btn-outline-secondary" type="button" id="toggleApiKeyYandexDisplay">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-eye-fill" viewBox="0 0 16 16">
+                                    <path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0" />
+                                    <path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8m8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <span asp-validation-for="OzonClient.ApiKey" class="text-danger"></span>
+               </div>
+    </div>
+    
+    <br />
+    
+    <div class="form-group">
+        <input type="submit" value="Создать" class="btn btn-primary" />
+    </div>
+</form>
+
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">К списку клиентов</a>
+</div>
+
+<script>
+    function handleClientTypeChange() {
+        var clientType = document.getElementById("OzonClient_ClientType").value;
+        var ozonFields = document.getElementById("ozonApiClientFields");
+        var yandexFields = document.getElementById("yandexApiClientFields");
+
+        if (clientType === "OZON") {
+            ozonFields.style.display = "block";
+            yandexFields.style.display = "none";
+            disableYandexFields();
+            enableOzonFields();
+        } else if (clientType === "YANDEX") {
+            ozonFields.style.display = "none";
+            yandexFields.style.display = "block";
+            disableOzonFields();
+            enableYandexFields();
+        } else {
+            ozonFields.style.display = "none";
+            yandexFields.style.display = "none";
+            disableOzonFields();
+            disableYandexFields();
+        }
+    }
+
+    function disableOzonFields() {
+        document.getElementById("ClientId").disabled = true;
+        document.getElementById("ApiKey").disabled = true;
+    }
+
+    function enableOzonFields() {
+        document.getElementById("ClientId").disabled = false;
+        document.getElementById("ApiKey").disabled = false;
+    }
+
+    function disableYandexFields() {
+        document.querySelector("#yandexApiClientFields select[name='OzonClient.ClientId']").disabled = true;
+        document.getElementById("ApiKeyYandexDisplay").disabled = true;
+        document.getElementById("ApiKeyYandex").disabled = true;
+    }
+
+    function enableYandexFields() {
+        document.querySelector("#yandexApiClientFields select[name='OzonClient.ClientId']").disabled = false;
+        document.getElementById("ApiKeyYandexDisplay").disabled = false;
+        document.getElementById("ApiKeyYandex").disabled = false;
+    }
+
+    document.getElementById("OzonClient_ClientType").addEventListener("change", handleClientTypeChange);
+
+    // Initial call to set correct visibility based on initial client type selection
+    handleClientTypeChange();
+
+</script>
+
+<script>
+    document.getElementById('toggleApiKeyYandexDisplay').addEventListener('click', function () {
+        var apiKeyInput = document.getElementById('ApiKeyYandexDisplay');
+        var type = apiKeyInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        apiKeyInput.setAttribute('type', type);
+
+        // Toggle the eye icon
+        this.querySelector('svg').classList.toggle('bi-eye-fill');
+        this.querySelector('svg').classList.toggle('bi-eye-slash-fill');
+    });
+</script>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

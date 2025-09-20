@@ -1,0 +1,28 @@
+﻿@{
+    ViewData["Title"] = "Поиск по артикулу";
+}
+
+<div class="container mt-4">
+    <h2>Поиск истории цен по артикулу</h2>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <form asp-action="SearchByArticle" method="post">
+                <div class="form-group">
+                    <label for="article">Артикул:</label>
+                    <input type="text" class="form-control" id="article" name="article" 
+                           placeholder="Введите артикул для поиска" required />
+                </div>
+                <button type="submit" class="btn btn-primary mt-2">Поиск</button>
+                <a asp-action="Index" class="btn btn-secondary mt-2">Назад</a>
+            </form>
+        </div>
+    </div>
+
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="alert alert-danger mt-3">
+            @Html.ValidationSummary()
+        </div>
+    }
+</div>

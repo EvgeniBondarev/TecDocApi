@@ -1,0 +1,442 @@
+﻿@{
+    ViewData["Title"] = "Категории";
+}
+@Html.AntiForgeryToken()
+<link href="~/css/tree-cards.css" rel="stylesheet" />
+
+<div class="container">
+    <!-- Панель действий -->
+    <div class="action-panel">
+        <a href="#" class="action-link" id="clear-selection">Очистить выбор</a>
+        <button id="confirmLinkButton" class="action-button" onclick="sendCategoriesToServer()">Связать категории</button>
+        <div class="translation-section" id="translation-section-id">
+            <input type="text" id="translationInput" class="translation-input" placeholder="Введите перевод">
+            <button id="sendTranslationButton" class="action-button" onclick="sendTranslationToServer()">Добавить перевод</button>
+        </div>
+        <a href="#" class="action-link" id="settings-button" onclick="showSettingsModal()">Настройки отображения</a>
+        <a  asp-area="OzonCards" asp-action="Index" asp-controller="Tasks">Задачи</a>
+    </div>
+
+    <!-- Основной контейнер с колонками -->
+    <div class="row" id="columns-container">
+        <!-- Правая колонка (Ct) -->
+        <div class="col-md-4 tree-container main-column" id="ct-column">
+            <h4 class="text-center">Ct (Главная)</h4>
+            <input type="text" id="ct-filter" class="form-control filter-input" placeholder="Фильтр категорий">
+            <div id="ct-category-container" class="tree-scroll">
+                <p>Загрузка...</p>
+            </div>
+        </div>
+
+        <!-- Левая колонка (Volna) -->
+        <div class="col-md-4 tree-container" id="volna-column">
+            <h4 class="text-center">Volna</h4>
+            <input type="text" id="volna-filter" class="form-control filter-input" placeholder="Фильтр категорий">
+            <div id="volna-category-container" class="tree-scroll">
+                <p>Загрузка...</p>
+            </div>
+        </div>
+
+        <!-- Центральная колонка (Ozon) -->
+        <div class="col-md-4 tree-container" id="ozon-column">
+            <h4 class="text-center">Ozon</h4>
+            <input type="text" id="ozon-filter" class="form-control filter-input" placeholder="Фильтр категорий">
+            <div id="ozon-category-container" class="tree-scroll">
+                <p>Загрузка...</p>
+            </div>
+        </div>
+        
+        <!-- Колонка Метод вызова и фильтрации -->
+        <div class="col-md-4 tree-container" id="method-column">
+            <h4 class="text-center">IC</h4>
+            <input type="text" id="method-filter" class="form-control filter-input" placeholder="Фильтр методов">
+            <div id="method-category-container" class="tree-scroll">
+                <p>Загрузка...</p>
+            </div>
+        </div>
+
+
+        <div class="col-md-4 tree-container" id="cattree-column">
+            <h4 class="text-center">CatTree</h4>
+            <input type="text" id="cattree-filter" class="form-control filter-input" placeholder="Фильтр категорий">
+            <div id="cattree-category-container" class="tree-scroll">
+                <p>Загрузка...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно настроек -->
+<div id="settings-modal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="hideSettingsModal()">&times;</span>
+        <h3>Настройки отображения</h3>
+        <div class="settings-options">
+            <button onclick="toggleColumn('volna-column')">Скрыть/показать Volna</button>
+            <button onclick="toggleColumn('ozon-column')">Скрыть/показать Ozon</button>
+            <button onclick="toggleColumn('method-column')">Скрыть/показать Метод вызова и фильтрации</button>
+            <button onclick="toggleColumn('cattree-column')">Скрыть/показать CatTree</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function unlinkCategory(id) {
+        if (confirm("Вы уверены, что хотите отвязать категорию?")) {
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+            fetch(`CategoryTree/Category/Unlink?id=${id}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': token
+                },
+                body: JSON.stringify({})
+            })
+                .then(response => {
+                    if (response.ok) {
+                        location.reload();
+                    } else {
+                        alert("Ошибка при отвязке.");
+                    }
+                });
+        }
+    }
+    
+
+    // Клик по связанной категории
+    $(document).on("click", ".link-item", function () {
+        const type = $(this).data("type");
+        const id = $(this).data("id");
+
+        if (!type || !id) return;
+
+        switch (type) {
+            case "Ozon":
+                loadCategories("ozon-category-container", '@Url.Action("GetOzonCategoriesById", "Category")' + '?id=' + id);
+                break;
+            case "Volna":
+                loadCategories("volna-category-container", '@Url.Action("GetVolnaCategoriesById", "Category")' + '?id=' + id);
+                break;
+            case "Ct":
+                loadCategories("ct-category-container", '@Url.Action("GetCtCategoriesById", "Category")' + '?id=' + id);
+                break;
+            case "CatTree":
+                loadCategories("cattree-category-container", '@Url.Action("GetCatTreeCategoriesById", "Category")' + '?id=' + id);
+                break;
+            case "IC":
+                loadCategories("method-category-container", '@Url.Action("GetICGroupsCategoriesById", "Category")' + '?id=' + id);
+                break;
+        }
+    });
+</script>
+
+
+<!-- jQuery для AJAX -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+    function showSettingsModal() {
+        document.getElementById('settings-modal').style.display = 'block';
+    }
+
+    function hideSettingsModal() {
+        document.getElementById('settings-modal').style.display = 'none';
+    }
+
+    // Закрытие модального окна при клике вне его
+    window.onclick = function(event) {
+        const modal = document.getElementById('settings-modal');
+        if (event.target == modal) {
+            hideSettingsModal();
+        }
+    }
+
+    // Ваша существующая функция toggleColumn
+    function toggleColumn(columnId) {
+        const column = document.getElementById(columnId);
+        if (column.style.display === 'none') {
+            column.style.display = 'block';
+        } else {
+            column.style.display = 'none';
+        }
+    }
+</script>
+
+<script>
+    // Функция для скрытия/показа колонок
+    function toggleColumn(columnId) {
+        var column = document.getElementById(columnId);
+        column.classList.toggle('hidden');
+        saveColumnsState();
+    }
+
+    // Функция для перемещения колонок
+    function makeColumnsDraggable() {
+        const columns = document.querySelectorAll('.tree-container');
+
+        columns.forEach(function(column) {
+            column.setAttribute('draggable', true);
+
+            column.addEventListener('dragstart', function(e) {
+                e.dataTransfer.setData('text', column.id);
+            });
+
+            column.addEventListener('dragover', function(e) {
+                e.preventDefault();
+            });
+
+            column.addEventListener('drop', function(e) {
+                e.preventDefault();
+                var draggedColumnId = e.dataTransfer.getData('text');
+                var draggedColumn = document.getElementById(draggedColumnId);
+                var currentColumn = column;
+
+                // Перемещаем столбцы
+                if (draggedColumn !== currentColumn) {
+                    var parent = draggedColumn.parentNode;
+                    parent.insertBefore(draggedColumn, currentColumn);
+                    saveColumnsState();
+                }
+            });
+        });
+    }
+
+    // Сохранение состояния колонок в sessionStorage
+    function saveColumnsState() {
+        const columnsState = {
+            volnaColumnHidden: document.getElementById('volna-column').classList.contains('hidden'),
+            ozonColumnHidden: document.getElementById('ozon-column').classList.contains('hidden'),
+            cattreeColumnHidden: document.getElementById('cattree-column').classList.contains('hidden'),
+            columnsOrder: Array.from(document.getElementById('columns-container').children).map(col => col.id),
+            methodColumnHidden: document.getElementById('method-column').classList.contains('hidden'),
+
+        };
+
+        sessionStorage.setItem('columnsState', JSON.stringify(columnsState));
+    }
+
+    // Восстановление состояния колонок из sessionStorage
+    function restoreColumnsState() {
+        const columnsState = JSON.parse(sessionStorage.getItem('columnsState'));
+        if (columnsState) {
+            // Восстанавливаем видимость колонок
+            if (columnsState.volnaColumnHidden) document.getElementById('volna-column').classList.add('hidden');
+            if (columnsState.ozonColumnHidden) document.getElementById('ozon-column').classList.add('hidden');
+            if (columnsState.cattreeColumnHidden) document.getElementById('cattree-column').classList.add('hidden');
+            if (columnsState.methodColumnHidden) document.getElementById('method-column').classList.add('hidden');
+
+            // Восстанавливаем порядок колонок
+            const container = document.getElementById('columns-container');
+            columnsState.columnsOrder.forEach(columnId => {
+                const column = document.getElementById(columnId);
+                container.appendChild(column);
+            });
+        }
+    }
+
+    // Инициализация перемещения колонок и восстановления состояния при загрузке страницы
+    window.onload = function() {
+        makeColumnsDraggable();
+        restoreColumnsState();
+    };
+</script>
+
+<script>
+    // Кнопка очистки выбора
+    document.getElementById("clear-selection").addEventListener("click", function () {
+        sessionStorage.removeItem("selectedCategories");
+        document.querySelectorAll(".category-link").forEach(link => {
+            link.style.color = "";
+        });
+        alert("Выбор категорий очищен!");
+    });
+    
+    function loadCategories(containerId, action, filterValue) {
+        $.get(action, { name: filterValue }, function (data) {
+            $("#" + containerId).html(data);
+        });
+    }
+
+    $(document).ready(function () {
+        // Изначальная загрузка деревьев
+        // Пример вызовов из JavaScript:
+        loadCategories("volna-category-container", '@Url.Action("UpdateVolnaCategories", "Category",  new { area = "CategoryTree" })', '');
+        loadCategories("ozon-category-container", '@Url.Action("UpdateOzonCategories", "Category",  new { area = "CategoryTree" })', '');
+        loadCategories("ct-category-container", '@Url.Action("UpdateCtCategories", "Category",  new { area = "CategoryTree" })', '');
+        loadCategories("cattree-category-container", '@Url.Action("UpdateCatTreeCategories", "Category",  new { area = "CategoryTree" })', '');
+        loadCategories("method-category-container", '@Url.Action("UpdateICGroupsCategories", "Category",  new { area = "CategoryTree" })', '')
+
+
+        // Фильтрация при вводе текста
+        $(".filter-input").on("input", function () {
+            let id = $(this).attr("id");
+            let value = $(this).val();
+
+            if (id === "volna-filter") {
+                loadCategories("volna-category-container", '@Url.Action("GetVolnaCategories", "Category",  new { area = "CategoryTree" })', value);
+            } else if (id === "ozon-filter") {
+                loadCategories("ozon-category-container", '@Url.Action("GetOzonCategories", "Category",  new { area = "CategoryTree" })', value);
+            } else if (id === "ct-filter") {
+                loadCategories("ct-category-container", '@Url.Action("GetCtCategories", "Category",  new { area = "CategoryTree" })', value);
+            } else if (id === "cattree-filter") {  // Обработчик фильтра для нового дерева
+                loadCategories("cattree-category-container", '@Url.Action("GetCatTreeCategories", "Category",  new { area = "CategoryTree" })', value);
+            }
+            else if (id === "method-filter") {
+                loadCategories("method-category-container", '@Url.Action("GetICGroupsCategories", "Category",  new { area = "CategoryTree" })', value);
+            }
+
+    });
+    });
+
+</script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        let selectedData = JSON.parse(sessionStorage.getItem("selectedCategories")) || {};
+
+        document.querySelectorAll(".category-link").forEach(link => {
+            let id = link.getAttribute("data-id");
+            let tree = link.getAttribute("data-tree");
+
+            if (selectedData[tree] && selectedData[tree] === id) {
+                link.style.color = "red";
+            }
+        });
+    });
+
+    function handleLeftClick(event, element) {
+        event.preventDefault();
+        let id = element.getAttribute("data-id");
+        let tree = element.getAttribute("data-tree");
+
+        let selectedData = JSON.parse(sessionStorage.getItem("selectedCategories")) || {};
+
+        // Если уже выбрана категория для данного tree, заменяем на новую
+        if (selectedData[tree] === id) {
+            delete selectedData[tree]; // Удаляем, если кликнули повторно (отмена выбора)
+            element.style.color = "";
+            // Проверяем, если выбрано ровно 3 категории - показываем окно
+            if (Object.keys(selectedData).length < 2) {
+                let button = document.getElementById("confirmLinkButton");
+                button.style.display = "none"; // Скрываем кнопку
+            }
+            if (Object.keys(selectedData).length === 0) {
+                let translation_section = document.getElementById("translation-section-id")
+                translation_section.style.display = "none";
+            }
+        } else {
+            // Сбрасываем цвет у старого элемента (если он был выделен)
+            document.querySelectorAll(`.category-link[data-tree="${tree}"]`).forEach(link => {
+                link.style.color = "";
+            });
+
+            selectedData[tree] = id; // Добавляем новую категорию
+            element.style.color = "red";
+        }
+
+        sessionStorage.setItem("selectedCategories", JSON.stringify(selectedData));
+        console.log("Выбранные категории:", selectedData);
+
+        // Проверяем, если выбрано ровно 3 категории - показываем окно
+        if (Object.keys(selectedData).length > 1) {
+            showConfirmationDialog();
+        }
+        if (Object.keys(selectedData).length >= 1) {
+            showSection();
+        }
+        console.log(sessionStorage.getItem("selectedCategories"));
+    }
+
+    const ozonCardsBaseUrl = '@Url.Action("Index", "Cards", new { area = "OzonCards" })';
+
+    function handleRightClick(event, element) {
+        event.preventDefault();
+        const encodedName = encodeURIComponent(element.dataset.name);
+        window.open(`${ozonCardsBaseUrl}?typeName=${encodedName}`, '_blank');
+        return false;
+    }
+
+
+    // Функция для показа окна подтверждения
+    function showConfirmationDialog() {
+        let button = document.getElementById("confirmLinkButton");
+        button.style.display = "block"; // Показываем кнопку
+    }
+    function showSection() {
+        let translation_section = document.getElementById("translation-section-id");
+        translation_section.style.display = "flex";
+    }
+
+    function sendTranslationToServer() {
+        const translationText = document.getElementById('translationInput').value.trim();
+
+        let selectedData = JSON.parse(sessionStorage.getItem("selectedCategories")) || {};
+
+        if (Object.keys(selectedData).length === 0) {
+            alert('Пожалуйста, сначала выберите категории');
+            return;
+        }
+
+        const requestData = {
+            CategoryNames: selectedData,
+            Translation: translationText
+        };
+
+        fetch('CategoryTree/Category/CreateCategoryTranslation', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestData)
+        })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => { throw new Error(err.error || 'Ошибка сервера'); });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    alert(translationText ? "Перевод сохранен" : "Перевод удален");
+                    document.getElementById('translationInput').value = '';
+                    location.reload();
+                }
+            })
+            .catch(error => {
+                console.error("Ошибка:", error);
+                alert("Ошибка: " + error.message);
+            });
+    }
+
+    // Функция для отправки данных в контроллер
+    function sendCategoriesToServer() {
+        let selectedData = JSON.parse(sessionStorage.getItem("selectedCategories")) || {};
+        let endpoint = ""
+        // Проверка наличия элемента с ключом 'CT' в selectedData
+        if ("CT" in selectedData) {
+            endpoint = 'CategoryTree/Category/LinkCategories'
+        } else {
+            endpoint = 'CategoryTree/Category/CreateUnifiedCategory'
+        }
+        
+        fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(selectedData)
+        })
+            .then(response => response.json())
+            .then(data => {
+                console.log("Ответ сервера:", data);
+                alert("Категории успешно связаны!");
+                sessionStorage.removeItem("selectedCategories"); // Очищаем после отправки
+                location.reload();
+            })
+            .catch(error => {
+                console.error("Ошибка:", error);
+                alert("Ошибка при связывании категорий.");
+            });
+    }
+</script>

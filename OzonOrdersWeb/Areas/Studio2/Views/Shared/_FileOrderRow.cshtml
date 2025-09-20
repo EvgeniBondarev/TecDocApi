@@ -1,0 +1,361 @@
+﻿@using OzonDomains.Models
+@using OzonOrdersWeb.ViewModels.OrderViewModels
+@model FileOrderRowViewModel
+
+
+<tr class="table-info quantity-row" id="selectRowForMerge_@Model.Index" data-index="@Model.Index"
+    onclick="selectRowForMerge(event, @Model.Index)" style="cursor: pointer;">
+    <td>
+        <input type="hidden" name="NotFullOrders[@Model.Index].Order.Key" value="@Model.Order.Key" />
+        <div class="d-flex align-items-center">
+            <span class="ml-2">
+                <b class="row-number">@Model.NumberInExcel</b>
+                <br>
+                @if (Model.UniqueOrder)
+                {
+                <input class="form-control form-control-sm orderNumberToSupplie-field"
+                       name="NotFullOrders[@Model.Index].Order.ShipmentNumber"
+                       value="@Model.Order.ShipmentNumber"
+                       id="shipmentNumber_@Model.Index"
+                       placeholder="Номер заказа" />
+                }
+                else
+
+                {
+                    <button type="button" class="btn btn-sm btn-primary moveToNewButton" onclick="cloneRow(this)" id="newOrderButton_@Model.Index">Новый заказ</button>
+
+                }
+            </span>
+        </div>
+    </td>
+    <td>
+            @if (!Model.UniqueOrder)
+            {
+                <div class="text-muted nowrap client-container" id="clientContainer_@Model.Index" title="@Model.Order.OzonClient?.Name" style="display:none;">
+                    <select name="NotFullOrders[@Model.Index].Order.OzonClient.Id" id="clientFilter_@Model.Index" class="form-control form-control-sm ozonClientFilter">
+                        <option value="">Выберите клиента</option>
+                        @foreach (var client in Model.OzonClients)
+                        {
+                            <option value="@client.Id" selected="@((Model.Order.OzonClient?.Id == client.Id) ? "selected" : null)">
+                                @client.Name
+                            </option>
+                        }
+                    </select>
+                </div>
+            }
+            else
+            {
+                <select name="NotFullOrders[@Model.Index].Order.OzonClient.Id" id="clientFilter_@Model.Index" class="form-control form-control-sm ozonClientFilterUnique">
+                    <option value="">Выберите клиента</option>
+                    @foreach (var client in Model.OzonClients)
+                    {
+                        <option value="@client.Id" selected="@((Model.Order.OzonClient?.Id == client.Id) ? "selected" : null)">
+                            @client.Name
+                        </option>
+                    }
+                </select>
+            }
+
+
+            @if (Model.Order.DeliveryCity != null && Model.Order.DeliveryCity != "")
+            {
+                <div style="white-space: nowrap;" title="@Model.Order.DeliveryCity">
+                @{
+                    string deliveryCity = Model.Order.DeliveryCity;
+                    if (deliveryCity.Length > 11)
+                    {
+                        deliveryCity = deliveryCity.Substring(0, 11) + "...";
+                    }
+                    @deliveryCity
+                    <input type="hidden" name="NotFullOrders[@Model.Index].Order.DeliveryCity" value="@Model.Order.DeliveryCity" />
+                }
+                </div>
+            }
+    </td>
+
+    <td>
+        <div style="max-width: 150px;" id="td2ProcessingDate" title="@Html.DisplayFor(modelItem => Model.Order.FormattedProcessingDate) @Html.DisplayFor(modelItem => Model.Order.FormattedProcessingTime)">
+            @Html.DisplayFor(modelItem => Model.Order.FormattedProcessingDate)
+            <input type="hidden" name="NotFullOrders[@Model.Index].Order.ProcessingDate" value="@Model.Order.ProcessingDate" />
+        </div>
+
+        <div class="text-muted" style="max-width: 150px;" title="@Html.DisplayFor(modelItem => Model.Order.FormattedShippingDate) @Html.DisplayFor(modelItem => Model.Order.FormattedShippingTime)">
+            @Html.DisplayFor(modelItem => Model.Order.FormattedShippingDate)
+            <input type="hidden" name="NotFullOrders[@Model.Index].Order.ShippingDate" value="@Model.Order.ShippingDate" />
+        </div>
+    </td>
+
+    <td>
+        <div style="white-space: nowrap; text-align: right;">
+            <div title="@Html.DisplayFor(modelItem => Model.Order.FormattedDeliveryDay) @Html.DisplayFor(modelItem => Model.Order.FormattedDeliveryHours)">@Html.DisplayFor(modelItem => Model.Order.FormattedDeliveryDay)</div>
+        </div>
+
+        <div style="white-space: nowrap; text-align: right;" class="text-muted">
+            @Html.DisplayFor(modelItem => Model.Order.FormattedTimeLeftDay)
+        </div>
+    </td>
+
+    <td>
+        <div class="nowrap" title="item.Status">
+            @if (Model.Order.Status != null)
+            {
+                string status = Model.Order.Status;
+                if (status.Length > 14)
+                {
+                    status = status.Substring(0, 14) + "...";
+                }
+                @status
+                <input type="hidden" name="NotFullOrders[@Model.Index].Order.Status" value="@Model.Order.Status" />
+            }
+            else
+            {
+                <br />
+            }
+
+        </div>
+
+        <div class="text-muted nowrap status-container" id="statusContainer_@Model.Index" title="@Model.Order.AppStatus?.Name">
+            <select name="NotFullOrders[@Model.Index].Order.AppStatus.Id" id="statusFilter_@Model.Index" class="form-control form-control-sm statusFilter" readonly>
+                <option value="">Выберите статус</option>
+                @foreach (var status in Model.AppStatuses)
+                {
+                    <option value="@status.Id" selected="@((Model.SelectedAppStatus?.Id == status.Id) ? "selected" : null)">
+                        @status.Name
+                    </option>
+                }
+            </select>
+        </div>
+
+    </td>
+
+    <td>
+        <div class="container">
+            <div class="row mb-0 justify-content-between">
+                <div id="thArticle" title="@Model.Order.ProductKey" class="col-md-4 d-flex align-items-center mb-1" style="white-space: nowrap;">
+                    @{
+                        string productKey = Model.Order.ProductKey;
+                        if (productKey != null && productKey.Length > 17)
+                        {
+                            productKey = productKey.Substring(0, 17) + "...";
+                        }
+                    }
+                    @productKey
+
+                    <input type="hidden" name="NotFullOrders[@Model.Index].Order.ProductKey" value="@Model.Order.ProductKey" />
+                </div>
+
+                <div id="thManufacturer" class="col-md-4 d-flex flex-column mb-1 nowrap text-center">
+                    @Html.DisplayFor(modelItem => Model.Order.Manufacturer.Name)
+                    <input type="hidden" name="NotFullOrders[@Model.Index].Order.Manufacturer.Id" value="@Model.Order.Manufacturer?.Id" />
+                </div>
+
+                <div id="thArticle2" class="col-md-4 d-flex flex-column mb-1 nowrap text-end">
+                    @if (Model.Order.Article != null)
+                    {
+                        @Html.DisplayFor(modelItem => Model.Order.Article)
+                        <input type="hidden" name="NotFullOrders[@Model.Index].Order.Article" value="@Model.Order.Article" />
+                    }
+                </div>
+            </div>
+            <div class="row mt-0">
+                <div id="thProductName" class="custom-width-large d-flex flex-column text-muted">
+                    <div>
+                        <div class="product-cell" title="@Html.DisplayFor(modelItem => Model.Order.ProductName)">
+                            @Html.DisplayFor(modelItem => Model.Order.ProductName)
+                            <input type="hidden" name="NotFullOrders[@Model.Index].Order.ProductName" value="@Model.Order.ProductName" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </td>
+
+    <td>
+    </td>
+
+    <td>
+        @Html.DisplayFor(modelItem => Model.Order.ShipmentWarehouse.Name)
+        <input type="hidden" name="NotFullOrders[@Model.Index].Order.ShipmentWarehouse.Id" value="@Model.Order.ShipmentWarehouse?.Id" />
+    </td>
+
+
+    <td>
+        <div>
+            @Html.DisplayFor(modelItem => Model.Order.Supplier.Name)
+            <input type="hidden" name="NotFullOrders[@Model.Index].Order.SupplierId" value="@Model.Order.Supplier?.Id" />
+        </div>
+
+        <div class="text-muted">
+            @Html.DisplayFor(modelItem => Model.Order.OrderNumberToSupplier)
+            <input type="hidden" name="NotFullOrders[@Model.Index].Order.OrderNumberToSupplier" value="@Model.Order.OrderNumberToSupplier" />
+        </div>
+    </td>
+
+    <td>
+        <div>
+            @if (Model.Order.ProductInfo.CommercialCategory != null)
+            {
+                string сommercialCategory = Model.Order.ProductInfo.CommercialCategory;
+                if (сommercialCategory.Length > 10)
+                {
+                    сommercialCategory = сommercialCategory.Substring(0, 10) + "...";
+                }
+                @сommercialCategory
+                <input type="hidden" name="NotFullOrders[@Model.Index].Order.ProductInfo.Id" value="@Model.Order.ProductInfo?.Id" />
+            }
+
+        </div>
+
+        <div class="text-muted">
+            @Html.DisplayFor(modelItem => Model.Order.ProductInfo.VolumetricWeight)
+            <input type="hidden" name="NotFullOrders[@Model.Index].Order.ProductInfo.Id" value="@Model.Order.ProductInfo?.Id" />
+        </div>
+    </td>
+
+    <td>
+        <div style="text-align: right;">
+            @Html.Raw(string.Format("{0:N0}", Model.Order.ProductInfo.CurrentPriceWithDiscount).Replace(",", " "))
+            <input type="hidden" name="NotFullOrders[@Model.Index].Order.ProductInfo.Id" value="@Model.Order.ProductInfo?.Id" />
+        </div>
+
+        <div class="text-muted nowrap">
+            <input type="hidden" name="NotFullOrders[@Model.Index].Order.Quantity"
+                   id="hiddenQuantity_@Model.Index" value="@Model.Order.Quantity" readonly />
+
+            <input name="NotFullOrders[@Model.Index].Order.Quantity"
+                   value="@Model.Order.Quantity"
+                   id="quantityFilter_@Model.Index"
+                   class="form-control form-control-sm quantity-input"
+                   style="text-align: right;" readonly />
+        </div>
+
+    </td>
+
+    <td>
+        <div style="text-align: right;">
+            <input name="NotFullOrders[@Model.Index].Order.Price"
+                   value="@Model.Order.Price"
+                   id="priceFilter_@Model.Index"
+                   class="form-control form-control-sm"
+                   style="text-align: right;" />
+        </div>
+
+
+        <div class="text-muted" style="text-align: right;">
+            @Html.Raw(string.Format("{0:N0}", Model.Order.ShipmentAmount).Replace(",", " "))
+            <input type="hidden" name="NotFullOrders[@Model.Index].Order.ShipmentAmount" value="@Model.Order.ShipmentAmount" readonly />
+        </div>
+    </td>
+
+    <td>
+        <div id="originalPriceContainer_origin_@Model.Index" style="text-align: right; white-space: nowrap;">
+            @if (Model.Order.OriginalPurchasePrice != null)
+            {
+                <div style="white-space: nowrap; margin: 0; font-size: 10px;">
+                    <div style="display: inline;">
+                        <span id="originalPurchasePrice_origin_@Model.Index">@Html.Raw(Model.Order.OriginalPurchasePrice)</span>
+                        <input type="hidden" id="hiddenOriginalPurchasePrice_origin_@Model.Index" name="NotFullOrders[@Model.Index].Order.OriginalPurchasePrice" value="@Model.Order.OriginalPurchasePrice" />
+                    </div>
+                    <div style="display: inline; margin-left: 5px;">
+                        <span id="currencyCode_origin_@Model.Index">@Html.DisplayFor(modelItem => Model.Order.Supplier.CurrencyCode)</span>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div style="white-space: nowrap; margin: 0; font-size: 10px; display:none">
+                    <div style="display: inline;">
+                        <span id="originalPurchasePrice_origin_@Model.Index">@Html.Raw(Model.Order.OriginalPurchasePrice)</span>
+                        <input type="hidden" id="hiddenOriginalPurchasePrice_origin_@Model.Index" name="NotFullOrders[@Model.Index].Order.OriginalPurchasePrice" value="@Model.Order.OriginalPurchasePrice" />
+                    </div>
+                    <div style="display: inline; margin-left: 5px;">
+                        <span id="currencyCode_origin_@Model.Index">@Html.DisplayFor(modelItem => Model.Order.Supplier.CurrencyCode)</span>
+                    </div>
+                </div>
+            }
+            <p style="display: inline; white-space: nowrap; margin: 0;">
+                <span id="purchasePrice_origin_@Model.Index">@Html.Raw(string.Format("{0:N0}", Model.Order.PurchasePrice).Replace(",", " "))</span>
+                <input type="hidden" id="hiddenPurchasePrice_origin_@Model.Index" name="NotFullOrders[@Model.Index].Order.PurchasePrice" value="@Model.Order.PurchasePrice" />
+            </p>
+        </div>
+
+        <div id="costPriceContainer_origin_@Model.Index" style="text-align: right;">
+            <span id="costPrice_origin_@Model.Index">@Html.Raw(string.Format("{0:N0}", Model.Order.CostPrice).Replace(",", " "))</span>
+            <input type="hidden" id="hiddenCostPrice_origin_@Model.Index" name="NotFullOrders[@Model.Index].Order.CostPrice" value="@Model.Order.CostPrice" />
+        </div>
+    </td>
+
+    <td style="text-align: right;">
+        <span id="minOzonCommission_origin_@Model.Index">
+            @Html.Raw(string.Format("{0:N0}", Model.Order.MinOzonCommission).Replace(",", " "))
+        </span>
+        <br />
+        <span id="maxOzonCommission_origin_@Model.Index">
+            @Html.Raw(string.Format("{0:N0}", Model.Order.MaxOzonCommission).Replace(",", " "))
+        </span>
+        <input type="hidden" id="minOzonCommission_hidden_@Model.Index" name="NotFullOrders[@Model.Index].Order.MinOzonCommission" value="@Model.Order.MinOzonCommission" />
+        <input type="hidden" id="maxOzonCommission_hidden_@Model.Index" name="NotFullOrders[@Model.Index].Order.MaxOzonCommission" value="@Model.Order.MaxOzonCommission" />
+    </td>
+
+    <td style="text-align: right;">
+        @if (Model.Order.MaxProfit < 0)
+        {
+            <span id="maxProfit_origin_@Model.Index" style="color:red">
+                @Html.Raw(string.Format("{0:N0}", Model.Order.MaxProfit).Replace(",", " "))
+            </span>
+        }
+        else
+        {
+            <span id="maxProfit_origin_@Model.Index">
+                @Html.Raw(string.Format("{0:N0}", Model.Order.MaxProfit).Replace(",", " "))
+            </span>
+        }
+        <input type="hidden" name="NotFullOrders[@Model.Index].Order.MaxProfit" value="@Model.Order.MaxProfit" />
+        <br>
+        @if (Model.Order.MinProfit < 0)
+        {
+            <span id="minProfit_origin_@Model.Index" style="color:red">
+                @Html.Raw(string.Format("{0:N0}", Model.Order.MinProfit).Replace(",", " "))
+            </span>
+        }
+        else
+        {
+            <span id="minProfit_origin_@Model.Index">
+                @Html.Raw(string.Format("{0:N0}", Model.Order.MinProfit).Replace(",", " "))
+            </span>
+        }
+        <input type="hidden" name="NotFullOrders[@Model.Index].Order.MinProfit" value="@Model.Order.MinProfit" />
+    </td>
+
+    <td style="text-align: right;">
+        @if (Model.Order.MaxDiscount < 0)
+        {
+            <span id="maxDiscount_origin_@Model.Index" style="color:red">
+                @Html.Raw(string.Format("{0:N0}", Model.Order.MaxDiscount).Replace(",", " "))
+            </span>
+        }
+        else
+        {
+            <span id="maxDiscount_origin_@Model.Index">
+                @Html.Raw(string.Format("{0:N0}", Model.Order.MaxDiscount).Replace(",", " "))
+            </span>
+        }
+        <input type="hidden" name="NotFullOrders[@Model.Index].Order.MaxDiscount" value="@Model.Order.MaxDiscount" />
+        <br>
+        @if (Model.Order.MinDiscount < 0)
+        {
+            <span id="minDiscount_origin_@Model.Index" style="color:red">
+                @Html.Raw(string.Format("{0:N0}", Model.Order.MinDiscount).Replace(",", " "))
+            </span>
+        }
+        else
+        {
+            <span id="minDiscount_origin_@Model.Index">
+                @Html.Raw(string.Format("{0:N0}", Model.Order.MinDiscount).Replace(",", " "))
+            </span>
+        }
+        <input type="hidden" name="NotFullOrders[@Model.Index].Order.MinDiscount" value="@Model.Order.MinDiscount" />
+    </td>
+
+    <input type="hidden" name="NotFullOrders[@Model.Index].Hidden" value="False" class="hiddenField" />
+</tr>

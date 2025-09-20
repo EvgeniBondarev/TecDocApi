@@ -1,0 +1,487 @@
+﻿@model List<OzonDomains.Models.Order>
+
+
+<style>
+
+    th {
+        white-space: nowrap;
+    }
+
+    .container .row .col-md-4 {
+        flex: 0 0 auto;
+        max-width: 33.3333%;
+    }
+
+    .container .custom-width-large {
+        width: 400px; /* Устанавливаем фиксированную ширину для поля "Наименование товара" */
+    }
+    
+    .product-cell {
+        font-size: 11px;
+    }
+
+        .product-cell:hover .product-popup {
+            display: block;
+        }
+
+    #processingDateFilter,
+    #shippingDateFilter {
+        width: 70px;
+    }
+
+    #deliveryPeriodInput,
+    #timeLeftDayInput {
+        width: 50px;
+    }
+
+    #statusFilter,
+    #appStatusFilterInput,
+    #supplierFilter
+    {
+        width: 103px;
+    }
+
+    #ozonClientFilterInput,
+    #deliveryCityFilter{
+        width: 125px;
+    }
+
+    #currentPriceWithDiscountFilter,
+    #quantityFilter,
+    #priceFilter,
+    #shipmentAmountFilter,
+    #purchasePriceFilter,
+    #costPriceFilter,
+    #ozonCommissionFilter,
+    #profitFilter,
+    #discountFilter {
+        width: 70px;
+        max-width: 70px;
+    }
+
+    a {
+        text-decoration: none;
+    }
+
+    .horizontal-line {
+        border-top: 1px solid #ccc;
+        margin: 20px 0;
+    }
+
+    #infoWindow {
+        position: fixed;
+        display: none;
+        border: 1px solid #ccc;
+        background-color: #fff;
+        padding: 10px;
+        z-index: 9999;
+    }
+
+    th.active {
+        background-color: #f4f4f4; /* Цвет подсветки */
+    }
+
+    .button-container {
+        display: flex;
+        gap: 10px; /* Расстояние между кнопками */
+    }
+
+    .horizontal-inputs {
+        display: flex;
+        align-items: center;
+    }
+
+        .horizontal-inputs > div {
+            margin-right: 10px; /* Отступ между элементами */
+        }
+
+    .vertical-align {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-between;
+        height: 100%;
+    }
+
+        .vertical-align > * {
+            margin: 2px 0; /* Минимальный отступ между элементами */
+        }
+
+    .checkbox-column {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 10px;
+    }
+
+    .nowrap {
+        white-space: nowrap;
+    }
+
+    .product-cell {
+        /* Убедитесь, что ширина элемента установлена */
+        width: 100%; /* Или установите конкретную ширину, если нужно */
+        /* Обрезка текста и добавление многоточия */
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* Изначально скрываем кнопку */
+    .clear-btn {
+        display: none;
+        position: absolute;
+        left: 100%;
+        transform: translateX(0) translateY(-50%); /* Прижимаем к основной кнопке и центрируем по вертикали */
+        z-index: 10; /* Поверх других элементов */
+        top: 50%; /* Центрируем по вертикали относительно главной кнопки */
+        opacity: 0; /* Прозрачность кнопки */
+        border: solid 1px;
+    }
+
+        /* Показываем кнопку при наведении на основную или на саму кнопку очистки */
+        .btn-container:hover .clear-btn,
+        .clear-btn:hover {
+            display: block;
+            opacity: 1; /* Увеличиваем непрозрачность при наведении */
+            border: solid 1px;
+        }
+
+    /* Обёртка для кнопок */
+    .btn-container {
+        position: relative;
+        display: inline-block;
+    }
+
+    .bg-green-300 {
+        background-color: #73c487 !important; /* Bootstrap's 'bg-success' color */
+    }
+
+    .placeholder {
+        min-height: 1em; /* Вы можете настроить минимальную высоту по вашему усмотрению */
+    }
+
+    button:focus {
+        outline: none !important;
+        box-shadow: none !important;
+    }
+
+</style>
+@foreach (var item in Model)
+        {
+            string rowClass = "custom-white";
+
+            if (item.AppStatus?.Name == "Заказан поставщику")
+            {
+                rowClass = "table-success";
+            }
+
+            if (item.IsReturnable == true)
+            {
+                rowClass = "custom-red";
+            }
+
+            if (
+                (item.AppStatus?.Name == "Отменен" && (item.Status == "Отменён" || string.IsNullOrEmpty(item.Status))) ||
+                item.Status == "Отменен" ||
+                item.Status == "Отменён"
+            )
+            {
+                rowClass = "table-danger";
+            }
+            
+            if (item.AppStatus?.Name  == "Отгружен постащиком")
+            {
+                rowClass = "table-info";
+            }
+            
+
+
+            <tr class=@rowClass oncontextmenu="showInfoAtCursor('@item.Id', event); return false;">
+                <td class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("ShipmentNumber") ? "bg-warning" : "")">
+                    <div class="d-flex align-items-center">
+                        @if (item.ExcelFileData != null)
+                        {
+                            <a href="@Url.Action("ViewFile", new { filePath = item.ExcelFileData.FolderName, fileName = item.ExcelFileData.FileName })" target="_blank" onclick="return validateLink('@item.ExcelFileData.FolderName', '@item.ExcelFileData.FileName')">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-filetype-xlsx" viewBox="0 0 16 16">
+                                    <path fill-rule="evenodd" d="M14 4.5V11h-1V4.5h-2A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v9H2V2a2 2 0 0 1 2-2h5.5zM7.86 14.841a1.13 1.13 0 0 0 .401.823q.195.162.479.252.284.091.665.091.507 0 .858-.158.355-.158.54-.44a1.17 1.17 0 0 0 .187-.656q0-.336-.135-.56a1 1 0 0 0-.375-.357 2 2 0 0 0-.565-.21l-.621-.144a1 1 0 0 1-.405-.176.37.37 0 0 1-.143-.299q0-.234.184-.384.188-.152.513-.152.214 0 .37.068a.6.6 0 0 1 .245.181.56.56 0 0 1 .12.258h.75a1.1 1.1 0 0 0-.199-.566 1.2 1.2 0 0 0-.5-.41 1.8 1.8 0 0 0-.78-.152q-.44 0-.777.15-.336.149-.527.421-.19.273-.19.639 0 .302.123.524t.351.367q.229.143.54.213l.618.144q.31.073.462.193a.39.39 0 0 1 .153.326.5.5 0 0 1-.085.29.56.56 0 0 1-.255.193q-.168.07-.413.07-.176 0-.32-.04a.8.8 0 0 1-.249-.115.58.58 0 0 1-.255-.384zm-3.726-2.909h.893l-1.274 2.007 1.254 1.992h-.908l-.85-1.415h-.035l-.853 1.415H1.5l1.24-2.016-1.228-1.983h.931l.832 1.438h.036zm1.923 3.325h1.697v.674H5.266v-3.999h.791zm7.636-3.325h.893l-1.274 2.007 1.254 1.992h-.908l-.85-1.415h-.035l-.853 1.415h-.861l1.24-2.016-1.228-1.983h.931l.832 1.438h.036z" />
+                                </svg>
+                            </a>
+                        }
+
+                        <span class="ml-2">
+                            @Html.DisplayFor(modelItem => item.ShipmentNumber)
+                        </span>
+                    </div>
+                </td>
+
+                <td>
+                    <div class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("OzonClient") ? "bg-warning" : "")" title="@item.OzonClient">
+                        @if (item.OzonClient != null)
+                        {
+                            string ozonClient = item.OzonClient.Name;
+                            if (ozonClient.Length > 18)
+                            {
+                                ozonClient = ozonClient.Substring(0,18) + "...";
+                            }
+                            @ozonClient
+                        }
+                    </div>
+
+                    @if (item.DeliveryCity != null && item.DeliveryCity != "")
+                    {
+                        <div class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("DeliveryCity") ? "bg-warning" : "") text-muted d-flex align-items-center" style="white-space: nowrap;" title="@item.DeliveryCity">
+                            @{
+                                string deliveryCity = item.DeliveryCity;
+                                if (deliveryCity.Length > 11)
+                                {
+                                    deliveryCity = deliveryCity.Substring(0, 11) + "...";
+                                }
+                                @deliveryCity
+                            }
+                        </div>
+                    }
+                </td>
+                
+                <td>
+                    <div class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("ProcessingDate") ? "bg-warning" : "")" style="max-width: 150px;" id="td2ProcessingDate" title="@Html.DisplayFor(modelItem => item.FormattedProcessingDate) @Html.DisplayFor(modelItem => item.FormattedProcessingTime)">
+                        @Html.DisplayFor(modelItem => item.FormattedProcessingDate)
+                    </div>
+                        
+                    <div class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("ShippingDate") ? "bg-warning" : "") text-muted" style="max-width: 150px;" title="@Html.DisplayFor(modelItem => item.FormattedShippingDate) @Html.DisplayFor(modelItem => item.FormattedShippingTime)">
+                        @Html.DisplayFor(modelItem => item.FormattedShippingDate)
+                    </div>
+                </td>
+
+                <td>
+                    <div style="white-space: nowrap; text-align: right;">
+                        <div title="@Html.DisplayFor(modelItem => item.FormattedDeliveryDay) @Html.DisplayFor(modelItem => item.FormattedDeliveryHours)">@Html.DisplayFor(modelItem => item.FormattedDeliveryDay)</div>
+                    </div>
+
+                    <div style="white-space: nowrap; text-align: right;" class="text-muted">
+                        @Html.DisplayFor(modelItem => item.FormattedTimeLeftDay)
+                    </div>
+                </td>
+
+                <td>
+                    <div class="container">
+                        <div class="row mb-0 justify-content-between">
+                                <div id="thArticle" title="@item.ProductKey" class="col-md-4 d-flex align-items-center mb-1 @(item.UpdatedColumns != null && item.UpdatedColumns.Contains("ProductKey") ? "bg-warning" : "")" style="white-space: nowrap;">
+                                        @{
+                                            string productKey = item.ProductKey;
+                                            if (productKey != null && productKey.Length > 17)
+                                            {
+                                                productKey = productKey.Substring(0, 17) + "...";
+                                            }
+                                        }
+                                        @productKey
+                                </div>
+                                
+                                <div id="thManufacturer" class="col-md-4 d-flex flex-column mb-1 nowrap text-center">
+                                    @if(item.EtProducer != null && item.EtProducer.Name == null)
+                                    {
+                                       <form  asp-area="Studio2" asp-action="Index" asp-controller="Producers" method="post">
+                                            <input type="hidden" name="MarketPrefix" value="@item.EtProducer.MarketPrefix"/>
+                                            <button type="submit" class="btn btn-link">Указать</button>
+                                       </form>
+                                    }
+                                    else
+                                    {
+                                        @Html.DisplayFor(modelItem => item.EtProducer.Name)
+                                    }
+                                </div>
+
+                                <div id="thArticle2" class="col-md-4 d-flex flex-column mb-1 nowrap text-end">
+                                    @if(item.Article != null){
+                                       @Html.DisplayFor(modelItem => item.Article)
+                                    }
+                                </div>
+                        </div>
+                        <div class="row mt-0">
+                                <div id="thProductName" class="custom-width-large d-flex flex-column text-muted">
+                                    <div class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("ProductName") ? "bg-warning" : "")">
+                                        <div class="product-cell" title="@Html.DisplayFor(modelItem => item.ProductName)">
+                                            @Html.DisplayFor(modelItem => item.ProductName)
+                                        </div>
+                                    </div>
+                                </div>
+                        </div>
+                    </div>
+                </td>
+
+                <td>
+                    <div class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("Status") ? "bg-warning" : "") nowrap" title="item.Status">
+                        @if(item.Status != null){
+                            string status = item.Status;
+                            if (status.Length > 14)
+                            {
+                                status = status.Substring(0, 14) + "...";
+                            }
+                            @status
+                        }
+                        else{
+                            <br/>
+                        }
+
+                    </div>
+
+                    <div class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("AppStatusId") ? "bg-warning" : "") text-muted nowrap" title="@item.AppStatus?.Name">
+                        @{
+                            string appStatus = item.AppStatus?.Name;
+                            if (appStatus?.Length > 14)
+                            {
+                                appStatus = appStatus.Substring(0, 14) + "...";
+                            }
+                        }
+                        @appStatus
+                    </div>
+                </td>
+                
+                <td>
+                    <div class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("ShipmentWarehouseId") ? "bg-warning" : "")">
+                        @Html.DisplayFor(modelItem => item.ShipmentWarehouse.Name)
+                    </div>
+
+                    <div class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("AppStatusId") ? "bg-warning" : "")  text-muted">
+                        @Html.DisplayFor(modelItem => item.FormattedLastStatusChangeDate)
+                    </div>
+                </td>
+                <td>
+                    <div class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("SupplierId") ? "bg-warning" : "")">
+                        @Html.DisplayFor(modelItem => item.Supplier.Name)
+                    </div>
+
+                    <div class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("OrderNumberToSupplier") ? "bg-warning" : "") text-muted">
+                        @Html.DisplayFor(modelItem => item.OrderNumberToSupplier)
+                    </div>
+                </td>
+
+                <td>
+                    <div class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("ProductInfoId") ? "bg-warning" : "")">
+                        @if (item.ProductInfo?.CommercialCategory != null)
+                        {
+                            string сommercialCategory = item.ProductInfo.CommercialCategory;
+                            if (сommercialCategory.Length > 10)
+                            {
+                                сommercialCategory = сommercialCategory.Substring(0, 10) + "...";
+                            }
+                            @сommercialCategory
+                        }
+
+                    </div>
+                        
+                    <div class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("ProductInfoId") ? "bg-warning" : "") text-muted">
+                        @Html.DisplayFor(modelItem => item.ProductInfo.VolumetricWeight)
+                        @if (item.ProductInfo?.Weight != 0)
+                        {
+                            <div style="white-space: nowrap; margin: 0; font-size: 10px; text-align: right">
+                                @Html.DisplayFor(modelItem => item.ProductInfo.Weight)
+                            </div>
+                        }
+                    </div>
+                </td>
+
+                <td>
+                    <div class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("ProductInfoId") ? "bg-warning" : "")" style="text-align: right;">
+                        @Html.Raw(string.Format("{0:N0}", item.ProductInfo.CurrentPriceWithDiscount).Replace(",", " "))
+                    </div>
+
+                    <div class="@(item.Quantity > 1 ? "bg-green-300" : "") text-muted" style="text-align: right;">
+                        @{
+                            if (item.Quantity > 1)
+                            {
+                                <b>
+                                    @Html.DisplayFor(modelItem => item.Quantity)
+                                </b>
+                            }
+                            else
+                            {
+                                @Html.DisplayFor(modelItem => item.Quantity)
+                            }
+                        }
+                    </div>
+                </td>
+                
+                <td>
+
+                    <div class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("Price") ? "bg-warning" : "")" style="text-align: right;">
+                        @Html.Raw(string.Format("{0:N0}", item.Price).Replace(",", " "))
+                    </div>
+
+                    <div class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("ShipmentAmount") ? "bg-warning" : "") text-muted" style="text-align: right;">
+                        @Html.Raw(string.Format("{0:N0}", item.ShipmentAmount).Replace(",", " "))
+                    </div>
+                </td>
+                
+               
+                
+                <td>
+                    <div class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("PurchasePrice") ? "bg-warning" : "")" style="text-align: right;  white-space: nowrap;">
+                        @if (item.OriginalPurchasePrice != null)
+                        {
+                            <div style="white-space: nowrap; margin: 0; font-size: 10px;">
+                                <div style="display: inline;">
+                                    @Html.Raw(string.Format("{0:N2}", item.OriginalPurchasePrice))
+                                </div>
+                                <div style="display: inline; margin-left: 5px;">
+                                    @Html.DisplayFor(modelItem => item.Supplier.CurrencyCode)
+                                </div>
+                            </div>
+                        }
+                        <p style="display: inline; white-space: nowrap; margin: 0;">
+                            @Html.Raw(string.Format("{0:N0}", item.PurchasePrice).Replace(",", " "))
+                        </p>
+                    </div>
+
+                    <div class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("CostPrice") ? "bg-warning" : "")" style="text-align: right;">
+                        @Html.Raw(string.Format("{0:N0}", item.CostPrice).Replace(",", " "))
+                    </div>
+
+                </td>
+
+                <td class="@(item.UpdatedColumns != null && (item.UpdatedColumns.Contains("MinOzonCommission") || item.UpdatedColumns.Contains("MaxOzonCommission")) ? "bg-warning" : "")" style="text-align: right;">
+                    @Html.Raw(string.Format("{0:N0}", item.MinOzonCommission).Replace(",", " ")) <br />
+                    @Html.Raw(string.Format("{0:N0}", item.MaxOzonCommission).Replace(",", " "))
+                </td>
+
+                <td class="@(item.UpdatedColumns != null && (item.UpdatedColumns.Contains("MinProfit") || item.UpdatedColumns.Contains("MaxProfit")) ? "bg-warning" : "")" style="text-align: right;">
+                    @if (item.MaxProfit < 0)
+                    {
+                        <span style="color:red">@Html.Raw(string.Format("{0:N0}", item.MaxProfit).Replace(",", " "))</span>
+                    }
+                    else
+                    {
+                        @Html.Raw(string.Format("{0:N0}", item.MaxProfit).Replace(",", " "))
+                    }
+                    <br>
+                    @if (item.MinProfit < 0)
+                    {
+                        <span style="color:red">@Html.Raw(string.Format("{0:N0}", item.MinProfit).Replace(",", " "))</span>
+                    }
+                    else
+                    {
+                        @Html.Raw(string.Format("{0:N0}", item.MinProfit).Replace(",", " "))
+                    }
+                </td>
+
+                <td class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("MinDiscount") ? "bg-warning" : "")" style="text-align: right;">
+                    @if (item.MaxDiscount < 0)
+                    {
+                        <span style="color:red">@Html.Raw(string.Format("{0:N0}", item.MaxDiscount).Replace(",", " "))</span>
+                    }
+                    else
+                    {
+                        @Html.Raw(string.Format("{0:N0}", item.MaxDiscount).Replace(",", " "))
+                    }
+                    <br>
+                    @if (item.MinDiscount < 0)
+                    {
+                        <span style="color:red">@Html.Raw(string.Format("{0:N0}", item.MinDiscount).Replace(",", " "))</span>
+                    }
+                    else
+                    {
+                        @Html.Raw(string.Format("{0:N0}", item.MinDiscount).Replace(",", " "))
+                    }
+                </td>
+            </tr>
+        }

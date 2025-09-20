@@ -1,0 +1,42 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="ReleaseServcies\**" />
+    <EmbeddedResource Remove="ReleaseServcies\**" />
+    <None Remove="ReleaseServcies\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="FiltersServcies\SortModels\OrderSortState.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="CsvHelper" />
+    <PackageReference Include="Dropbox.Api" />
+    <PackageReference Include="EPPlus" />
+    <PackageReference Include="FluentFTP" />
+    <PackageReference Include="Hangfire.Core" />
+    <PackageReference Include="HtmlAgilityPack" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" />
+    <PackageReference Include="Microsoft.Playwright" />
+    <PackageReference Include="RestEase" />
+    <PackageReference Include="Selenium.Support" />
+    <PackageReference Include="Selenium.WebDriver" />
+    <PackageReference Include="Selenium.WebDriver.ChromeDriver" />
+    <PackageReference Include="System.Data.SqlClient" />
+    <PackageReference Include="System.Security.Cryptography.Xml" />
+    <PackageReference Include="System.Text.Encodings.Web" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\OzonRepositories\OzonRepositories.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Runtime.Caching">
+      <HintPath>C:\Windows\Microsoft.NET\assembly\GAC_MSIL\System.Runtime.Caching\v4.0_4.0.0.0__b03f5f7f11d50a3a\System.Runtime.Caching.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+</Project>

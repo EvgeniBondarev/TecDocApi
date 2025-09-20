@@ -1,0 +1,161 @@
+﻿@model List<OzonOrdersWeb.Areas.PartsInfo.Models.SupplierModel>
+
+@{
+  var code = ViewData["SearchCode"]?.ToString();
+  var isSearch = !string.IsNullOrEmpty(code);
+  var img = Model != null && Model.Count > 0 ? Model[0].ImageUrl : "https://s3.timeweb.cloud/25f554fc-6f66254e-9650-4d17-8e13-77b5b7d3242e/AppData/Studio2/IMG/Ico.jpg";
+  var dynamicTitle = isSearch ? $"Parts Info — {code}" : "Parts Info — Поиск автозапчастей по коду";
+}
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>@dynamicTitle</title>
+  <meta property="og:title" content="@dynamicTitle" />
+  <meta name="twitter:title" content="@dynamicTitle" />
+
+  <meta property="og:description" content="Проверьте наличие и цену автозапчастей по коду. Удобный поиск, фото, рейтинг и отзывы!" />
+  <meta property="og:image" content=@img />
+  <meta property="og:url" content="https://interparts.mpsuper.ru/PartsInfo/Info/CodeInfo@(isSearch ? $"?code={code}" : "")" />
+  <meta property="og:type" content="website" />
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:description" content="Проверьте наличие и цену автозапчастей по коду. Удобный поиск, фото, рейтинг и отзывы!">
+  <meta name="twitter:image" content="https://s3.timeweb.cloud/25f554fc-6f66254e-9650-4d17-8e13-77b5b7d3242e/AppData/Studio2/IMG/Ico.jpg">
+  
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
+  <link rel="icon" href="https://s3.timeweb.cloud/25f554fc-6f66254e-9650-4d17-8e13-77b5b7d3242e/AppData/Studio2/IMG/Ico.jpg" type="image/png">
+  <link rel="stylesheet" href="~/css/PartsInfo/Info/CodeInfo/style.css" />
+</head>
+<body>
+<nav>
+  <div class="nav-wrapper container">
+    <a href="#" class="brand-logo" style="display: flex; align-items: center;">
+      <img src="https://s3.timeweb.cloud/25f554fc-6f66254e-9650-4d17-8e13-77b5b7d3242e/AppData/Studio2/IMG/PartsInfo.jpg" alt="Inter Cars">
+    </a>
+  </div>
+</nav>
+
+<div class="container">
+  <form method="get" action="/PartsInfo/Info/CodeInfo">
+    <div class="row search-wrapper">
+      <div class="input-field col s12 search-container">
+        <input type="text" id="search" name="code" value="@ViewData["SearchCode"]" autocomplete="off" />
+        <label for="search">Введите номер детали...</label>
+        <ul id="autocomplete-results" class="autocomplete-dropdown"></ul>
+      </div>
+    </div>
+    <button type="submit" class="btn" style="display:none;">Поиск</button>
+  </form>
+    
+  <div class="row">
+    <div class="col s12">
+      @if (Model != null)
+      {
+        @foreach (var item in Model)
+        {
+          int maxStars = 5;
+          double rating = item.Rating < 0 ? 0 : (item.Rating > 10 ? 10 : item.Rating); 
+          double starsCount = rating / 2.0; 
+
+          int fullStars = (int)starsCount;
+          bool halfStar = (starsCount - fullStars) >= 0.5;
+          int emptyStars = maxStars - fullStars - (halfStar ? 1 : 0);
+
+          string sourceIcon = "";
+          string sourceTitle = "";
+              
+          switch(item.ImageSource)
+          {
+            case OzonOrdersWeb.Areas.PartsInfo.Models.ImageSource.Database:
+              sourceIcon = "fa-database";
+              sourceTitle = "Из базы данных";
+              break;
+            case OzonOrdersWeb.Areas.PartsInfo.Models.ImageSource.S3:
+              sourceIcon = "fa-cloud";
+              sourceTitle = "Из облачного хранилища S3";
+              break;
+            case OzonOrdersWeb.Areas.PartsInfo.Models.ImageSource.VolnaParser:
+              sourceIcon = "fa-paragraph";
+              sourceTitle = "Из парсера Volna";
+              break;
+            case OzonOrdersWeb.Areas.PartsInfo.Models.ImageSource.Internet:
+              sourceIcon = "fa-globe";
+              sourceTitle = "Из интернета";
+              break;
+            default:
+              sourceIcon = "fa-question";
+              sourceTitle = "Неизвестный источник";
+              break;
+          }
+          <a href="@Url.Action("Info", "FullData", new { area = "PartsInfo", code = ViewData["SearchCode"], supplier = item.Name })" class="product-card-link">
+            <div class="product-card">
+              <div style="position: relative;">
+                @{
+                  var imageUrl = item.PrData?.ImgUrls?.FirstOrDefault() 
+                                 ?? item.PrData?.ImgUrls?.FirstOrDefault()
+                                 ?? item.ImageUrl;
+        
+                  var altText = item.Name ?? "Product image";
+                }
+                <img src="@imageUrl" alt="@altText" />
+                <i class="fas @sourceIcon" 
+                   style="position: absolute; bottom: 5px; right: 5px; background: rgba(0,0,0,0.3); color: white; padding: 3px; border-radius: 3px;"
+                   title="@sourceTitle"></i>
+              </div>
+              <div class="product-info">
+                <div class="product-title">
+                  @item.Name
+                </div>
+                <div class="product-desc">
+                  @item.Description
+                  @if (!string.IsNullOrWhiteSpace(item.PrData?.VendorCategoryName))
+                  {
+                    <text><br />@item.PrData.VendorCategoryName</text>
+                  }
+                </div>
+                <div class="manufacturer-field">
+                  <span class="field-label">Рейтинг:</span>
+                  <div class="rating-stars">
+                    @for (int i = 0; i < fullStars; i++)
+                    {
+                      <i class="fas fa-star" style="color: gold;"></i>
+                    }
+                    @if (halfStar)
+                    {
+                      <i class="fas fa-star-half-alt" style="color: gold;"></i>
+                    }
+                    @for (int i = 0; i < emptyStars; i++)
+                    {
+                      <i class="far fa-star" style="color: gold;"></i>
+                    }
+                    <span style="margin-left: 5px; color: #333;">@starsCount.ToString("0.0")</span>
+                  </div>
+                  <div style="font-size: 12px; color: #888; margin-top: 5px;">
+                    Tecdoc ID: @item.TecdocSupplierId | JS ID: @item.JSSupplierId
+                  </div>
+                </div>
+              </div>
+            </div>
+          </a>
+        }
+      }
+      else
+      {
+        <div class="product-card">
+          <div class="product-info">
+            <div class="product-desc">Код не найден</div>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+</div>
+<script src="~/js/PartsInfo/Info/CodeInfo/index.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+</body>
+</html>

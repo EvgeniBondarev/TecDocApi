@@ -1,0 +1,187 @@
+﻿@using Microsoft.AspNetCore.Identity
+@using OzonDomains.ViewModels
+@using OzonRepositories.Context.Identity
+@using Servcies.FiltersServcies.FilterModels
+
+@model PageViewModel<CustomIdentityUser, UserFilterModel>
+
+@inject UserManager<CustomIdentityUser> UserManager
+
+<style>
+    .underline-input input,
+    .underline-input select {
+        border: none;
+        border-bottom: 1px solid #ced4da; /* Bootstrap's gray border color */
+        outline: none;
+        width: 100%;
+        box-shadow: none;
+        border-radius: 0;
+        padding: 0.375rem 0.75rem; /* Adding padding for better appearance */
+    }
+
+    .btn-link {
+        padding: 0;
+    }
+</style>
+<script asp-src-include="~/js/**/*.js"></script>
+
+<div class="container ">
+    <div class="row">
+        <div>
+            <div class="card">
+                <div class="card-header">
+                    <h2>Список пользователей</h2>
+                    <p>
+                        <a asp-action="Create">Добавить пользователя</a>
+                    </p>
+                    <p>
+                        <a asp-action="Index">Роли</a>
+                    </p>
+                    <p>
+                        <a asp-area="" asp-controller="UserAccesses" asp-action="Index">Права доступа пользователей</a>
+                    </p>
+                </div>
+                <div class="card-body">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th></th>
+                                <th>Имя пользователя</th>
+                                <th>Права доступа</th>
+                                <th>Роль</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <form asp-area="Studio2" asp-controller="User" id="filterForm" asp-action="UserList" method="post">
+                                <td>
+                                    <button type="button" class="btn btn-link ml-2" onclick="clearForm()" style="margin-top: -9px;">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash-fill" viewBox="0 0 16 16">
+                                            <path d="M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5M8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5m3 .5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 1 0"></path>
+                                        </svg>
+                                        <span class="visually-hidden">Button</span>
+                                    </button>
+                                </td>
+                                <td>
+                                    <input asp-for="@Model.FilterModel.UserName" id="nameFilter" name="UserName" class="form-control form-control-sm" />
+                                </td>
+                                <td>
+                                    <select asp-for="@Model.FilterModel.UserAccess.Id" id="userAccessFilter" name="UserAccessId" class="form-control form-control-sm">
+                                        <option value=@null>Все</option>
+                                                @foreach (var access in ViewBag.Accesses)
+                                                {
+                                            <option value="@access.Id">@access.Name</option>
+                                                }
+                                    </select>
+                                </td>
+                                <td>
+                                    <select asp-for="@Model.FilterModel.UserRole" id="userRoleFilter" name="UserRole" class="form-control form-control-sm">
+                                        <option value="Все">Все</option>
+                                                @foreach (var role in ViewBag.Roles)
+                                                {
+                                            <option value="@role">@role</option>
+                                                }
+                                    </select>
+                                </td>
+                                <button type="submit" class="btn btn-primary">Применить фильтр</button>
+                                </form>
+                            @foreach (var user in Model.Items)
+                            {
+                                <tr>
+                                    <td></td>
+                                    <td>
+                                        <form asp-area="Studio2" asp-controller="User" asp-action="Edit" method="post" oninput="toggleSaveButton(this)">
+                                            <input type="hidden" name="Id" value="@user.Id" />
+                                            <div class="underline-input">
+                                                <input type="text" name="UserName" class="form-control form-control-sm" value="@user.UserName" placeholder="Username" />
+                                            </div>
+                                            <input type="hidden" name="UserAccessId" value="@user.UserAccessId" />
+                                            <button type="submit" class="btn btn-link" style="display: none;">Сохранить</button>
+                                        </form>
+                                    </td>
+                                    <td>
+                                        <form asp-area="Studio2" asp-controller="User" asp-action="EditUserAccess" method="post" oninput="toggleSaveButton(this)">
+                                            <input type="hidden" name="Id" value="@user.Id" />
+                                            <div class="underline-input">
+                                                <select name="UserAccessId" class="form-control form-control-sm">
+                                                    <option value="">Не указаны</option>
+                                                    @foreach (var access in ViewBag.Accesses)
+                                                    {
+                                                        <option value="@access.Id" selected="@(access.Id == user.UserAccessId)">@access.Name</option>
+                                                    }
+                                                </select>
+                                            </div>
+                                            <button type="submit" class="btn btn-link" style="display: none;">Сохранить</button>
+                                        </form>
+                                    </td>
+                                    <td>
+                                        @foreach (var role in await UserManager.GetRolesAsync(user))
+                                        {
+                                            <span>@role</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <a class="btn btn-sm btn-primary" asp-area="Studio2" asp-controller="User" asp-action="Edit" asp-route-userid="@user.Id">Роль</a>
+                                        <a class="btn btn-sm btn-primary" asp-area="Studio2" asp-controller="User" asp-action="SetUserAccess" asp-route-userid="@user.Id">Права доступа</a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<div class="pagination-wrapper d-flex justify-content-center">
+    <div class="pagination-controls">
+        @if (Model.TotalPages > 15)
+        {
+            @if (Model.PageNumber <= 8)
+            {
+                @for (int i = 1; i <= 15; i++)
+                {
+                    <a asp-action="Index" asp-route-page="@(i)" class="btn btn-primary @(i == Model.PageNumber ? "active" : "")">@i</a>
+                }
+                <span>...</span>
+                <a asp-action="Index" asp-route-page="@Model.TotalPages" class="btn btn-primary">@(Model.TotalPages)</a>
+            }
+            else if (Model.PageNumber >= Model.TotalPages - 7)
+            {
+                <a asp-action="Index" asp-route-page="1" class="btn btn-primary">1</a>
+                <span>...</span>
+                @for (int i = Model.TotalPages - 14; i <= Model.TotalPages; i++)
+                {
+                    <a asp-action="Index" asp-route-page="@(i)" class="btn btn-primary @(i == Model.PageNumber ? "active" : "")">@i</a>
+                }
+            }
+            else
+            {
+                <a asp-action="Index" asp-route-page="1" class="btn btn-primary">1</a>
+                <span>...</span>
+                @for (int i = Model.PageNumber - 6; i <= Model.PageNumber + 8; i++)
+                {
+                    <a asp-action="Index" asp-route-page="@(i)" class="btn btn-primary @(i == Model.PageNumber ? "active" : "")">@i</a>
+                }
+                <span>...</span>
+                <a asp-action="Index" asp-route-page="@Model.TotalPages" class="btn btn-primary">@(Model.TotalPages)</a>
+            }
+        }
+        else
+        {
+            @for (int i = 1; i <= Model.TotalPages; i++)
+            {
+                <a asp-action="Index" asp-route-page="@(i)" class="btn btn-primary @(i == Model.PageNumber ? "active" : "")">@i</a>
+            }
+        }
+    </div>
+</div>
+
+<script>
+    function toggleSaveButton(form) {
+        $(form).find('button[type="submit"]').show();
+    }
+</script>

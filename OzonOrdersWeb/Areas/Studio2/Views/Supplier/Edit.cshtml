@@ -1,0 +1,60 @@
+﻿@using OzonOrdersWeb.ViewModels.SupplierViewModels
+@model EditSupplierViewModel
+
+@{
+    ViewData["Title"] = "Edit";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h4>Поставщики</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-area="Studio2" asp-controller="Supplier" asp-action="Edit">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="Supplier.Id" />
+            <div class="form-group">
+                <label asp-for="Supplier.Name" class="control-label"></label>
+                <input asp-for="Supplier.Name" class="form-control" readonly />
+                <span asp-validation-for="Supplier.Name" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Supplier.CostFactor" class="control-label"></label>
+                <input asp-for="Supplier.CostFactor" class="form-control" />
+                <span asp-validation-for="Supplier.CostFactor" class="text-danger"></span>
+                <span id="costFactorWarning" class="text-danger" style="display:none;">Пожалуйста, используйте запятую вместо точки для десятичной части.</span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Supplier.WeightFactor" class="control-label"></label>
+                <input asp-for="Supplier.WeightFactor" class="form-control" />
+                <span asp-validation-for="Supplier.WeightFactor" class="text-danger"></span>
+                <span id="weightFactorWarning" class="text-danger" style="display:none;">Пожалуйста, используйте запятую вместо точки для десятичной части.</span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Supplier.CurrencyCode" class="control-label"></label>
+                <select asp-for="Supplier.CurrencyCode" class="form-control" asp-items="Model.CurrencyCodes"></select>
+                <span asp-validation-for="Supplier.CurrencyCode" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Supplier.WeightFactorCurrencyCode" class="control-label"></label>
+                <select asp-for="Supplier.WeightFactorCurrencyCode" class="form-control" asp-items="Model.CurrencyCodes"></select>
+                <span asp-validation-for="Supplier.WeightFactorCurrencyCode" class="text-danger"></span>
+            </div>
+            <br />
+            <div class="form-group">
+                <input type="submit" value="Сохранить" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">К списку поставщиков</a>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}
+

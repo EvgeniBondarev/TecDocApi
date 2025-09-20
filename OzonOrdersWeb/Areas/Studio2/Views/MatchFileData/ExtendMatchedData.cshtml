@@ -1,0 +1,217 @@
+﻿@using OzonOrdersWeb.ViewModels.MatchFileDataViewModel
+
+@model ExtendMatchedDataViewModel
+<style>
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0, 0, 0, 0.5); /* Полупрозрачный фон */
+    }
+
+    .modal-content {
+        background-color: #fefefe;
+        margin: 15% auto;
+        padding: 20px;
+        border: 1px solid #888;
+        width: 80%; /* Ширина контента */
+    }
+
+    .progress {
+        margin: 20px 0; /* Отступы сверху и снизу */
+    }
+</style>
+
+@{
+    string errorResult = (string)ViewData["ErrorResult"];
+}
+
+@if (errorResult != null)
+{
+    <div class="alert alert-dismissible alert-danger">
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <p>@Html.Raw(errorResult)</p>
+    </div>
+}
+
+<div class="container mt-5">
+    <h1 class="mb-4">Дополнить сопоставление</h1>
+    <hr />
+
+    @using (Html.BeginForm("ExtendMatchedData", "MatchFileData", FormMethod.Post, new { enctype = "multipart/form-data", @class = "needs-validation", novalidate = "novalidate", id = "uploadForm" }))
+    {
+        <div class="row">
+            <!-- Файл 1 -->
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label for="fileInput1" class="form-label">
+                        <h2>
+                            Заказы
+                        </h2> 
+                        <b>@Model.MainFileName</b>
+                    </label>
+                    <input type="file" class="form-control" id="fileInput1" name="file1" accept=".xlsx,.csv" required>
+                    <div class="invalid-feedback">
+                        <h2>
+                            Заказы
+                        </h2>
+                    </div>
+                </div>
+                <div id="startInputs1" style="display: none;">
+                    <div class="mb-3">
+                        <label for="startRowInput1" class="form-label">Начальная строка (файл 1)</label>
+                        <input type="number" class="form-control" id="startRowInput1" name="startRow1" value="1">
+                    </div>
+                    <div class="mb-3">
+                        <label for="startColumnInput1" class="form-label">Начальный столбец (файл 1)</label>
+                        <input type="number" class="form-control" id="startColumnInput1" name="startColumn1" value="1">
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label for="fileInput2" class="form-label">
+                        <h2>
+                            Платежи
+                        </h2> 
+                        <b>@Model.ScondaryFileName</b>
+                    </label>
+                    <input type="file" class="form-control" id="fileInput2" name="file2" accept=".xlsx,.csv" required>
+                    <div class="invalid-feedback">
+                        Пожалуйста, выберите файл для загрузки.
+                    </div>
+                </div>
+                <div id="startInputs2" style="display: none;">
+                    <div class="mb-3">
+                        <label for="startRowInput2" class="form-label">Начальная строка (файл 2)</label>
+                        <input type="number" class="form-control" id="startRowInput2" name="startRow2" value="1">
+                    </div>
+                    <div class="mb-3">
+                        <label for="startColumnInput2" class="form-label">Начальный столбец (файл 2)</label>
+                        <input type="number" class="form-control" id="startColumnInput2" name="startColumn2" value="1">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="matchingFieldsContainer">
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="matchColumn1" class="form-label">Сопоставление 1</label>
+                    <input type="text" class="form-control" name="matchingColumns[0].Item1" required placeholder="Введите название столбца">
+                </div>
+
+                <div class="col-md-6">
+                    <label for="matchColumn2" class="form-label">Сопоставление 1</label>
+                    <input type="text" class="form-control" name="matchingColumns[0].Item2" required placeholder="Введите название столбца">
+                </div>
+            </div>
+        </div>
+
+        <button type="button" id="addMatchingFields" class="btn btn-link mb-3">Добавить сопоставление</button> 
+        <input type="hidden" name="id" value="@Model.Id" />
+
+        <div class="row">
+            <div class="col-md-12">
+                <button type="submit" class="btn btn-primary" id="submitButton" disabled>Загрузить и сопоставить</button>
+            </div>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(ViewBag.Message))
+    {
+        <div class="alert alert-info mt-4">
+            @ViewBag.Message
+        </div>
+    }
+</div>
+
+<script>
+    let matchCount = 1; // Счетчик сопоставлений
+
+    function handleFileInput(fileInputId, startInputsId) {
+        var fileInput = document.getElementById(fileInputId);
+        fileInput.addEventListener('change', function () {
+            var file = this.files[0];
+            if (file) {
+                var extension = file.name.split('.').pop().toLowerCase();
+                if (extension === 'csv' || extension === 'xlsx') {
+                    document.getElementById(startInputsId).style.display = 'block';
+                } else {
+                    document.getElementById(startInputsId).style.display = 'none';
+                }
+            }
+            updateSubmitButtonState();
+        });
+    }
+
+    function updateSubmitButtonState() {
+        const fileInput1 = document.getElementById('fileInput1').value;
+        const fileInput2 = document.getElementById('fileInput2').value;
+
+        const submitButton = document.getElementById('submitButton');
+
+        // Enable the button only if both file inputs are filled
+        if (fileInput1 && fileInput2) {
+            submitButton.disabled = false;
+        } else {
+            submitButton.disabled = true;
+        }
+    }
+    function updateMatchingFields() {
+        const fileInput1 = document.getElementById('fileInput1').value;
+        const fileInput2 = document.getElementById('fileInput2').value;
+
+        const matchingFieldsContainer = document.getElementById('matchingFieldsContainer');
+        const submitButton = document.getElementById('submitButton');
+
+        // Show the matching fields container if both file inputs have files
+        if (fileInput1 && fileInput2) {
+            matchingFieldsContainer.style.display = 'block';
+            submitButton.disabled = false; // Enable submit button when both files are selected
+        } else {
+            matchingFieldsContainer.style.display = 'none';
+            submitButton.disabled = true; // Disable submit button if any file is not selected
+        }
+    }
+
+
+    document.getElementById('addMatchingFields').addEventListener('click', function () {
+        const container = document.getElementById('matchingFieldsContainer');
+
+        const newFields = `
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="matchColumn${matchCount + 1}" class="form-label">Сопоставление ${matchCount + 1}</label>
+                            <input type="text" class="form-control" name="matchingColumns[${matchCount}].Item1" required placeholder="Введите название столбца">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="matchColumn${matchCount + 1}" class="form-label">Сопоставление ${matchCount + 1}</label>
+                            <input type="text" class="form-control" name="matchingColumns[${matchCount}].Item2" required placeholder="Введите название столбца">
+                        </div>
+                    </div>
+                `;
+        container.insertAdjacentHTML('beforeend', newFields);
+        matchCount++; // Увеличиваем счетчик
+    });
+
+    // Attach change event listeners
+    handleFileInput('fileInput1', 'startInputs1');
+    handleFileInput('fileInput2', 'startInputs2');
+</script>
+<script>
+    // Функция для показа/скрытия списка при клике на заголовок
+    document.getElementById('toggleList').addEventListener('click', function () {
+        const listContainer = document.getElementById('fileListContainer');
+        if (listContainer.style.display === 'none' || listContainer.style.display === '') {
+            listContainer.style.display = 'block'; // Показать список
+        } else {
+            listContainer.style.display = 'none'; // Скрыть список
+        }
+    });
+</script>

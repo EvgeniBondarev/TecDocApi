@@ -1,0 +1,81 @@
+﻿@{
+Layout = "_Layout";
+}
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <title>Поиск изображений S3</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="~/css/PartsInfo/Info/Images/style.css" />
+</head>
+<body>
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-images me-2"></i>Поиск изображений S3
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="folderSearchContainer">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-folder"></i></span>
+                            <input type="text" id="folderSearch" class="form-control" placeholder="Введите имя папки (например, SEI)" autocomplete="off">
+                            <button class="btn btn-outline-secondary" type="button" id="clearSearch">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div id="folderDropdown" class="card folder-list">
+                            <div id="loadingSpinner" class="card-body text-center my-3" style="display: none;">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Загрузка...</span>
+                                </div>
+                                <p class="mt-2">Загрузка папок...</p>
+                            </div>
+                            <div id="folderList" class="list-group"></div>
+                            <div id="errorMessage" class="alert alert-danger d-none" role="alert">
+                                Не удалось загрузить папки. <a href="#" id="retryLink" class="alert-link">Повторить</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="code-input-container">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-code"></i></span>
+                            <input type="text" id="codeInput" class="form-control" placeholder="Введите код (например, TH138)" autocomplete="off">
+                            <button class="btn btn-outline-secondary" type="button" id="clearCode">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <button id="searchButton" class="btn btn-primary w-100">
+                        <i class="fas fa-search me-2"></i>Найти изображения
+                    </button>
+                    <div id="loadingImages" class="loading-images text-center mt-3">
+                        <div class="spinner-border text-primary mx-auto" role="status">
+                            <span class="visually-hidden">Загрузка...</span>
+                        </div>
+                        <p class="mt-2">Загрузка изображений...</p>
+                    </div>
+                    <div id="randomImagesContainer" class="row row-cols-5 g-3 mt-3"></div>
+                    <div id="imagesContainer" class="images-container"></div>
+                </div>
+                <div class="card-footer text-muted small">
+                    <div class="d-flex justify-content-between">
+                        <span id="lastUpdated"></span>
+                        <span id="cacheStatus"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="~/js/PartsInfo/Images/index.js"></script>
+</body>
+</html>

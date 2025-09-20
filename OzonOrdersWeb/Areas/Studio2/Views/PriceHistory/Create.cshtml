@@ -1,0 +1,71 @@
+﻿@model OzonRepositories.Data.Bitrix.PriceHistory
+@{
+    ViewData["Title"] = "Создание записи истории цен";
+}
+
+<div class="container mt-4">
+    <h2>Создание новой записи истории цен</h2>
+    
+    <form asp-action="Create" method="post">
+        @Html.AntiForgeryToken()
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label asp-for="BitrixId" class="control-label"></label>
+                    <input asp-for="BitrixId" class="form-control" />
+                    <span asp-validation-for="BitrixId" class="text-danger"></span>
+                </div>
+                
+                <div class="form-group">
+                    <label asp-for="Article" class="control-label"></label>
+                    <input asp-for="Article" class="form-control" />
+                    <span asp-validation-for="Article" class="text-danger"></span>
+                </div>
+                
+                <div class="form-group">
+                    <label asp-for="PriceValue" class="control-label"></label>
+                    <input asp-for="PriceValue" class="form-control" type="number" step="0.01" />
+                    <span asp-validation-for="PriceValue" class="text-danger"></span>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label asp-for="Currency" class="control-label"></label>
+                    <input asp-for="Currency" class="form-control" />
+                    <span asp-validation-for="Currency" class="text-danger"></span>
+                </div>
+                
+                <div class="form-group">
+                    <label asp-for="ValueSource" class="control-label"></label>
+                    <input asp-for="ValueSource" class="form-control" />
+                    <span asp-validation-for="ValueSource" class="text-danger"></span>
+                </div>
+                
+                <div class="form-group">
+                    <label asp-for="Author" class="control-label"></label>
+                    <input asp-for="Author" class="form-control" />
+                    <span asp-validation-for="Author" class="text-danger"></span>
+                </div>
+                
+                <div class="form-group">
+                    <label asp-for="CreateDateTime" class="control-label"></label>
+                    <input asp-for="CreateDateTime" class="form-control" type="datetime-local" />
+                    <span asp-validation-for="CreateDateTime" class="text-danger"></span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-group mt-3">
+            <button type="submit" class="btn btn-success">Создать</button>
+            <a asp-action="Index" class="btn btn-secondary">Отмена</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

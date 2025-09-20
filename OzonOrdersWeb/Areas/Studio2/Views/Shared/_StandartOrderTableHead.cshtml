@@ -1,0 +1,180 @@
+﻿<tr>
+        <th id="thShipmentNumber">
+            <small>№/Номер заказа</small>
+            <input id="shipmentNumberFilter" class="form-control form-control-sm" readonly />
+        </th>
+
+        <th>
+            <div id="thOzonClient">
+                <small>Клиент</small>
+                <input id="ozonClientFilterInput" class="form-control form-control-sm" autocomplete="off" readonly />
+            </div>
+            <div id="thDeliveryCity" class="text-muted" title="Город доставки">
+                <small>Город.</small>
+                <input id="deliveryCityFilter" class="form-control form-control-sm" readonly />
+            </div>
+        </th>
+
+        <th>
+            <div id="thProcessingDate" title="Принят в обработку">
+                <small>Принят.</small>
+                <input id="processingDateFilter" class="form-control form-control-sm" type="date" readonly />
+            </div>
+            <div id="thShippingDate" class="text-muted" title="Дата отгрузки">
+                <small>Дата отгр.</small>
+                <input id="shippingDateFilter" class="form-control form-control-sm" type="date" readonly />
+            </div>
+        </th>
+
+        <th style="width: 20px">
+            <div id="thDeliveryPeriod" title="Срок доставки">
+                <small>Срок. </small>
+                <input id="deliveryPeriodInput" class="form-control form-control-sm" type="text" placeholder="1 д. 1 ч." readonly />
+            </div>
+            <div id="thDeliveryPeriod" class="text-muted" title="Осталось времени">
+                <small>Остал.</small>
+                <input id="timeLeftDayInput" class="form-control form-control-sm" type="number" placeholder="1 д." readonly />
+            </div>
+        </th>
+
+        <th>
+            <div class="container">
+                <div class="row mb-0 justify-content-between">
+                    <div id="thArticle" class="col-md-4 d-flex flex-column">
+                        <small>Key</small>
+                        <input id="articleFilter" class="form-control form-control-sm" readonly />
+                    </div>
+                    <div id="thManufacturer" class="col-md-4 d-flex flex-column">
+                        <small>Производитель</small>
+                        <input id="manufacturerFilter" class="form-control form-control-sm" readonly />
+                    </div>
+                    <div id="thArticle2" class="col-md-4 d-flex flex-column">
+                        <small>Код товара</small>
+                        <input id="articleFilter2" class="form-control form-control-sm" readonly />
+                    </div>
+                </div>
+                <div class="row mt-0">
+                    <div id="thProductName" class="custom-width-large text-muted">
+                        <small>Наименование товара</small>
+                        <input id="productNameFilter" class="form-control form-control-sm" readonly />
+                    </div>
+                </div>
+            </div>
+        </th>
+        
+        <th>
+            <div id="thStatusOzon">
+                <small>Статус клиента</small>
+                <input id="statusFilter" class="form-control form-control-sm statusFilter" autocomplete="off" readonly />
+            </div>
+            <div id="thStatus" class="text-muted">
+                <small>Статус</small>
+                <input id="appStatusFilterInput" class="form-control form-control-sm" readonly />
+            </div>
+        </th>
+        
+        <th>
+            <div id="thShipmentWarehouse">
+                <small>Склад отгрузки</small>
+                <input id="shipmentWarehouseFilter" class="form-control form-control-sm" autocomplete="off" readonly />
+            </div>
+            <div id="thLastStatusChangeDate">
+                <small>Дата изм. статуса</small>
+                <input id="lastStatusChangeDateFilter" class="form-control form-control-sm" autocomplete="off" readonly />
+            </div>
+        </th>
+        
+        <th>
+            <div id="thSupplier">
+                <small>Поставщик</small>
+                <input id="supplierFilter" class="form-control form-control-sm" readonly />
+            </div>
+            <div id="thOrderNumberToSupplierSort" class="text-muted" title="Номер заказа поставщику">
+                <small>Номер зак. п.</small>
+                <input type="text" class="form-control form-control-sm" id="universalOrderNumberToSupplier" readonly />
+            </div>
+        </th>
+
+        <th>
+            <div id="thCategory">
+                <small>Категория</small>
+                <input id="commercialCategoryFilter" class="form-control form-control-sm" readonly />
+            </div>
+            <div id="thVolume" class="text-muted">
+                <small>Вес V</small>
+                <input id="volumetricWeightFilter" class="form-control form-control-sm" readonly />
+            </div>
+        </th>
+        
+        <th>
+            <div id="thPurchasePrice" title="Цена сайта">
+                <small>Цена с.</small>
+                <input id="currentPriceWithDiscountFilter" class="form-control form-control-sm" readonly />
+            </div>
+            <div id="thQuantity" class="text-muted" title="Количество">
+                <small>Кол.</small>
+                <input id="quantityFilter" class="form-control form-control-sm" readonly />
+            </div>
+        </th>
+        
+        <th>
+            <div id="thPrice">
+                <small>Цена</small>
+                <input id="priceFilter" class="form-control form-control-sm" readonly />
+            </div>
+            <div id="thShipmentAmount" class="text-muted" title="Сумма отправления">
+                <small>Сумма о.</small>
+                <input id="shipmentAmountFilter" class="form-control form-control-sm" readonly />
+            </div>
+        </th>
+
+        <th>
+            <div id="thCurrentPrice" title="Цена закупки">
+                <small>Цена заку.</small>
+                <input id="purchasePriceFilter" class="form-control form-control-sm" readonly />
+            </div>
+            <div id="thCostPriceсе" class="text-muted" title="Себестоимость">
+                <small>Себест.</small>
+                <input id="costPriceFilter" class="form-control form-control-sm" readonly />
+            </div>
+        </th>
+        
+        <th id="thOzonCommission" title="Комиссия ОЗОН">
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                <div>
+                    <small>Комис.</small>
+                </div>
+                <div style="text-align: center; font-size: 10px;" class="text-muted">
+                    <div><small>min</small></div>
+                    <div><small>max</small></div>
+                </div>
+            </div>
+            <input id="ozonCommissionFilter" class="form-control form-control-sm" readonly />
+        </th>
+        
+        <th id="thProfit" title="Прибыль">
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                <div>
+                    <small>Приб.</small>
+                </div>
+                <div style="text-align: center; font-size: 10px;" class="text-muted">
+                    <div><small>min</small></div>
+                    <div><small>max</small></div>
+                </div>
+            </div>
+            <input id="profitFilter" class="form-control form-control-sm" readonly />
+        </th>
+        
+        <th id="thDiscount" title="Наценка %">
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                <div>
+                    <small>Нацен.%</small>
+                </div>
+                <div style="text-align: center; font-size: 10px;" class="text-muted">
+                    <div><small>min</small></div>
+                    <div><small>max</small></div>
+                </div>
+            </div>
+            <input id="discountFilter" class="form-control form-control-sm" readonly />
+        </th>
+    </tr>

@@ -1,0 +1,248 @@
+nav {
+    background-color: #f8f9fa;
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+}
+
+nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    gap: 15px;
+}
+
+nav li {
+    display: inline;
+}
+
+nav a {
+    text-decoration: none;
+    color: #007bff;
+    font-weight: bold;
+}
+
+nav a:hover {
+    text-decoration: underline;
+}
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+
+}
+
+.container {
+    height: 100vh; /* Высота контейнера на весь экран */
+    display: flex;
+    flex-direction: column;
+}
+
+.row {
+    flex-grow: 1;
+    display: flex;
+    flex-wrap: wrap; /* Позволяет элементам переноситься */
+    justify-content: space-between;
+}
+
+.tree-container {
+    border: 1px solid #ddd;
+    padding: 10px;
+    flex: 1;
+    height: 100vh; /* Высота на весь экран */
+    overflow: hidden;
+    min-width: 300px; /* Минимальная ширина */
+    box-shadow: 0 0 5px rgba(0,0,0,0.1);
+}
+
+.tree-scroll {
+    height: calc(100vh - 120px); /* Учитываем высоту заголовка и фильтра */
+    overflow-y: auto; /* Независимая прокрутка */
+    border: 1px solid #ccc;
+    padding: 10px;
+}
+
+a {
+    color: black; /* Чёрный цвет текста */
+    text-decoration: none; /* Убираем подчёркивание */
+}
+
+a:hover, a:focus, a:active {
+    color: black; /* Чёрный цвет при наведении и фокусе */
+    text-decoration: none; /* Убираем подчёркивание */
+}
+.main-column {
+    background-color: #f0f0f0; /* светло-серый фон */
+    border: 2px solid #ccc;
+
+    padding: 10px;
+}
+/* Плавное скрытие и отображение колонок */
+.tree-container {
+    transition: all 0.5s ease;
+}
+
+.tree-container.hidden {
+    display: none;
+}
+
+/* Чтобы остальные колонки можно было двигать */
+.tree-container.draggable {
+    cursor: move;
+}
+
+.modal-content {
+    background-color: #fefefe;
+    border: 1px solid #888;
+    width: 80%;
+    border-radius: 5px;
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close:hover {
+    color: black;
+}
+
+.settings-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.action-panel {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    margin-bottom: 15px;
+}
+.action-panel {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 15px;
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.action-link {
+    color: #007bff;
+    text-decoration: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.action-link:hover {
+    background-color: #f8f9fa;
+    text-decoration: underline;
+}
+
+.action-button {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.action-button:hover {
+    background-color: #218838;
+}
+
+#confirmLinkButton {
+    display: none;
+}    .action-panel {
+         display: flex;
+         align-items: center;
+         gap: 15px;
+         margin-bottom: 15px;
+         padding: 8px 0;
+         border-bottom: 1px solid #eee;
+     }
+
+.action-link {
+    color: #007bff;
+    text-decoration: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.action-link:hover {
+    background-color: #f8f9fa;
+    text-decoration: underline;
+}
+
+.action-button {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.action-button:hover {
+    background-color: #218838;
+}
+
+#confirmLinkButton {
+    display: none;
+}
+
+.Ozon {
+    color: #4a90e2; /* спокойный синий */
+}
+
+.Volna {
+    color: #50b894; /* мягкий зелёный */
+}
+
+.CatTree {
+    color: #f4a261; /* тёплый персиково-оранжевый */
+}
+
+.IC {
+    color: #9b8ec8; /* мягкий сиреневый */
+}
+
+/* hover эффект — чуть темнее */
+.Ozon:hover {
+    color: #2c6bb2;
+}
+
+.Volna:hover {
+    color: #3d9c7b;
+}
+
+.CatTree:hover {
+    color: #e98b3f;
+}
+
+.IC:hover {
+    color: #7f6bb3;
+}
+.translation-section {
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+    margin-left: 10px;
+}
+
+.translation-input {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}

@@ -1,0 +1,55 @@
+﻿/* Ширина по умолчанию для больших экранов */
+#shipmentTable {
+    width: 100%;
+    box-sizing: border-box; /* Учитываем padding и border в ширину */
+    margin: 0 auto; /* Центрирование таблицы */
+}
+
+/* Разрешение 2560x1440 */
+@media (max-width: 2560px) {
+    #shipmentTable {
+        max-width: 2300px;
+    }
+}
+
+/* Разрешение 1920x1080 */
+@media (max-width: 1920px) {
+    #shipmentTable {
+        max-width: 1700px;
+    }
+}
+
+/* Существующие медиа-запросы */
+@media (max-width: 1200px) {
+    #shipmentTable {
+        max-width: 1000px;
+    }
+}
+
+@media (max-width: 992px) {
+    #shipmentTable {
+        max-width: 900px;
+    }
+}
+
+@media (max-width: 768px) {
+    #shipmentTable {
+        max-width: 730px;
+    }
+}
+
+@media (max-width: 576px) {
+    #shipmentTable {
+        max-width: 100%; /* Таблица займет всю доступную ширину экрана */
+    }
+}
+
+#shipmentTable small,
+#shipmentTable input,
+#shipmentTable td {
+    font-size: 14px;
+    white-space: nowrap; /* Запрещает перенос текста на новую строку */
+    overflow: hidden; /* Прячет текст, который не помещается */
+    text-overflow: ellipsis; /* Добавляет многоточие для текста, который не помещается */
+}
+

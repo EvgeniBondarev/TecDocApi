@@ -1,0 +1,12 @@
+﻿@model string
+
+@{
+    ViewData["Title"] = "Сводка заказа";
+}
+
+<div class="container mt-4">
+    <h2>Сводка заказа</h2>
+    <div class="table-responsive mt-3">
+        @Html.Raw(Model)
+    </div>
+</div>

@@ -1,0 +1,219 @@
+﻿@model List<OzonDomains.Models.OrderHistory>
+
+@{
+ViewData["Title"] = "История изменений заказов";
+}
+
+<div class="container">
+    <h2>История изменений заказов</h2>
+
+    <div id="historyContainer">
+        <table class="table table-striped">
+            <thead>
+            <tr>
+                <th>Время</th>
+                <th>Заказ</th>
+                <th>Поле</th>
+                <th>Старое значение</th>
+                <th>Новое значение</th>
+                <th>Кем изменено</th>
+            </tr>
+            </thead>
+            <tbody id="historyTableBody">
+            @foreach (var item in Model)
+            {
+            <tr>
+                <td>@item.FormattedChangedAt</td>
+                <td>@item.OrderId</td>
+                <td>@item.ColumnDisplayName</td>
+                <td>@item.FormattedOldValue</td>
+                <td>@item.FormattedNewValue</td>
+                <td>@item.ChangedBy</td>
+            </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+<script src="~/lib/microsoft-signalr/signalr.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // SignalR подключение
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl('/orderHistoryHub')
+            .withAutomaticReconnect()
+            .build();
+
+        // Функция для форматирования числовых значений
+        function formatNumericValue(value) {
+            if (!value) return '';
+
+            // Пытаемся распарсить как число
+            const number = parseFloat(value);
+            if (!isNaN(number)) {
+                // Форматируем с 2 знаками после запятой, убирая лишние нули
+                return number.toFixed(2).replace(/\.?0+$/, '');
+            }
+
+            return value;
+        }
+
+        // Функция для обновления таблицы
+        function updateTable() {
+            const button = document.getElementById('refreshBtn');
+            const spinner = document.getElementById('spinner');
+            const buttonText = document.getElementById('buttonText');
+
+            if (button && spinner && buttonText) {
+                button.disabled = true;
+                spinner.classList.remove('visually-hidden');
+                buttonText.textContent = 'Обновление...';
+            }
+
+            connection.invoke('RequestRecentChanges')
+                .catch(err => {
+                    console.error('Ошибка запроса обновлений:', err);
+                    restoreButtonState();
+                });
+        }
+
+        function restoreButtonState() {
+            const button = document.getElementById('refreshBtn');
+            const spinner = document.getElementById('spinner');
+            const buttonText = document.getElementById('buttonText');
+
+            if (button && spinner && buttonText) {
+                button.disabled = false;
+                spinner.classList.add('visually-hidden');
+                buttonText.textContent = 'Обновить';
+            }
+        }
+
+        // Обработчик получения изменений
+        connection.on("ReceiveChange", function (change) {
+            console.log('Получено новое изменение:', change);
+            addChangeToTable(change);
+        });
+
+        // Обработчик получения списка изменений
+        connection.on("ReceiveRecentChanges", function (changes) {
+            console.log('Получены обновления:', changes.length, 'записей');
+            updateTableWithData(changes);
+            restoreButtonState();
+        });
+
+        // Функция добавления одной записи в таблицу
+        function addChangeToTable(change) {
+            const tbody = document.getElementById('historyTableBody');
+            if (!tbody) return;
+
+            const row = document.createElement('tr');
+
+            const changedAt = new Date(change.changedAt);
+            const formattedDate = changedAt.toLocaleString('ru-RU', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+
+            // Форматируем числовые значения
+            const formattedOldValue = formatNumericValue(change.oldValue);
+            const formattedNewValue = formatNumericValue(change.newValue);
+
+            row.innerHTML = `
+                    <td>${formattedDate}</td>
+                    <td>${change.orderId}</td>
+                    <td>${change.columnDisplayName || ''}</td>
+                    <td>${formattedOldValue}</td>
+                    <td>${formattedNewValue}</td>
+                    <td>${change.changedBy || ''}</td>
+                `;
+
+            tbody.insertBefore(row, tbody.firstChild);
+
+            if (tbody.children.length > 100) {
+                tbody.removeChild(tbody.lastChild);
+            }
+        }
+
+        // Функция полного обновления таблицы
+        function updateTableWithData(changes) {
+            const tbody = document.getElementById('historyTableBody');
+            if (!tbody) return;
+
+            tbody.innerHTML = '';
+
+            const sortedChanges = changes.sort((a, b) =>
+                new Date(b.changedAt) - new Date(a.changedAt)
+            );
+
+            sortedChanges.forEach(change => {
+                const row = document.createElement('tr');
+
+                const changedAt = new Date(change.changedAt);
+                const formattedDate = changedAt.toLocaleString('ru-RU', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+
+                // Форматируем числовые значения
+                const formattedOldValue = formatNumericValue(change.oldValue);
+                const formattedNewValue = formatNumericValue(change.newValue);
+
+                row.innerHTML = `
+                        <td>${formattedDate}</td>
+                        <td>${change.orderId}</td>
+                        <td>${change.columnDisplayName || ''}</td>
+                        <td>${formattedOldValue}</td>
+                        <td>${formattedNewValue}</td>
+                        <td>${change.changedBy || ''}</td>
+                    `;
+
+                tbody.appendChild(row);
+            });
+        }
+
+        // Обработчики кнопок
+        const refreshBtn = document.getElementById('refreshBtn');
+        const testBtn = document.getElementById('testBtn');
+
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', updateTable);
+        }
+
+        if (testBtn) {
+            testBtn.addEventListener('click', function() {
+                fetch('/Studio2/OrderHistory/AddTestChange', { method: 'POST' })
+                    .catch(err => console.error('Ошибка тестового запроса:', err));
+            });
+        }
+
+        // Запуск соединения
+        connection.start()
+            .then(() => {
+                console.log('SignalR connected to orderHistoryHub');
+                updateTable();
+            })
+            .catch(err => {
+                console.error('SignalR connection error:', err.toString());
+                restoreButtonState();
+            });
+
+        // Автообновление каждые 30 секунд
+        setInterval(() => {
+            if (connection.state === signalR.HubConnectionState.Connected) {
+                updateTable();
+            }
+        }, 5000);
+    });
+</script>
+}

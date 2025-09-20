@@ -1,0 +1,100 @@
+﻿@{
+Layout = null;
+ViewData["Title"] = "Вход";
+}
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - SlqStudio</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            display: flex;
+            min-height: 100vh;
+            flex-direction: column;
+            background-color: #f8f9fa;
+        }
+        main {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .auth-card {
+            width: 100%;
+            max-width: 500px;
+        }
+        .brand-logo {
+            font-weight: 500;
+            text-align: center;
+            width: 100%;
+            display: block;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+            color: #0d6efd;
+        }
+        .form-control-with-icon {
+            position: relative;
+        }
+        .form-control-with-icon i {
+            position: absolute;
+            top: 12px;
+            left: 10px;
+            z-index: 2;
+            color: #6c757d;
+        }
+        .form-control-with-icon input {
+            padding-left: 40px;
+        }
+    </style>
+</head>
+<body>
+<main>
+    <div class="container">
+        <div class="auth-card mx-auto">
+            <span class="brand-logo">PIM конфигурация</span>
+
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <h5 class="card-title text-center mb-4">Вход</h5>
+
+                    @if (ViewBag.Error != null)
+                    {
+                    <div class="alert alert-danger text-center">@ViewBag.Error</div>
+                    }
+
+                    <form method="post" asp-area="Studio2" asp-controller="Config" asp-action="Login">
+                        <div class="mb-3 form-control-with-icon">
+                            <i class="bi bi-person"></i>
+                            <input id="name" type="text" class="form-control" name="name" placeholder="Имя пользователя" required>
+                        </div>
+
+                        <div class="mb-4 form-control-with-icon">
+                            <i class="bi bi-lock"></i>
+                            <input id="password" type="password" class="form-control" name="password" placeholder="Пароль" required>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-box-arrow-in-right me-2"></i>Войти
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- Bootstrap JS Bundle with Popper -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

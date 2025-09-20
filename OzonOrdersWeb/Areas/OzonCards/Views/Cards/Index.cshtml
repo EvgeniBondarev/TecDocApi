@@ -1,0 +1,478 @@
+﻿@using System.Web
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Дерево категорий</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+    <link href="~/css/tree-cards.css" rel="stylesheet" />
+    <style>
+        /* Устанавливаем 100% высоты для body и html */
+        body, html {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Добавляем прокрутку для контейнеров */
+        #categoryTree, #categoryAttributes {
+            overflow-y: auto;
+            max-height: 80vh; /* Максимальная высота 80% окна браузера */
+        }
+
+        /* Для страницы с прокруткой на весь экран */
+        body {
+            overflow-y: scroll; /* Включаем прокрутку на всей странице */
+        }
+    </style>
+</head>
+<body>
+
+<input type="text" id="typeName" placeholder="Введите имя типа">
+<button id="loadTree">Загрузить дерево</button>
+<div id="categoryTree"></div>
+<div id="categoryAttributes"></div>
+
+<script>
+    var publicDescriptionCategoryId = 0;
+    $(document).ready(function() {
+        // Функция для выполнения поиска
+        function executeSearch(typeName) {
+            typeName = encodeURIComponent(typeName.trim());
+            if (!typeName) {
+                alert("Введите имя типа");
+                return;
+            }
+
+            $.ajax({
+                url: `https://card-api.interparts.ru/api/Category/find-by-type-name/${typeName}`,
+                method: "GET",
+                dataType: "json",
+                success: function(response) {
+                    if (!response.error) {
+                        let treeHtml = buildCategoryTree(response.result);
+                        $("#categoryTree").html(treeHtml);
+
+                        let lastCategory = getLastCategory(response.result);
+                        if (lastCategory && lastCategory.typeId && lastCategory.parentId) {
+                            publicDescriptionCategoryId = lastCategory.parentId;
+                            loadCategoryAttributes(lastCategory.typeId, lastCategory.parentId);
+                        }
+                    } else {
+                        console.error("Ошибка запроса: ", response.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error("Ошибка AJAX-запроса: ", error);
+                }
+            });
+        }
+
+        // Обработчик клика на кнопке
+        $("#loadTree").click(function() {
+            let typeName = $("#typeName").val();
+            executeSearch(typeName);
+        });
+
+        // Автоматический поиск при загрузке, если есть ViewBag.TypeName
+        @if (!string.IsNullOrEmpty(ViewBag.TypeName))
+        {
+        <text>
+        var typeName = '@Html.Raw(HttpUtility.JavaScriptStringEncode(ViewBag.TypeName.ToString()))';
+        $("#typeName").val(decodeURIComponent(typeName));
+        executeSearch(typeName); // Выполняем поиск сразу
+        </text>
+        }
+
+        function buildCategoryTree(category) {
+            if (!category) return "";
+            let html = `<ul><li>${category.name}${category.typeId ? ' ' + category.typeId : ''}`;
+            if (category.children && category.children.length > 0) {
+                html += "<ul>";
+                category.children.forEach(child => {
+                    html += buildCategoryTree(child);
+                });
+                html += "</ul>";
+            }
+            if (category.typeName) {
+                html += ` <strong>(${category.typeName})</strong>`;
+            }
+            html += "</li></ul>";
+            return html;
+        }
+
+        function getLastCategory(category, parent = null) {
+            if (!category.children || category.children.length === 0) {
+                return { typeId: category.typeId, parentId: parent ? parent.id : null };
+            }
+            return getLastCategory(category.children[category.children.length - 1], category);
+        }
+
+        function loadCategoryAttributes(typeId, descriptionCategoryId) {
+            $.ajax({
+                url: "https://card-api.interparts.ru/api/OzonApi/description-category-attributes",
+                method: "POST",
+                contentType: "application/json",
+                data: JSON.stringify({
+                    descriptionCategoryId: descriptionCategoryId,
+                    language: "DEFAULT",
+                    typeId: typeId
+                }),
+                dataType: "json",
+                success: function(response) {
+                    if (!response.error) {
+                        let attributesHtml = buildAttributesList(response.result.result, typeId, descriptionCategoryId);
+                        $("#categoryAttributes").html(attributesHtml);
+                    } else {
+                        console.error("Ошибка запроса: ", response.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error("Ошибка AJAX-запроса: ", error);
+                }
+            });
+        }
+
+        function buildAttributesList(attributes, typeId, descriptionCategoryId) {
+            if (!attributes || attributes.length === 0) return "<p>Нет доступных атрибутов</p>";
+            let html = `<h3>Введите Mongo ID:</h3><input type="text" id="mongoId" placeholder="Введите Mongo ID"> <button id="load-data">Загрузить данные</button><br/>`
+            html += "<h3>Атрибуты категории:</h3><ul>";
+
+            attributes.forEach(attr => {
+                let attrHtml = `<li><strong>${attr.name}</strong>`;
+                if (attr.description) attrHtml += `: ${attr.description}`;
+
+                const isRequired = attr.isRequired ? "required style='border: 2px solid red;'" : "";
+                attrHtml += `<br/><input type="text" class="attribute-value" data-attribute-id="${attr.id}" data-attribute-name="${attr.name.trimStart()}" placeholder="Введите значение" ${isRequired}>`;
+
+                // Проверяем dictionaryId
+                if (attr.dictionaryId && attr.dictionaryId !== 0) {
+                    attrHtml += `<div id="attr-values-${attr.id}">Загрузка значений...</div>`;
+                    loadAttributeValues(attr.id, typeId, descriptionCategoryId, attr.dictionaryId, `#attr-values-${attr.id}`);
+                }
+
+                attrHtml += "</li>";
+                html += attrHtml;
+            });
+
+            html += "</ul>";
+
+            // Форма для параметров карточки товара
+            html += `
+                    <h3>Данные карточки товара:</h3>
+                    <label>Название товара (name):</label><br>
+                    <input type="text" id="product-name" placeholder="Например, 'Смартфон XYZ'" style="width: 400px;"><br>
+                    
+                    <label>Штрихкод (barcode):</label><br>
+                    <input type="text" id="product-barcode" placeholder="Уникальный код товара" style="width: 400px;"><br>
+                    
+                    <label>Идентификатор предложения (offer_id):</label><br>
+                    <input type="text" id="product-offerId" placeholder="Уникальный идентификатор товара продавца" style="width: 400px;"><br>
+                    
+                    <label>Цена (price):</label><br>
+                    <input type="text" id="product-price" placeholder="Текущая цена товара" style="width: 400px;"><br>
+                    
+                    <label>Старая цена (old_price):</label><br>
+                    <input type="text" id="product-oldPrice" placeholder="Цена до скидки, если товар участвует в акции" style="width: 400px;"><br>
+                    
+                    <label>Ставка НДС (vat):</label><br>
+                    <input type="text" id="product-vat" placeholder="Например, 0.1 для 10% НДС" style="width: 400px;"><br>
+                    
+                    <label>Код валюты (currency_code):</label><br>
+                    <input type="text" id="product-currencyCode" placeholder="Например, 'RUB' для рублей" style="width: 400px;"><br>
+                    
+                    <label>Единица измерения (размер) (dimension_unit):</label><br>
+                    <input type="text" id="product-dimensionUnit" placeholder="Например, 'mm' для миллиметров" style="width: 400px;"><br>
+                    
+                    <label>Единица измерения (вес) (weight_unit):</label><br>
+                    <input type="text" id="product-weightUnit" placeholder="Например, 'g' для граммов" style="width: 400px;"><br>
+                    
+                    <label>Вес (weight):</label><br>
+                    <input type="text" id="product-weight" placeholder="Вес товара в указанных единицах" style="width: 400px;"><br>
+                    
+                    <label>Ширина (width):</label><br>
+                    <input type="text" id="product-width" placeholder="Ширина товара в указанных единицах" style="width: 400px;"><br>
+                    
+                    <label>Высота (height):</label><br>
+                    <input type="text" id="product-height" placeholder="Высота товара в указанных единицах" style="width: 400px;"><br>
+                    
+                    <label>Глубина (depth):</label><br>
+                    <input type="text" id="product-depth" placeholder="Глубина товара в указанных единицах" style="width: 400px;"><br>
+                    
+                    <label>Основное изображение (primary_image):</label><br>
+                    <input type="text" id="product-primaryImage" placeholder="URL изображения в формате JPG или PNG" style="width: 400px;"><br>
+                    
+                    <label>Цветовое изображение (color_image):</label><br>
+                    <input type="text" id="product-colorImage" placeholder="URL изображения цвета" style="width: 400px;"><br>
+                    
+                    <label>Изображения (images):</label><br>
+                    <input type="text" id="product-images" placeholder="Список URL изображений через запятую" style="width: 400px;"><br>
+                    
+                    <label>Изображения 360 (images360):</label><br>
+                    <input type="text" id="product-images360" placeholder="Список URL изображений 360 через запятую" style="width: 400px;"><br>
+                    
+                    <label>PDF файлы (pdf_list):</label><br>
+                    <input type="text" id="product-pdfList" placeholder="Список URL PDF файлов через запятую" style="width: 400px;"><br>
+                    <br>
+                    <button id="create-product">Создать карточку</button><br>
+                `;
+
+            return html;
+        }
+
+        // Обработчик клика по кнопке "Создать карточку"
+        $(document).on("click", "#create-product", function() {
+
+            let isValid = true;
+
+            // Проверяем все обязательные поля
+            $(".attribute-value[required]").each(function () {
+                if (!$(this).val().trim()) {
+                    $(this).css("border", "2px solid red");
+                    isValid = false;
+                } else {
+                    $(this).css("border", ""); // Сброс рамки, если поле заполнено
+                }
+            });
+
+            if (!isValid) {
+                alert("Пожалуйста, заполните все обязательные поля.");
+                return; // Отменяем отправку
+            }
+
+            let attributes = [];
+
+            var productData = generateProductData();
+            console.log(productData)
+
+            console.log(productData)
+
+            // Отправляем запрос
+            $.ajax({
+                url: "https://card-api.interparts.ru/api/OzonApi/product-import",
+                method: "POST",
+                contentType: "application/json",
+                data: JSON.stringify(productData),
+                dataType: "json",
+                success: function(response) {
+                    alert("Карточка успешно создана!");
+                    console.log(response);
+
+                    // Вызываем /api/dynamic/{collectionName}
+                    $.ajax({
+                        url: `https://card-api.interparts.ru/api/dynamic/CardsData`,
+                        method: "POST",
+                        contentType: "application/json",
+                        data: JSON.stringify(productData),
+                        dataType: "json",
+                        success: function(dynamicResponse) {
+                            console.log("Документ успешно создан:", dynamicResponse);
+
+                            // Вызываем /api/tasks с телом
+                            const taskData = {
+                                taskId: response.result.result.taskId,
+                                mongoId: dynamicResponse.result,
+                                name: $("#typeName").val(),
+                                ozonClient: 482702,
+                                lastStatus: "Создан"
+                            };
+
+                            $.ajax({
+                                url: "https://card-api.interparts.ru/api/tasks",
+                                method: "POST",
+                                contentType: "application/json",
+                                data: JSON.stringify(taskData),
+                                dataType: "json",
+                                success: function(taskResponse) {
+                                    console.log("Задача успешно создана:", taskResponse);
+                                },
+                                error: function(xhr, status, error) {
+                                    console.error("Ошибка при вызове /api/tasks:", error);
+                                }
+                            });
+                        },
+                        error: function(xhr, status, error) {
+                            console.error("Ошибка при вызове /api/dynamic:", error);
+                        }
+                    });
+                },
+                error: function(xhr, status, error) {
+                    console.log(JSON.stringify(productData));
+                    console.error("Ошибка создания карточки:", error);
+                }
+            });
+        });
+
+        function loadAttributeValues(attributeId, typeId, descriptionCategoryId, dictionaryId, parentHtml) {
+            $.ajax({
+                url: "https://card-api.interparts.ru/api/OzonApi/description-category-attribute-values",
+                method: "POST",
+                contentType: "application/json",
+                data: JSON.stringify({
+                    attributeId: attributeId,
+                    descriptionCategoryId: descriptionCategoryId,
+                    language: "DEFAULT",
+                    lastValueId: 0,
+                    limit: 100,
+                    typeId: typeId
+                }),
+                dataType: "json",
+                success: function(response) {
+                    if (!response.error) {
+                        let values = response.result.result;
+                        let valuesHtml = "<ul>";
+
+                        values.forEach((val, index) => {
+                            let listItemClass = index < 10 ? "" : "hidden-value";
+                            let listItemStyle = index < 10 ? "cursor: pointer;" : "display: none; cursor: pointer;";
+
+                            valuesHtml += `<li class="${listItemClass}" style="${listItemStyle}" data-attribute-id="${attributeId}">${val.value}</li>`;
+                        });
+
+                        if (values.length > 10) {
+                            valuesHtml += `<li class="show-more" style="color: blue; cursor: pointer;">Развернуть</li>`;
+                        }
+
+                        valuesHtml += "</ul>";
+
+                        $(parentHtml).append(valuesHtml);
+
+                        $(parentHtml).find(".show-more").on("click", function() {
+                            $(parentHtml).find(".hidden-value").slideToggle();
+                            $(this).remove();
+                        });
+
+                        $(parentHtml).find("li[data-attribute-id]").on("click", function() {
+                            let selectedValue = $(this).text();
+                            let attributeId = $(this).data("attribute-id");
+                            $(`input.attribute-value[data-attribute-id="${attributeId}"]`).val(selectedValue);
+                        });
+
+                    } else {
+                        console.error("Ошибка запроса: ", response.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error("Ошибка AJAX-запроса: ", error);
+                }
+            });
+        }
+    });
+
+    function generateProductData() {
+        let attributes = [];
+
+        $(".attribute-value").each(function() {
+            let attrId = $(this).data("attribute-id");
+            let value = $(this).val();
+            let inputId = $(`.attribute-id[data-attribute-id="${attrId}"]`).val();
+
+            if (value && attrId) {
+                attributes.push({
+                    complex_id: 0,
+                    id: parseInt(attrId),
+                    values: [{ value: value }]
+                });
+            }
+        });
+
+        let productData = {
+            items: [
+                {
+                    attributes: attributes,
+                    barcode: $("#product-barcode").val() || "",
+                    description_category_id: publicDescriptionCategoryId,
+                    new_description_category_id: 0,
+                    color_image: $("#product-colorImage").val() || "",
+                    complex_attributes: [],
+                    currency_code: $("#product-currencyCode").val() || "RUB",
+                    depth: parseFloat($("#product-depth").val()) || 0,
+                    dimension_unit: $("#product-dimensionUnit").val() || "mm",
+                    height: parseFloat($("#product-height").val()) || 0,
+                    images: $("#product-images").val() ? $("#product-images").val().split(",") : [],
+                    images360: $("#product-images360").val() ? $("#product-images360").val().split(",") : [],
+                    name: $("#product-name").val() || "",
+                    offer_id: $("#product-offerId").val() || "",
+                    old_price: $("#product-oldPrice").val() || "0",
+                    pdf_list: $("#product-pdfList").val() ? $("#product-pdfList").val().split(",") : [],
+                    price: $("#product-price").val() || "0",
+                    primary_image: $("#product-primaryImage").val() || "",
+                    vat: $("#product-vat").val() || "0.1",
+                    weight: parseFloat($("#product-weight").val()) || 0,
+                    weight_unit: $("#product-weightUnit").val() || "g",
+                    width: parseFloat($("#product-width").val()) || 0
+                }
+            ]
+        };
+
+        console.log(productData);
+        return productData;
+    }
+
+    $(document).on("click", "#load-data", function() {
+        let mongoId = $("#mongoId").val().trim();
+        console.log(mongoId);
+        if (!mongoId) {
+            alert("Введите Mongo ID!");
+            return;
+        }
+
+        $.ajax({
+            url: `https://card-api.interparts.ru/api/dynamic/CardsData/${mongoId}`,
+            method: "GET",
+            dataType: "json",
+            success: function(jsonResponse) {
+                if (jsonResponse.items && jsonResponse.items.length > 0) {
+                    let item = jsonResponse.items[0];
+
+                    $("#product-name").val(item.name || "");
+                    $("#product-barcode").val(item.barcode || "");
+                    $("#product-offerId").val(item.offer_id || "");
+                    $("#product-price").val(item.price || "");
+                    $("#product-oldPrice").val(item.old_price || "");
+                    $("#product-vat").val(item.vat || "");
+                    $("#product-currencyCode").val(item.currency_code || "");
+                    $("#product-dimensionUnit").val(item.dimension_unit || "");
+                    $("#product-weightUnit").val(item.weight_unit || "");
+                    $("#product-weight").val(item.weight || "");
+                    $("#product-width").val(item.width || "");
+                    $("#product-height").val(item.height || "");
+                    $("#product-depth").val(item.depth || "");
+                    $("#product-primaryImage").val(item.primary_image || "");
+                    $("#product-colorImage").val(item.color_image || "");
+                    $("#product-images").val((item.images || []).join(", "));
+                    $("#product-images360").val((item.images360 || []).join(", "));
+                    $("#product-pdfList").val((item.pdf_list || []).join(", "));
+
+                    if (item.attributes && item.attributes.length > 0) {
+                        item.attributes.forEach(attr => {
+                            let inputField;
+                            if(attr.id === 0){
+                                inputField = $(`input.attribute-value[data-attribute-name='${attr.name}']`);
+                            }
+                            else{
+                                inputField = $(`input.attribute-value[data-attribute-id='${attr.id}']`);
+                            }
+
+                            if (inputField.length > 0) {
+                                let value = attr.values.length > 0 ? attr.values[0].value : "";
+                                inputField.val(value);
+                            }
+                        });
+                    }
+                } else {
+                    alert("Ошибка: Данные не найдены.");
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error("Ошибка при получении JSON данных:", error);
+                alert("Ошибка загрузки данных. Проверьте Mongo ID.");
+            }
+        });
+    });
+</script>
+</body>
+</html>

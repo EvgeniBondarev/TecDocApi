@@ -1,0 +1,28 @@
+﻿@using OzonOrdersWeb.ViewModels.UserViewModels
+
+
+@model RegisterViewModel
+
+<div class="row">
+    <div class="col-md-4">
+        <section>
+        <form asp-area="Studio2" asp-controller="User" asp-action="Create" method="post" class="mt-4">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                <div class="form-floating mb-3">
+                <label for="new-username">Имя пользователя</label>
+                <input asp-for="Username" class="form-control form-control-sm col-sm-6 col-md-4 col-lg-3" id="new-username" autocomplete="off" />
+                <span asp-validation-for="Username" class="text-danger"></span>
+            </div>
+
+            <div class="form-floating mb-3">
+                <label for="new-password">Пароль</label>
+                <input asp-for="Password" type="password" class="form-control form-control-sm col-sm-6 col-md-4 col-lg-3" id="new-password" autocomplete="off" />
+                <span asp-validation-for="Password" class="text-danger"></span>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Создать</button>
+        </form>
+        </section>
+    </div>
+</div>

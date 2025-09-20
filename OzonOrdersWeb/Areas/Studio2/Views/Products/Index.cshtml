@@ -1,0 +1,178 @@
+﻿@using OzonDomains.Models
+@using OzonDomains.ViewModels
+@using OServcies.FiltersServcies.FilterModels;
+
+@model PageViewModel<Product, ProductFilterModel>
+
+@{
+    ViewData["Title"] = "Index";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h1>Товары и цены</h1>
+
+@{
+    int[]? uploadResult = (int[])ViewData["UploadResult"];
+}
+
+@if (uploadResult != null)
+{
+    <div class="alert alert-dismissible alert-success">
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <p>Файл успешно загружен! <br />Результат: <br />Добавлено @uploadResult[0] строк.<br />Обновлено @uploadResult[1] строк в таблице "Заказы"</p>
+    </div>
+}
+<p>
+    <a asp-action="Upload">Обновить товары</a>
+</p>
+
+<p>
+    <a class="btn btn-primary" data-bs-toggle="offcanvas" href="#offcanvasExample" role="button" aria-controls="offcanvasExample">
+        Открыть фильтры
+    </a>
+</p>
+
+<div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasExample" aria-labelledby="offcanvasExampleLabel">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title" id="offcanvasExampleLabel">Фильтры</h5>
+        <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+        <form asp-area="Studio2" asp-controller="Products" asp-action="Index" method="post">
+            <div class="mb-2">
+                <label for="articleFilter" class="form-label">Артикул:</label>
+                <input asp-for="@Model.FilterModel.Article" id="articleFilter" name="Article" class="form-control form-control-sm" /><br />
+            </div>
+            <div class="mb-2">
+                <label for="ozonProductIdFilter" class="form-label">Ozon Product ID:</label>
+                <input asp-for="@Model.FilterModel.OzonProductId" id="ozonProductIdFilter" name="OzonProductId" class="form-control form-control-sm" /><br />
+            </div>
+            <div class="mb-2">
+                <label for="fboOzonSkuIdFilter" class="form-label">FBO OZON SKU ID:</label>
+                <input asp-for="@Model.FilterModel.FboOzonSkuId" id="fboOzonSkuIdFilter" name="FboOzonSkuId" class="form-control form-control-sm" /><br />
+            </div>
+            <div class="mb-2">
+                <label for="fbsOzonSkuIdFilter" class="form-label">FBS OZON SKU ID:</label>
+                <input asp-for="@Model.FilterModel.FbsOzonSkuId" id="fbsOzonSkuIdFilter" name="FbsOzonSkuId" class="form-control form-control-sm" /><br />
+            </div>
+            <div class="mb-2">
+                <label for="commercialCategoryFilter" class="form-label">Коммерческая категория:</label>
+                <input asp-for="@Model.FilterModel.CommercialCategory" id="commercialCategoryFilter" name="CommercialCategory" class="form-control form-control-sm" /><br />
+            </div>
+            <div class="mb-2">
+                <label for="volumeFilter" class="form-label">Объем товара, л:</label>
+                <input asp-for="@Model.FilterModel.Volume" id="volumeFilter" name="Volume" class="form-control form-control-sm" /><br />
+            </div>
+            <div class="mb-2">
+                <label for="volumetricWeightFilter" class="form-label">Объемный вес, кг:</label>
+                <input asp-for="@Model.FilterModel.VolumetricWeight" id="volumetricWeightFilter" name="VolumetricWeight" class="form-control form-control-sm" /><br />
+            </div>
+            <div class="mb-2">
+                <label for="currentPriceFilter" class="form-label">Текущая цена с учетом скидки, руб.:</label>
+                <input asp-for="@Model.FilterModel.CurrentPriceWithDiscount" id="currentPriceFilter" name="CurrentPriceWithDiscount" class="form-control form-control-sm" /><br />
+            </div>
+            <button type="submit" class="btn btn-primary">Применить фильтры</button><br />
+            <a href="#" onclick="clearForm()">Очистить поля</a>
+        </form>
+    </div>
+</div>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>
+                Артикул
+            </th>
+            <th>
+                OzonProductId
+            </th>
+            <th>
+                FboOzonSkuId
+            </th>
+            <th>
+                FbsOzonSkuId
+            </th>
+            <th>
+                Коммерческая категория
+            </th>
+            <th>
+                Объем товара, л
+            </th>
+            <th>
+                Объемный вес, кг
+            </th>
+            <th>
+                Текущая цена с учетом скидки, руб.
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.Items)
+        {
+            <tr ondblclick="location.href='@Url.Action("Details", "Products", new { id = item.Id })'" style="cursor: pointer;">
+                <td>
+                    @Html.DisplayFor(modelItem => item.Article)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.OzonProductId)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.FboOzonSkuId)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.FbsOzonSkuId)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.CommercialCategory)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Volume)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.VolumetricWeight)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.CurrentPriceWithDiscount)
+                </td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
+                    <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
+                    <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<div class="pagination-wrapper">
+    <div class="pagination-controls">
+        @if (Model.HasPreviousPage)
+        {
+            <a asp-action="Index" asp-route-page="@(Model.PageNumber - 1)" class="btn btn-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-left" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8" />
+                </svg>
+            </a>
+        }
+
+        @if (Model.HasNextPage)
+        {
+            <a asp-action="Index" asp-route-page="@(Model.PageNumber + 1)" class="btn btn-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-right" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8" />
+                </svg>
+            </a>
+        }
+    </div>
+    <div class="pagination-text">
+        <p>@Model.PageNumber / @Model.TotalPages</p>
+    </div>
+</div>
+
+
+@section Scripts {
+    <script>
+        // Ваш JavaScript код здесь
+    </script>
+}

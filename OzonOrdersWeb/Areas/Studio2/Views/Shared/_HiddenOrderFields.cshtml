@@ -1,0 +1,48 @@
+﻿@model (OzonDomains.Models.Order, int)
+@{
+    var order = Model.Item1;
+    var index = Model.Item2;
+}
+<input type="hidden" name="notFullOrders[@index].Order.Id" value="@order.Id" />
+<input type="hidden" name="notFullOrders[@index].Key" value="@order.Key" />
+<input type="hidden" name="notFullOrders[@index].ShipmentNumber" value="@order.ShipmentNumber" />
+<input type="hidden" name="notFullOrders[@index].ProcessingDate" value="@order.ProcessingDate?" />
+<input type="hidden" name="notFullOrders[@index].ShippingDate" value="@order.ShippingDate?" />
+<input type="hidden" name="notFullOrders[@index].Status" value="@order.Status" />
+<input type="hidden" name="notFullOrders[@index].AppStatusId" value="@order.AppStatusId" />
+<input type="hidden" name="notFullOrders[@index].ShipmentAmount" value="@order.ShipmentAmount" />
+<input type="hidden" name="notFullOrders[@index].ProductName" value="@order.ProductName" />
+<input type="hidden" name="notFullOrders[@index].ProductKey" value="@order.ProductKey" />
+<input type="hidden" name="notFullOrders[@index].Article" value="@order.Article" />
+<input type="hidden" name="notFullOrders[@index].ManufacturerId" value="@order.ManufacturerId" />
+<input type="hidden" name="notFullOrders[@index].Price" value="@order.Price" />
+<input type="hidden" name="notFullOrders[@index].Quantity" value="@order.Quantity" />
+<input type="hidden" name="notFullOrders[@index].ShipmentWarehouseId" value="@order.ShipmentWarehouseId" />
+<input type="hidden" name="notFullOrders[@index].СurrencyId" value="@order.СurrencyId" />
+<input type="hidden" name="notFullOrders[@index].SupplierId" value="@order.SupplierId" />
+<input type="hidden" name="notFullOrders[@index].OrderNumberToSupplier" value="@order.OrderNumberToSupplier" />
+<input type="hidden" name="notFullOrders[@index].PurchasePrice" value="@order.PurchasePrice" />
+<input type="hidden" name="notFullOrders[@index].OriginalPurchasePrice" value="@order.OriginalPurchasePrice" />
+<input type="hidden" name="notFullOrders[@index].ProductInfoId" value="@order.ProductInfoId" />
+<input type="hidden" name="notFullOrders[@index].MinOzonCommission" value="@order.MinOzonCommission" />
+<input type="hidden" name="notFullOrders[@index].MaxOzonCommission" value="@order.MaxOzonCommission" />
+<input type="hidden" name="notFullOrders[@index].MaxCommissionInfo" value="@order.MaxCommissionInfo" />
+<input type="hidden" name="notFullOrders[@index].MinCommissionInfo" value="@order.MinCommissionInfo" />
+<input type="hidden" name="notFullOrders[@index].MinProfit" value="@order.MinProfit" />
+<input type="hidden" name="notFullOrders[@index].MaxProfit" value="@order.MaxProfit" />
+<input type="hidden" name="notFullOrders[@index].MinDiscount" value="@order.MinDiscount" />
+<input type="hidden" name="notFullOrders[@index].MaxDiscount" value="@order.MaxDiscount" />
+<input type="hidden" name="notFullOrders[@index].CostPrice" value="@order.CostPrice" />
+<input type="hidden" name="notFullOrders[@index].DeliveryCity" value="@order.DeliveryCity" />
+<input type="hidden" name="notFullOrders[@index].NewCategory" value="@order.NewCategory" />
+<input type="hidden" name="notFullOrders[@index].IsVerified" value="@order.IsVerified" />
+<input type="hidden" name="notFullOrders[@index].IsAccepted" value="@order.IsAccepted" />
+<input type="hidden" name="notFullOrders[@index].Comment" value="@order.Comment" />
+<input type="hidden" name="notFullOrders[@index].UpdatedColumns" value="@string.Join(",", order.UpdatedColumns ?? new List<string>())" />
+<input type="hidden" name="notFullOrders[@index].UpdatedBy" value="@order.UpdatedBy" />
+<input type="hidden" name="notFullOrders[@index].IsReturnable" value="@order.IsReturnable" />
+<input type="hidden" name="notFullOrders[@index].TransactionId" value="@order.TransactionId" />
+<input type="hidden" name="notFullOrders[@index].OzonClientId" value="@order.OzonClientId" />
+<input type="hidden" name="notFullOrders[@index].FromFiletId" value="@order.FromFiletId" />
+<input type="hidden" name="notFullOrders[@index].FromFile" value="@order.FromFile" />
+<input type="hidden" name="notFullOrders[@index].ExcelFileDataId" value="@order.ExcelFileDataId" />

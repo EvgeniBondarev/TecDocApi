@@ -1,0 +1,156 @@
+﻿@using System.Web
+@model List<Servcies.HangfireService.Models.JobDto>
+
+<!-- Модальное окно для деталей -->
+<div class="modal fade" id="detailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Детали удаленной задачи</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <h6>Данные:</h6>
+                    <pre id="modalDataContent" class="p-3 bg-light rounded modal-pre-wrap"></pre>
+                </div>
+                <div>
+                    <h6>Причина удаления:</h6>
+                    <pre id="modalReasonContent" class="p-3 bg-light rounded modal-pre-wrap"></pre>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .modal-pre-wrap {
+        white-space: pre-wrap;
+        word-break: break-all;
+        overflow-wrap: break-word;
+    }
+    .table-deleted {
+        background-color: rgba(255, 0, 0, 0.05);
+    }
+    .short-text {
+        display: inline-block;
+        max-width: 200px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        vertical-align: middle;
+    }
+    .json-short {
+        font-family: monospace;
+        background-color: #f8f9fa;
+        padding: 2px 4px;
+        border-radius: 3px;
+    }
+</style>
+
+<div class="table-responsive">
+    <table class="table table-bordered table-striped align-middle">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Задание</th>
+                <th>Дата удаления</th>
+                <th>Причина</th>
+                <th>Данные</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var job in Model)
+            {
+                var shortReason = !string.IsNullOrEmpty(job.Result) ? 
+                    (job.Result.Length > 30 ? job.Result.Substring(0, 30) + "..." : job.Result) : 
+                    "N/A";
+                
+                var jsonData = job.Args != null ? 
+                    Newtonsoft.Json.JsonConvert.SerializeObject(job.Args) : 
+                    null;
+                var shortData = jsonData != null ? 
+                    (jsonData.Length > 30 ? jsonData.Substring(0, 30) + "..." : jsonData) : 
+                    "N/A";
+                
+                var dataId = "data-" + Guid.NewGuid().ToString("N");
+                var reasonId = "reason-" + Guid.NewGuid().ToString("N");
+
+                <tr class="table-danger">
+                    <td>@job.Id</td>
+                    <td>@job.MethodName</td>
+                    <td>@job.DeletedAt?.ToString("HH:mm dd.MM.yyyy")</td>
+                    <td>
+                        @if (!string.IsNullOrEmpty(job.Result))
+                        {
+                            <div id="@reasonId" class="d-none">@job.Result</div>
+                            <a href="#" class="text-decoration-none show-details" 
+                               data-reason-id="@reasonId" data-data-id="@dataId"
+                               title="@job.Result">
+                                <span class="short-text">@shortReason</span>
+                            </a>
+                        }
+                        else
+                        {
+                            <span class="text-muted">N/A</span>
+                        }
+                    </td>
+                    <td>
+                        @if (job.Args != null)
+                        {
+                            <div id="@dataId" class="d-none">
+                                @Newtonsoft.Json.JsonConvert.SerializeObject(job.Args, Newtonsoft.Json.Formatting.Indented)
+                            </div>
+                            <a href="#" class="text-decoration-none show-details" 
+                               data-reason-id="@reasonId" data-data-id="@dataId"
+                               title="@jsonData">
+                                <span class="short-text json-short">@shortData</span>
+                            </a>
+                        }
+                        else
+                        {
+                            <span class="text-muted">N/A</span>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">Нет удаленных задач</div>
+}
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Инициализация тултипов
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+
+        // Обработка кликов для показа деталей
+        document.querySelectorAll('.show-details').forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                const reasonId = this.getAttribute('data-reason-id');
+                const dataId = this.getAttribute('data-data-id');
+                
+                const reasonContent = reasonId ? document.getElementById(reasonId)?.textContent : "N/A";
+                const dataContent = dataId ? document.getElementById(dataId)?.textContent : "N/A";
+                
+                const modal = new bootstrap.Modal(document.getElementById('detailsModal'));
+                document.getElementById('modalReasonContent').textContent = reasonContent;
+                document.getElementById('modalDataContent').textContent = dataContent;
+                
+                modal.show();
+            });
+        });
+    });
+</script>

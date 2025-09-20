@@ -1,0 +1,58 @@
+#shipmentTable small,
+#shipmentTable input,
+#shipmentTable td {
+    font-size: 13px;
+}
+
+.custom-gray {
+    background-color: #585858;
+    color: #fff; 
+    }
+.custom-gray:hover {
+    color: #fff;
+}
+
+.custom-red {
+    background-color: #DC143C;
+    color: #fff;
+}
+.custom-red:hover {
+    color: #fff;
+}
+.product-popup {
+display: none;
+position: absolute;
+z-index: 1;
+}
+
+.product-cell {
+    font-size: 11px;
+}
+
+.product-cell:hover .product-popup {
+    display: block;
+}
+#processingDateFilter {
+    width: 80px; 
+}
+#shippingDateFilter{
+    width: 80px;
+}
+
+a {
+    text-decoration: none;
+}
+
+.horizontal-line {
+    border-top: 1px solid #ccc;
+    margin: 20px 0;
+}
+
+#infoWindow {
+    position: fixed;
+    display: none;
+    border: 1px solid #ccc;
+    background-color: #fff;
+    padding: 10px;
+    z-index: 9999;
+}

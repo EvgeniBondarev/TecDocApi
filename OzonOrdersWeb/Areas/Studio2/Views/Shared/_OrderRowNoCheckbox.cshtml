@@ -1,0 +1,272 @@
+﻿@using OzonDomains.Models
+@using OzonOrdersWeb.ViewModels.OrderViewModels
+@model Order
+
+
+@{
+    string rowClass;
+    rowClass = Model.AppStatus.Name == "Заказан поставщику" ? "table-success" : "custom-white";
+}
+
+
+<tr class=@rowClass>
+    <td>
+        <div class="d-flex align-items-center">
+            <span class="ml-2">
+                @Html.DisplayFor(modelItem => Model.ShipmentNumber)
+            </span>
+        </div>
+    </td>
+    <td>
+        <div title="@Model.OzonClient">
+            @if (Model.OzonClient != null)
+            {
+                string ozonClient = Model.OzonClient.Name;
+                if (ozonClient.Length > 18)
+                {
+                    ozonClient = ozonClient.Substring(0, 18) + "...";
+                }
+                @ozonClient
+            }
+        </div>
+
+        @if (Model.DeliveryCity != null && Model.DeliveryCity != "")
+        {
+            <div style="white-space: nowrap;" title="@Model.DeliveryCity">
+                @{
+                    string deliveryCity = Model.DeliveryCity;
+                    if (deliveryCity.Length > 11)
+                    {
+                        deliveryCity = deliveryCity.Substring(0, 11) + "...";
+                    }
+                    @deliveryCity
+                }
+            </div>
+        }
+    </td>
+
+    <td>
+        <div style="max-width: 150px;" id="td2ProcessingDate" title="@Html.DisplayFor(modelItem => Model.FormattedProcessingDate) @Html.DisplayFor(modelItem => Model.FormattedProcessingTime)">
+            @Html.DisplayFor(modelItem => Model.FormattedProcessingDate)
+        </div>
+
+        <div class="text-muted" style="max-width: 150px;" title="@Html.DisplayFor(modelItem => Model.FormattedShippingDate) @Html.DisplayFor(modelItem => Model.FormattedShippingTime)">
+            @Html.DisplayFor(modelItem => Model.FormattedShippingDate)
+        </div>
+    </td>
+
+    <td>
+        <div style="white-space: nowrap; text-align: right;">
+            <div title="@Html.DisplayFor(modelItem => Model.FormattedDeliveryDay) @Html.DisplayFor(modelItem => Model.FormattedDeliveryHours)">@Html.DisplayFor(modelItem => Model.FormattedDeliveryDay)</div>
+        </div>
+
+        <div style="white-space: nowrap; text-align: right;" class="text-muted">
+            @Html.DisplayFor(modelItem => Model.FormattedTimeLeftDay)
+        </div>
+    </td>
+
+    <td>
+        <div class="nowrap" title="item.Status">
+            @if (Model.Status != null)
+            {
+                string status = Model.Status;
+                if (status.Length > 14)
+                {
+                    status = status.Substring(0, 14) + "...";
+                }
+                @status
+            }
+            else
+            {
+                <br />
+            }
+
+        </div>
+
+        <div class="text-muted nowrap" title="@Model.AppStatus.Name">
+            @{
+                string appStatus = Model.AppStatus.Name;
+                if (appStatus.Length > 14)
+                {
+                    appStatus = appStatus.Substring(0, 14) + "...";
+                }
+            }
+            @appStatus
+        </div>
+    </td>
+
+    <td>
+        <div class="container">
+            <div class="row mb-0 justify-content-between">
+                <div id="thArticle" title="@Model.ProductKey" class="col-md-4 d-flex align-items-center mb-1" style="white-space: nowrap;">
+                    @{
+                        string productKey = Model.ProductKey;
+                        if (productKey != null && productKey.Length > 17)
+                        {
+                            productKey = productKey.Substring(0, 17) + "...";
+                        }
+                    }
+                    @productKey
+                </div>
+
+                <div id="thManufacturer" class="col-md-4 d-flex flex-column mb-1 nowrap text-center">
+                    @Html.DisplayFor(modelItem => Model.Manufacturer.Name)
+                </div>
+
+                <div id="thArticle2" class="col-md-4 d-flex flex-column mb-1 nowrap text-end">
+                    @if (Model.Article != null)
+                    {
+                        @Html.DisplayFor(modelItem => Model.Article)
+                    }
+                </div>
+            </div>
+            <div class="row mt-0">
+                <div id="thProductName" class="custom-width-large d-flex flex-column text-muted">
+                    <div>
+                        <div class="product-cell" title="@Html.DisplayFor(modelItem => Model.ProductName)">
+                            @Html.DisplayFor(modelItem => Model.ProductName)
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </td>
+
+    <td>
+    </td>
+
+
+    <td>
+        @Html.DisplayFor(modelItem => Model.ShipmentWarehouse.Name)
+    </td>
+
+
+    <td>
+
+        <div>
+            @Html.DisplayFor(modelItem => Model.Supplier.Name)
+        </div>
+
+        <div class="text-muted">
+            @Html.DisplayFor(modelItem => Model.OrderNumberToSupplier)
+        </div>
+    </td>
+
+    <td>
+        <div>
+            @if (Model.ProductInfo.CommercialCategory != null)
+            {
+                string сommercialCategory = Model.ProductInfo.CommercialCategory;
+                if (сommercialCategory.Length > 10)
+                {
+                    сommercialCategory = сommercialCategory.Substring(0, 10) + "...";
+                }
+                @сommercialCategory
+            }
+
+        </div>
+
+        <div class="text-muted">
+            @Html.DisplayFor(modelItem => Model.ProductInfo.VolumetricWeight)
+        </div>
+    </td>
+
+    <td>
+        <div style="text-align: right;">
+            @Html.Raw(string.Format("{0:N0}", Model.ProductInfo.CurrentPriceWithDiscount).Replace(",", " "))
+        </div>
+
+        <div class="text-muted" style="text-align: right;">
+            @{
+
+                if (Model.Quantity > 1)
+                {
+                    <b>
+                        @Html.DisplayFor(modelItem => Model.Quantity)
+                    </b>
+                }
+                else
+                {
+                    @Html.DisplayFor(modelItem => Model.Quantity)
+                }
+            }
+        </div>
+    </td>
+
+    <td>
+        <div style="text-align: right;">
+            @Html.Raw(string.Format("{0:N0}", Model.Price).Replace(",", " "))
+        </div>
+
+        <div class="text-muted" style="text-align: right;">
+            @Html.Raw(string.Format("{0:N0}", Model.ShipmentAmount).Replace(",", " "))
+        </div>
+    </td>
+
+    <td>
+            <div style="text-align: right;  white-space: nowrap;">
+            <p style="display: inline; white-space: nowrap; margin: 0;">
+                @Html.Raw(string.Format("{0:N0}", Model.PurchasePrice).Replace(",", " "))
+            </p>
+            @if (Model.OriginalPurchasePrice != null)
+            {
+                <div style="display: inline-block; white-space: nowrap; margin: 0; font-size: 10px; text-align: center;">
+                    <div>
+                        @Html.Raw(string.Format("{0:N0}", Model.OriginalPurchasePrice).Replace(",", " "))
+                    </div>
+                    <div>
+                        @Html.DisplayFor(modelItem => Model.Supplier.CurrencyCode)
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div style="text-align: right;">
+            @Html.Raw(string.Format("{0:N0}", Model.CostPrice).Replace(",", " "))
+        </div>
+    </td>
+    <td style="text-align: right;">
+        @Html.Raw(string.Format("{0:N0}", Model.MinOzonCommission).Replace(",", " ")) <br />
+        @Html.Raw(string.Format("{0:N0}", Model.MaxOzonCommission).Replace(",", " "))
+    </td>
+
+    <td style="text-align: right;">
+        @if (Model.MaxProfit < 0)
+        {
+            <span style="color:red">@Html.Raw(string.Format("{0:N0}", Model.MaxProfit).Replace(",", " "))</span>
+        }
+        else
+        {
+            @Html.Raw(string.Format("{0:N0}", Model.MaxProfit).Replace(",", " "))
+        }
+        <br>
+        @if (Model.MinProfit < 0)
+        {
+            <span style="color:red">@Html.Raw(string.Format("{0:N0}", Model.MinProfit).Replace(",", " "))</span>
+        }
+        else
+        {
+            @Html.Raw(string.Format("{0:N0}", Model.MinProfit).Replace(",", " "))
+        }
+    </td>
+
+    <td style="text-align: right;">
+        @if (Model.MaxDiscount < 0)
+        {
+            <span style="color:red">@Html.Raw(string.Format("{0:N0}", Model.MaxDiscount).Replace(",", " "))</span>
+        }
+        else
+        {
+            @Html.Raw(string.Format("{0:N0}", Model.MaxDiscount).Replace(",", " "))
+        }
+        <br>
+        @if (Model.MinDiscount < 0)
+        {
+            <span style="color:red">@Html.Raw(string.Format("{0:N0}", Model.MinDiscount).Replace(",", " "))</span>
+        }
+        else
+        {
+            @Html.Raw(string.Format("{0:N0}", Model.MinDiscount).Replace(",", " "))
+        }
+    </td>
+</tr>

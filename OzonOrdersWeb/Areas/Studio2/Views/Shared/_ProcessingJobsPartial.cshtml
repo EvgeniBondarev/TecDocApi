@@ -1,0 +1,218 @@
+﻿@using System.Web
+@model List<Servcies.HangfireService.Models.JobDto>
+
+<!-- Модальное окно для данных -->
+<div class="modal fade" id="dataModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Данные задания</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <pre id="modalDataContent" class="p-3 bg-light rounded modal-pre-wrap"></pre>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                <button type="button" class="btn btn-danger" id="forceStopBtn" data-job-id="">
+                    <i class="fas fa-stop-circle"></i> Принудительно остановить
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .action-link {
+        cursor: pointer;
+    }
+    .action-link:hover {
+        text-decoration: underline;
+    }
+    .modal-pre-wrap {
+        white-space: pre-wrap;
+        word-break: break-all;
+        overflow-wrap: break-word;
+    }
+    .json-short {
+        font-family: monospace;
+        background-color: #f8f9fa;
+        padding: 2px 4px;
+        border-radius: 3px;
+        display: inline-block;
+        max-width: 200px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .server-id {
+        font-family: monospace;
+        font-size: 0.9em;
+    }
+    .duration-cell {
+        min-width: 120px;
+    }
+    .duration-tooltip {
+        cursor: help;
+        border-bottom: 1px dotted #999;
+    }
+    .stop-btn {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.8rem;
+    }
+    
+</style>
+
+<div class="table-responsive">
+    <table class="table table-bordered table-striped align-middle">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Задание</th>
+            <th>Сервер</th>
+            <th>Начато</th>
+            <th>Длительность</th>
+            <th>Данные</th>
+            <th>Действия</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var job in Model)
+        {
+        var jsonData = job.Args != null ?
+        Newtonsoft.Json.JsonConvert.SerializeObject(job.Args, Newtonsoft.Json.Formatting.Indented) :
+        "{}";
+        var shortData = jsonData.Length > 30 ? jsonData.Substring(0, 30) + "..." : jsonData;
+        var dataId = "data-" + Guid.NewGuid().ToString("N");
+        var duration = DateTime.UtcNow - (job.StartedAt ?? DateTime.UtcNow);
+        var durationMinutes = duration.TotalMinutes;
+        var durationText = durationMinutes.ToString("0.00") + " мин";
+        var durationTooltip = $"Выполняется {duration.TotalSeconds:0} секунд ({duration.TotalMilliseconds} мс)";
+
+        <tr>
+            <td>@job.Id</td>
+            <td>@job.MethodName</td>
+            <td class="server-id">@job.ServerId</td>
+            <td>@job.StartedAt?.ToString("HH:mm dd.MM.yyyy")</td>
+            <td class="duration-cell">
+                        <span class="duration-tooltip" title="@durationTooltip">
+                            @durationText
+                        </span>
+            </td>
+            <td>
+                <div id="@dataId" class="d-none">@jsonData</div>
+                <a href="#" class="text-decoration-none show-data"
+                   data-data-id="@dataId"
+                   data-job-id="@job.Id"
+                   title="@jsonData">
+                    <pre class="mb-0 d-inline json-short">@shortData</pre>
+                </a>
+            </td>
+            <td>
+                <button class="btn btn-sm btn-outline-danger stop-btn stop-job"
+                        data-job-id="@job.Id"
+                        title="Остановить задание">
+                    <i class="fas fa-stop"></i> Остановить
+                </button>
+            </td>
+        </tr>
+        }
+        </tbody>
+    </table>
+</div>
+
+@if (!Model.Any())
+{
+<div class="alert alert-info">Нет выполняющихся заданий</div>
+}
+
+@section Scripts {
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Инициализация тултипов
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+
+        // Обработка кликов для показа данных
+        document.querySelectorAll('.show-data').forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                const dataId = this.getAttribute('data-data-id');
+                const jobId = this.getAttribute('data-job-id');
+                const dataContent = document.getElementById(dataId).textContent;
+
+                const modal = new bootstrap.Modal(document.getElementById('dataModal'));
+                document.getElementById('modalDataContent').textContent = dataContent;
+                document.getElementById('forceStopBtn').setAttribute('data-job-id', jobId);
+
+                modal.show();
+            });
+        });
+
+        // Обработка остановки заданий
+        document.querySelectorAll('.stop-job').forEach(button => {
+            button.addEventListener('click', function() {
+                const jobId = this.getAttribute('data-job-id');
+                if (confirm(`Вы уверены, что хотите остановить задание ${jobId}?`)) {
+                    stopJob(jobId);
+                }
+            });
+        });
+
+        // Обработка принудительной остановки из модального окна
+        document.getElementById('forceStopBtn').addEventListener('click', function() {
+            const jobId = this.getAttribute('data-job-id');
+            if (confirm(`ВНИМАНИЕ! Принудительная остановка может вызвать проблемы. Остановить задание ${jobId}?`)) {
+                forceStopJob(jobId);
+            }
+        });
+    });
+
+    function stopJob(jobId) {
+        fetch('@Url.Action("StopJob", "HangfireQueue")', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+            },
+            body: JSON.stringify({ jobId: jobId })
+        })
+            .then(response => {
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    alert("Ошибка при остановке задания");
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert("Произошла ошибка при выполнении запроса");
+            });
+    }
+
+    function forceStopJob(jobId) {
+        fetch('@Url.Action("DeleteJob", "HangfireQueue")', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+            },
+            body: JSON.stringify({ jobId: jobId })
+        })
+            .then(response => {
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    alert("Ошибка при принудительной остановке задания");
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert("Произошла ошибка при выполнении запроса");
+            });
+    }
+</script>
+}

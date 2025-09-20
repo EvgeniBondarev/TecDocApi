@@ -1,0 +1,594 @@
+﻿@model OzonOrdersWeb.Areas.OzonCards.ViewModels.ExcelMappingRequest
+
+@{
+ViewData["Title"] = "Обработка Excel файлов";
+}
+
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">
+                <i class="fas fa-exchange-alt me-2"></i>Обработка Excel файлов
+            </h4>
+        </div>
+        <div class="card-body">
+            <p class="text-muted">Загрузите исходный и целевой файлы для сопоставления данных</p>
+
+            <!-- Форма загрузки файлов -->
+            <form id="uploadForm" enctype="multipart/form-data" class="mb-4">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-header bg-info text-white">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-file-export me-1"></i>Исходный файл
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <label class="form-label fw-bold">Исходный файл:</label>
+                                    <input type="file" id="sourceFile" name="sourceFile" class="form-control" accept=".xlsx,.xls" required />
+                                    <small class="form-text text-muted">Выберите файл с исходными данными</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-header bg-success text-white">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-file-import me-1"></i>Целевой файл
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <label class="form-label fw-bold">Целевой файл:</label>
+                                    <input type="file" id="destinationFile" name="destinationFile" class="form-control" accept=".xlsx,.xls" required />
+                                    <small class="form-text text-muted">Выберите файл для заполнения данными</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-center mt-3">
+                    <button type="button" id="uploadBtn" class="btn btn-primary">
+                        <i class="fas fa-upload me-1"></i>Загрузить файлы
+                    </button>
+                </div>
+            </form>
+
+            <!-- Форма обработки -->
+            <form id="processForm" asp-action="ProcessExcel" asp-area="OzonCards" asp-controller="Excel" method="post" enctype="multipart/form-data" style="display: none;">
+                <input type="hidden" name="SourceFileName" id="hiddenSourceFile" />
+                <input type="hidden" name="DestinationFileName" id="hiddenDestinationFile" />
+                <input type="hidden" name="MappingName" id="hiddenMappingName" />
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-header bg-info text-white">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-cog me-1"></i>Настройки исходного файла
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <label class="form-label fw-bold">Исходный лист:</label>
+                                    <select name="SourceSheet" id="sourceSheet" class="form-select" required
+                                            asp-for="SourceSheet">
+                                        <option value="">Выберите лист...</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label fw-bold">Строка заголовков:</label>
+                                    <input type="number" name="SourceHeaderRow" id="sourceHeaderRow" class="form-control"
+                                           value="@(Model?.SourceHeaderRow ?? 1)" min="1" />
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label fw-bold">Строка начала данных:</label>
+                                    <input type="number" name="SourceDataStartRow" id="sourceDataStartRow" class="form-control"
+                                           value="@(Model?.SourceDataStartRow ?? 2)" min="1" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-header bg-success text-white">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-cog me-1"></i>Настройки целевого файла
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <label class="form-label fw-bold">Целевой лист:</label>
+                                    <select name="DestinationSheet" id="destinationSheet" class="form-select" required>
+                                        <option value="">Выберите лист...</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label fw-bold">Строка заголовков:</label>
+                                    <input type="number" name="DestinationHeaderRow" id="destinationHeaderRow" class="form-control" 
+                                           value="@(Model?.DestinationHeaderRow ?? 1)" min="1" />
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label fw-bold">Строка начала данных:</label>
+                                    <input type="number" name="DestinationDataStartRow" id="destinationDataStartRow" class="form-control" 
+                                           value="@(Model?.DestinationDataStartRow ?? 2)" min="1" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-center mt-3">
+                    <button type="button" id="loadColumnsBtn" class="btn btn-info">
+                        <i class="fas fa-sync me-1"></i> Загрузить столбцы
+                    </button>
+                </div>
+
+                <div id="columnsInfo" style="display: none;">
+                    <hr />
+
+                    <div class="card">
+                        <div class="card-header bg-warning text-dark">
+                            <h6 class="mb-0">
+                                <i class="fas fa-columns me-1"></i>Доступные столбцы
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6 class="fw-bold">Исходные столбцы:</h6>
+                                    <div id="sourceColumnsList" class="border p-2" style="max-height: 200px; overflow-y: auto;"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6 class="fw-bold">Целевые столбцы:</h6>
+                                    <div id="destinationColumnsList" class="border p-2" style="max-height: 200px; overflow-y: auto;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mt-3">
+                        <div class="card-header bg-warning text-dark">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-exchange-alt me-1"></i>Сопоставление столбцов
+                                </h6>
+                                <button type="button" id="addMapping" class="btn btn-sm btn-outline-dark">
+                                    <i class="fas fa-plus me-1"></i>Добавить
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div id="columnMappings">
+                                <div class="row mb-3 mapping-row align-items-center">
+                                    <div class="col-md-5">
+                                        <select name="ColumnMappings[0].SourceColumn" class="form-select source-column" required>
+                                            <option value="">Выберите исходный столбец</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="col-md-1 text-center">
+                                        <i class="fas fa-arrow-right fa-lg text-muted"></i>
+                                    </div>
+
+                                    <div class="col-md-5">
+                                        <select name="ColumnMappings[0].DestinationColumn" class="form-select dest-column" required>
+                                            <option value="">Выберите целевой столбец</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="col-md-1">
+                                        <button type="button" class="btn btn-danger btn-sm remove-mapping">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-3">
+                        <button type="button" id="saveTemplateBtn" class="btn btn-outline-primary">
+                            <i class="fas fa-save me-1"></i> Сохранить шаблон
+                        </button>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-cog me-1"></i> Обработать файлы
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Индикатор загрузки -->
+            <div id="loading" class="text-center" style="display: none;">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="sr-only">Загрузка...</span>
+                </div>
+                <p class="mt-2">Загрузка данных...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно сохранения шаблона -->
+<div class="modal fade" id="saveTemplateModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Сохранение шаблона</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="templateName" class="form-label">Название шаблона:</label>
+                    <input type="text" class="form-control" id="templateName" placeholder="Введите название шаблона" required>
+                    <div class="form-text">Дайте название для вашего шаблона сопоставления</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" id="confirmSaveTemplate">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let mappingCount = 1;
+    let sourceColumns = [];
+    let destColumns = [];
+
+    $('#uploadBtn').click(function () {
+        const formData = new FormData();
+        formData.append('sourceFile', $('#sourceFile')[0].files[0]);
+        formData.append('destinationFile', $('#destinationFile')[0].files[0]);
+
+        $('#loading').show();
+
+        $.ajax({
+            url: '@Url.Action("UploadFiles", "Excel", new { area = "OzonCards" })',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function (response) {
+                if (response.success) {
+                    // Сохраняем имена файлов в скрытые поля
+                    $('#hiddenSourceFile').val(response.sourceFileName);
+                    $('#hiddenDestinationFile').val(response.destFileName);
+
+                    FillDropdown('#sourceSheet', response.sourceSheets);
+                    FillDropdown('#destinationSheet', response.destinationSheets);
+
+                    var selectedSourceSheet = @Html.Raw(Json.Serialize(Model?.SourceSheet ?? ""));
+                    var selectedDestinationSheet = @Html.Raw(Json.Serialize(Model?.DestinationSheet ?? ""));
+
+                    if (selectedSourceSheet) {
+                        $('#sourceSheet option').each(function () {
+                            if ($(this).text() === selectedSourceSheet) {
+                                $(this).prop('selected', true);
+                            }
+                        });
+                    }
+
+                    if (selectedDestinationSheet) {
+                        $('#destinationSheet option').each(function () {
+                            if ($(this).text() === selectedDestinationSheet) {
+                                $(this).prop('selected', true);
+                            }
+                        });
+                    }
+
+                    $('#processForm').show();
+                } else {
+                    alert('Ошибка: ' + response.message);
+                }
+            },
+            error: function () {
+                alert('Ошибка загрузки файлов');
+            },
+            complete: function () {
+                $('#loading').hide();
+            }
+        });
+    });
+
+    $('#loadColumnsBtn').click(function () {
+        const sourceFile = $('#sourceFile')[0].files[0];
+        const destFile = $('#destinationFile')[0].files[0];
+        const sourceSheet = $('#sourceSheet').val();
+        const destSheet = $('#destinationSheet').val();
+        const sourceHeaderRow = $('#sourceHeaderRow').val();
+        const destHeaderRow = $('#destinationHeaderRow').val();
+
+        if (!sourceSheet || !destSheet) {
+            alert('Выберите листы в обоих файлах');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('sourceFile', sourceFile);
+        formData.append('destinationFile', destFile);
+        formData.append('sourceSheet', sourceSheet);
+        formData.append('destinationSheet', destSheet);
+        formData.append('sourceHeaderRow', sourceHeaderRow);
+        formData.append('destinationHeaderRow', destHeaderRow);
+
+        $('#loading').show();
+
+        $.ajax({
+            url: '@Url.Action("GetColumnsInfo", "Excel", new { area = "OzonCards" })',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function (response) {
+                if (response.success) {
+                    sourceColumns = response.sourceColumns;
+                    destColumns = response.destinationColumns;
+
+                    ShowColumnsInfo('#sourceColumnsList', sourceColumns, 'Исходные');
+                    ShowColumnsInfo('#destinationColumnsList', destColumns, 'Целевые');
+
+                    FillColumnsDropdown('.source-column', sourceColumns);
+                    FillColumnsDropdown('.dest-column', destColumns);
+                    
+                    var existingMappings = @Html.Raw(Json.Serialize(Model?.ColumnMappings ?? []));
+
+                    if (existingMappings.length > 0) {
+                        $('#columnMappings').empty(); // очищаем текущие строки
+
+                        existingMappings.forEach(function (map, index) {
+                            var html = `
+                                <div class="row mb-3 mapping-row align-items-center">
+                                    <div class="col-md-5">
+                                        <select name="ColumnMappings[${index}].SourceColumn" class="form-select source-column" required>
+                                            <option value="">Выберите исходный столбец</option>
+                                            ${sourceColumns.map(col => `<option value="${col.name}" title="Пример: ${col.example}">${col.name}</option>`).join('')}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-1 text-center">
+                                        <i class="fas fa-arrow-right fa-lg text-muted"></i>
+                                    </div>
+                                    <div class="col-md-5">
+                                        <select name="ColumnMappings[${index}].DestinationColumn" class="form-select dest-column" required>
+                                            <option value="">Выберите целевой столбец</option>
+                                            ${destColumns.map(col => `<option value="${col.name}" title="Пример: ${col.example}">${col.name}</option>`).join('')}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-1">
+                                        <button type="button" class="btn btn-danger btn-sm remove-mapping">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                `;
+                            $('#columnMappings').append(html);
+
+                            // Устанавливаем выбранные значения по имени столбца
+                            if (map.sourceColumn) {
+                                $(`#columnMappings select.source-column`).last().val(map.sourceColumn);
+                            }
+                            if (map.destinationColumn) {
+                                $(`#columnMappings select.dest-column`).last().val(map.destinationColumn);
+                            }
+                        });
+
+                        mappingCount = existingMappings.length;
+                    }
+
+                    $('#columnsInfo').show();
+                } else {
+                    alert('Ошибка: ' + response.message);
+                }
+            },
+            error: function (xhr, status, error) {
+                console.error('Error:', error);
+                alert('Ошибка загрузки столбцов: ' + error);
+            },
+            complete: function () {
+                $('#loading').hide();
+            }
+        });
+    });
+
+    // Сохранение шаблона
+    $('#saveTemplateBtn').click(function() {
+        $('#saveTemplateModal').modal('show');
+    });
+
+    $('#confirmSaveTemplate').click(function () {
+        const templateName = $('#templateName').val().trim();
+        if (!templateName) {
+            alert('Пожалуйста, введите название шаблона');
+            return;
+        }
+        $('#hiddenMappingName').val(templateName);
+        $('#saveTemplateModal').modal('hide');
+        showToast('Имя шаблона сохранено для отправки формы', 'info');
+    });
+
+
+    function collectColumnMappings() {
+        const mappings = [];
+
+        $('#columnMappings .mapping-row').each(function () {
+            const sourceColumn = $(this).find('.source-column').val();
+            const destColumn = $(this).find('.dest-column').val();
+
+            const sourceExample = $(this).find('.source-example').val() || "";
+            const destExample = $(this).find('.dest-example').val() || "";
+
+            if (sourceColumn && destColumn) {
+                mappings.push({
+                    SourceColumn: sourceColumn,
+                    DestinationColumn: destColumn,
+                    SourceExample: sourceExample,
+                    DestinationExample: destExample
+                });
+            }
+        });
+
+        return mappings;
+    }
+    
+    function FillDropdown(selector, items) {
+        $(selector).empty().append('<option value="">Выберите...</option>');
+        items.forEach(item => {
+            $(selector).append($('<option>', {
+                value: item,
+                text: item
+            }));
+        });
+    }
+
+    function FillColumnsDropdown(selector, columns) {
+        $(selector).empty().append('<option value="">Выберите столбец...</option>');
+        columns.forEach(col => {
+            $(selector).append($('<option>', {
+                value: col.name,
+                text: col.name,
+                title: `Пример: ${col.example}`
+            }));
+        });
+    }
+
+    function ShowColumnsInfo(selector, columns, title) {
+        let html = `<div class="small"><strong>${title} столбцы:</strong><br>`;
+        columns.forEach(col => {
+            html += `<div class="border-bottom p-1">
+                    <strong>${col.name}</strong>: 
+                    <span class="text-muted">${col.example}</span>
+                </div>`;
+        });
+        html += '</div>';
+        $(selector).html(html);
+    }
+
+    $('#addMapping').click(function () {
+        const html = `
+                <div class="row mb-3 mapping-row align-items-center">
+                    <div class="col-md-5">
+                        <select name="ColumnMappings[${mappingCount}].SourceColumn" class="form-select source-column" required>
+                            <option value="">Выберите исходный столбец</option>
+                            ${sourceColumns.map(col =>
+            `<option value="${col.name}" title="Пример: ${col.example}">${col.name}</option>`
+        ).join('')}
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-1 text-center">
+                        <i class="fas fa-arrow-right fa-lg text-muted"></i>
+                    </div>
+                    
+                    <div class="col-md-5">
+                        <select name="ColumnMappings[${mappingCount}].DestinationColumn" class="form-select dest-column" required>
+                            <option value="">Выберите целевой столбец</option>
+                            ${destColumns.map(col =>
+            `<option value="${col.name}" title="Пример: ${col.example}">${col.name}</option>`
+        ).join('')}
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-1">
+                        <button type="button" class="btn btn-danger btn-sm remove-mapping">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        $('#columnMappings').append(html);
+        mappingCount++;
+    });
+
+    $(document).on('click', '.remove-mapping', function () {
+        if ($('.mapping-row').length > 1) {
+            $(this).closest('.mapping-row').remove();
+        } else {
+            alert('Должно быть хотя бы одно сопоставление');
+        }
+    });
+
+    // Автоматическая подгрузка при изменении важных параметров
+    $('#sourceSheet, #destinationSheet, #sourceHeaderRow, #destinationHeaderRow').change(function() {
+        if ($('#sourceSheet').val() && $('#destinationSheet').val()) {
+            $('#columnsInfo').hide();
+        }
+    });
+
+    // Функция показа уведомления
+    function showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+        toast.style.cssText = 'top: 20px; right: 20px; z-index: 1050; min-width: 300px;';
+        toast.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+
+        document.body.appendChild(toast);
+
+        setTimeout(() => {
+            toast.remove();
+        }, 3000);
+    }
+    $(document).ready(function () {
+        // Если модель не null, показываем уведомление
+        var modelExists = @Html.Raw((Model != null && Model.ColumnMappings?.Count > 0) ? "true" : "false");
+
+        if (modelExists) {
+            showToast('Сопоставление столбцов подгружено из шаблона', 'success');
+        }
+    });
+</script>
+
+<style>
+    .mapping-row {
+        transition: all 0.3s ease;
+        padding: 10px;
+        border-radius: 5px;
+        background-color: #f8f9fa;
+    }
+
+    .mapping-row:hover {
+        background-color: #e9ecef;
+    }
+
+    .remove-mapping {
+        transition: all 0.2s ease;
+    }
+
+    .remove-mapping:hover {
+        transform: scale(1.1);
+    }
+
+    .card {
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        margin-bottom: 1rem;
+    }
+
+    .card-header {
+        border-bottom: none;
+    }
+
+    option[title]:hover::after {
+        content: attr(title);
+        position: absolute;
+        background: #333;
+        color: white;
+        padding: 5px;
+        border-radius: 3px;
+        z-index: 1000;
+    }
+</style>
+}

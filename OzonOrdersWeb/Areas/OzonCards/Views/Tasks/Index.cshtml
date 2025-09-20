@@ -1,0 +1,305 @@
+﻿@{
+    ViewData["Title"] = "Список задач";
+}
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewData["Title"]</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link href="~/css/tree-cards.css" rel="stylesheet" />
+    <style>
+        .container {
+            display: flex;
+            width: 100%;
+            align-items: flex-start;
+            gap: 20px;
+        }
+    
+        .tasks-table-container {
+            flex: 0 0 90%;
+            overflow: auto;
+            border: 1px solid #000;
+        }
+    
+        .tasks-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+    
+        .tasks-table th,
+        .tasks-table td {
+            border: 1px solid #000;
+            padding: 8px;
+            text-align: left;
+        }
+    
+        /* Стили для модального окна */
+        .modal {
+            display: none; /* по умолчанию скрыто */
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.6); /* затемнение фона */
+        }
+    
+        .modal-content {
+            background-color: #fff;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #000;
+            overflow-y: auto;
+        }
+    
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+    
+        .close-button:hover,
+        .close-button:focus {
+            color: black;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="tasks-table-container">
+            <table class="tasks-table" border="1">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Task ID</th>
+                    <th>Mongo ID</th>
+                    <th>Название</th>
+                    <th>Создано</th>
+                    <th>Ozon Client</th>
+                    <th>Последний статус</th>
+                    <th>Время проверки</th>
+                    <th>Действия</th>
+                </tr>
+                </thead>
+                <tbody id="tasksTable"></tbody>
+            </table>
+        </div>
+
+        <!-- Модальное окно -->
+        <div id="taskInfoModal" class="modal">
+            <div class="modal-content">
+                <span class="close-button">&times;</span>
+                <h2>Информация о задаче</h2>
+                <div id="taskInfoContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function () {
+            fetchTasks();
+        });
+
+        function fetchTasks() {
+            $.ajax({
+                url: "https://card-api.interparts.ru/api/tasks",
+                method: "GET",
+                dataType: "json",
+                success: function (response) {
+                    if (!response.error && response.result) {
+                        const sortedTasks = response.result.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
+                        let rows = "";
+                        sortedTasks.forEach(task => {
+                            rows += `<tr id="taskRow_${task.id}">
+                                <td>${task.id}</td>
+                                <td>${task.taskId}</td>
+                                <td>${task.mongoId}</td>
+                                <td>${task.name}</td>
+                                <td>${new Date(task.createTime).toLocaleString()}</td>
+                                <td>${task.ozonClient}</td>
+                                <td id="status_${task.id}">${task.lastStatus}</td>
+                                <td id="checkTime_${task.id}">${new Date(task.checkTime).toLocaleString()}</td>
+                                <td>
+                                    <button style="display: block; width: 100%;" onclick="fetchTaskInfo(${task.taskId}, '${task.mongoId}', '${task.id}')">Информация</button>
+                                    <button style="display: block; width: 100%; margin-top: 5px;" onclick="deleteTask(${task.id})">Удалить</button>
+                                </td>
+                            </tr>`;
+                        });
+                        $("#tasksTable").html(rows);
+                    } else {
+                        console.error("Ошибка получения списка задач", response.message);
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error("Ошибка при запросе списка задач:", error);
+                }
+            });
+        }
+
+        function fetchTaskInfo(taskId, mongoId, taskRowId) {
+            let infoHtml = "";
+            let latestStatus = "Не указан";
+
+            $.ajax({
+                url: "https://card-api.interparts.ru/api/OzonApi/product/import/info",
+                method: "POST",
+                contentType: "application/json",
+                data: JSON.stringify({ taskId: taskId }),
+                dataType: "json",
+                success: function (response) {
+                    if (!response.error && response.result) {
+                        const result = response.result.result;
+                        if (result.items && result.items.length > 0) {
+                            result.items.forEach(item => {
+                                latestStatus = item.status;
+                                infoHtml += `<div><strong>Статус:</strong> ${item.status}</div>`;
+                                if (item.errors && item.errors.length > 0) {
+                                    infoHtml += "<div><strong>Ошибки:</strong><ul>";
+                                    item.errors.forEach(error => {
+                                        infoHtml += `<li><b>${error.code}</b> / ${error.message}</li>`;
+                                    });
+                                    infoHtml += "</ul></div>";
+                                }
+                            });
+                        } else {
+                            infoHtml = "Нет данных о задаче.";
+                        }
+
+                        $(`#status_${taskRowId}`).text(latestStatus);
+                        $(`#checkTime_${taskRowId}`).text(new Date().toLocaleString());
+                    } else {
+                        console.error("Ошибка получения информации о задаче", response.message);
+                        infoHtml = "<p>Ошибка получения информации о задаче.</p>";
+                    }
+
+                    fetchJsonData(mongoId, infoHtml);
+                },
+                error: function (xhr, status, error) {
+                    console.error("Ошибка при запросе информации о задаче:", error);
+                    infoHtml = "<p>Ошибка при запросе информации о задаче.</p>";
+                    fetchJsonData(mongoId, infoHtml);
+                }
+            });
+        }
+
+        function fetchJsonData(mongoId, infoHtml) {
+            $.ajax({
+                url: `https://card-api.interparts.ru/api/dynamic/CardsData/${mongoId}`,
+                method: "GET",
+                dataType: "json",
+                success: function (jsonResponse) {
+                    const jsonString = JSON.stringify(jsonResponse, null, 2);
+                    infoHtml += `<h3>Данные JSON:</h3>
+                        <textarea id="jsonEditor" style="width:100%; height:500px;">${jsonString}</textarea>
+                        <button onclick="sendEditedJson('${mongoId}')">Отправить</button>`;
+                    $("#taskInfoContent").html(infoHtml);
+                    $("#taskInfoModal").fadeIn(); // Показать модальное окно
+                },
+                error: function (xhr, status, error) {
+                    console.error("Ошибка при получении JSON данных:", error);
+                    infoHtml += "<p>Ошибка загрузки JSON.</p>";
+                    $("#taskInfoContent").html(infoHtml);
+                    $("#taskInfoModal").fadeIn(); // Показать модальное окно
+                }
+            });
+        }
+
+        // Обработка закрытия модального окна
+        $(document).on('click', '.close-button', function () {
+            $("#taskInfoModal").fadeOut();
+        });
+
+        // Закрытие при клике вне содержимого
+        $(window).on('click', function (event) {
+            if ($(event.target).is('#taskInfoModal')) {
+                $("#taskInfoModal").fadeOut();
+            }
+        });
+
+
+        function sendEditedJson(mongoId) {
+            const editedJson = $("#jsonEditor").val();
+
+            try {
+                const parsedJson = JSON.parse(editedJson);
+                $.ajax({
+                    url: `https://card-api.interparts.ru/api/dynamic/CardsData/${mongoId}`,
+                    method: "PUT",
+                    contentType: "application/json",
+                    data: JSON.stringify(parsedJson),
+                    success: function () {
+                        alert("JSON успешно обновлен");
+                    },
+                    error: function (xhr, status, error) {
+                        console.error("Ошибка при обновлении JSON:", error);
+                        alert("Ошибка при обновлении JSON");
+                    }
+                });
+
+                $.ajax({
+                    url: "https://card-api.interparts.ru/api/OzonApi/product-import",
+                    method: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify(parsedJson),
+                    dataType: "json",
+                    success: function (response) {
+                        console.log("Карточка успешно создана!");
+
+                        const taskData = {
+                            taskId: response.result.result.taskId,
+                            mongoId: mongoId,
+                            name: "Название задачи",
+                            ozonClient: 482702,
+                            lastStatus: "Создан"
+                        };
+
+                        $.ajax({
+                            url: "https://card-api.interparts.ru/api/tasks",
+                            method: "POST",
+                            contentType: "application/json",
+                            data: JSON.stringify(taskData),
+                            dataType: "json",
+                            success: function (taskResponse) {
+                                console.log("Задача успешно создана:", taskResponse);
+                                location.reload();
+                            },
+                            error: function (xhr, status, error) {
+                                console.error("Ошибка при вызове /api/tasks:", error);
+                            }
+                        });
+                    },
+                    error: function (xhr, status, error) {
+                        console.error("Ошибка создания карточки:", error);
+                    }
+                });
+
+            } catch (e) {
+                alert("Ошибка: Некорректный JSON");
+            }
+        }
+
+        function deleteTask(taskId) {
+            if (confirm("Вы уверены, что хотите удалить задачу?")) {
+                $.ajax({
+                    url: `https://card-api.interparts.ru/api/tasks/${taskId}`,
+                    method: "DELETE",
+                    success: function () {
+                        $(`#taskRow_${taskId}`).remove();
+                    },
+                    error: function (xhr, status, error) {
+                        console.error("Ошибка удаления задачи:", error);
+                    }
+                });
+            }
+        }
+    </script>
+</body>
+</html>

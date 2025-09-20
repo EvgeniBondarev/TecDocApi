@@ -1,0 +1,33 @@
+﻿@using OzonOrdersWeb.ViewModels.UserViewModels
+
+@model SetUserAccessViewModel
+
+@{
+    ViewData["Title"] = "Set User Access";
+}
+
+<h2>Права доступа</h2>
+<br />
+
+
+<form asp-area="Studio2" asp-controller="User" asp-action="SetUserAccess" method="post">
+    <input type="hidden" asp-for="UserId" value="@Model.UserId" />
+    <div class="form-group">
+        <label>Выберите право доступа</label>
+        @foreach (var userAccess in Model.UserAccesses)
+        {
+            <div class="radio">
+                <label>
+                    <input type="radio" asp-for="SelectedUserAccessId" value="@userAccess.Id" />
+                    @userAccess.Name
+                </label>
+            </div>
+        }
+    </div>
+    <br />
+    <br />
+
+    <div class="form-group">
+        <input type="submit" value="Сохранить" class="btn btn-primary" />
+    </div>
+</form>

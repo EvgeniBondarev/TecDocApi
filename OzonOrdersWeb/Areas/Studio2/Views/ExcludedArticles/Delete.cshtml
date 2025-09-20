@@ -1,0 +1,17 @@
+﻿@model OzonDomains.Models.ExcludedArticle
+
+@{
+    ViewData["Title"] = "Удаление артикула";
+}
+
+<h2>@ViewData["Title"]</h2>
+
+<div class="alert alert-danger">
+    Вы уверены, что хотите удалить артикул <strong>@Model.Article</strong> для клиента <strong>@Model.OzonClient?.Name</strong>?
+</div>
+
+<form asp-area="Studio2" asp-controller="ExcludedArticles" asp-action="Delete" method="post">
+    <input type="hidden" asp-for="Id" />
+    <button type="submit" class="btn btn-danger">Удалить</button>
+    <a asp-action="Index" class="btn btn-secondary">Отмена</a>
+</form>

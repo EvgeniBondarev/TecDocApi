@@ -1,0 +1,40 @@
+﻿@model OzonDomains.Models.OrderCarts.OrderItem
+
+@{
+    ViewData["Title"] = "Удалить товар из корзины";
+}
+
+<h2>@ViewData["Title"]</h2>
+
+<div class="alert alert-warning">
+    <p>Вы уверены, что хотите удалить этот товар из корзины?</p>
+</div>
+
+<table class="table table-bordered">
+    <tr>
+        <th>ID</th>
+        <td>@Model.Id</td>
+    </tr>
+    <tr>
+        <th>ItemId</th>
+        <td>@Model.ItemId</td>
+    </tr>
+    <tr>
+        <th>Количество</th>
+        <td>@Model.Quantity</td>
+    </tr>
+    <tr>
+        <th>Комментарий</th>
+        <td>@Model.Comment</td>
+    </tr>
+    <tr>
+        <th>Статус позиции</th>
+        <td>@Model.ItemStatus?.Name</td>
+    </tr>
+</table>
+
+<form asp-area="Studio2" asp-controller="OrderItem" asp-action="Delete" method="post">
+    <input type="hidden" asp-for="Id" />
+    <button type="submit" class="btn btn-danger">Удалить</button>
+    <a asp-area="Studio2" asp-controller="Cart" asp-action="Index" class="btn btn-secondary">Отмена</a>
+</form>

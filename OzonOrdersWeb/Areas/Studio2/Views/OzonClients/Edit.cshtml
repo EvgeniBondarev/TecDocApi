@@ -1,0 +1,230 @@
+﻿@using OzonOrdersWeb.ViewModels.OzonClientViewModels
+@model EditOzonClientViewModel
+@{
+ViewData["Title"] = "Edit";
+Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<style>
+    .bi-eye-slash-fill {
+        width: 16px;
+        height: 16px;
+        fill: currentColor;
+    }
+    .api-roles-container {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+        padding: 20px;
+        margin-bottom: 30px;
+    }
+    .role-card {
+        background-color: white;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+    .role-name {
+        font-weight: bold;
+        color: #007bff;
+        margin-bottom: 10px;
+    }
+    .method-list {
+        list-style-type: none;
+        padding-left: 0;
+        margin-bottom: 0;
+    }
+    .method-item {
+        padding: 5px 0;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    .method-item:last-child {
+        border-bottom: none;
+    }
+    .no-roles {
+        color: #6c757d;
+        font-style: italic;
+    }
+</style>
+@{
+string status = (string)ViewData["EditInfo"];
+}
+@if (status != null)
+{
+<div class="alert alert-dismissible alert-danger">
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <p>@status</p>
+</div>
+}
+<h1>Изменение клиента</h1>
+
+<hr />
+
+<!-- Основные поля формы - ВЫВОДИМ ПОСЛЕ РОЛЕЙ -->
+<div class="row">
+    <div class="col-md-6">
+        <form asp-area="Studio2" asp-controller="OzonClients" asp-action="Edit">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="OzonClient.Id" />
+
+            <h5>Основные данные клиента</h5>
+
+            <div class="form-group">
+                <label asp-for="OzonClient.Name" class="control-label"></label>
+                <input asp-for="OzonClient.Name" class="form-control" />
+                <span asp-validation-for="OzonClient.Name" class="text-danger"></span>
+            </div>
+
+            @if (Model.OzonClient.ApiKey != null && Model.OzonClient.ClientId != null)
+            {
+                <div class="form-group">
+                    <label asp-for="OzonClient.ClientId" class="control-label"></label>
+                    <input asp-for="OzonClient.ClientId" value="@Model.OzonClient.DecryptClientId" class="form-control" />
+                    <span asp-validation-for="OzonClient.ClientId" class="text-danger"></span>
+                </div>
+                <div class="form-group">
+                    <label asp-for="OzonClient.ApiKey" class="control-label"></label>
+                    <div class="input-group">
+                        <input asp-for="OzonClient.ApiKey" id="apiKeyInput" type="password" value="@Model.OzonClient.DecryptApiKey" class="form-control" />
+                        <div class="input-group-append">
+                            <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-eye-fill" viewBox="0 0 16 16">
+                                    <path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0" />
+                                    <path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8m8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <span asp-validation-for="OzonClient.ApiKey" class="text-danger"></span>
+                </div>
+            }
+
+            <div class="form-group">
+                <label asp-for="OzonClient.CurrencyCode" class="control-label"></label>
+                <select asp-for="OzonClient.CurrencyCode" class="form-control">
+                    <option value="RUB">RUB</option>
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                    <option value="BYN">BYN</option>
+                </select>
+                <span asp-validation-for="OzonClient.CurrencyCode" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="OzonClient.ClientType" class="control-label"></label>
+                <select asp-for="OzonClient.ClientType" class="form-control">
+                    <option value="ALL">Другое</option>
+                    <option value="OZON">Ozon</option>
+                    <option value="YANDEX">Yandex</option>
+                </select>
+                <span asp-validation-for="OzonClient.ClientType" class="text-danger"></span>
+            </div>
+
+            <div class="form-group" style="display: none">
+                <label asp-for="OzonClient.DecryptApiKey" class="control-label"></label>
+                <input asp-for="OzonClient.DecryptApiKey" class="form-control" />
+                <span asp-validation-for="OzonClient.DecryptApiKey" class="text-danger"></span>
+            </div>
+
+            <div class="form-group" style="display: none">
+                <label asp-for="OzonClient.DecryptClientId" class="control-label"></label>
+                <input asp-for="OzonClient.DecryptClientId" class="form-control" />
+                <span asp-validation-for="OzonClient.DecryptClientId" class="text-danger"></span>
+            </div>
+
+            <br />
+            <div class="form-group">
+                <input type="submit" value="Сохранить" class="btn btn-primary" />
+            </div>
+        </form>
+        <br/>
+        <br/>
+        <div class="api-roles-container mb-4">
+            <h4>Роли и разрешения API</h4>
+
+            @if (Model.ApiRoles != null && Model.ApiRoles.Any())
+            {
+                <div class="mb-3">
+                    @if (Model.HasApiAccess)
+                    {
+                        <span>✅ API доступен</span>
+                    }
+                    else
+                    {
+                        <span>⚠️ Ошибка доступа</span>
+                    }
+                </div>
+
+                @foreach (var role in Model.ApiRoles)
+                {
+                    <div class="role-card">
+                        <div class="role-name">@role.Name</div>
+
+                        @if (role.Methods != null && role.Methods.Any())
+                        {
+                            <ul class="method-list">
+                                @foreach (var method in role.Methods)
+                                {
+                                    <li class="method-item">@method</li>
+                                }
+                            </ul>
+                        }
+                        else
+                        {
+                            <p class="no-roles">Нет доступных методов</p>
+                        }
+                    </div>
+                }
+            }
+            else
+            {
+                <p class="no-roles">Роли API не загружены или клиент не является Ozon</p>
+            }
+        </div>
+    </div>
+</div>
+
+<script>
+    function updateHiddenFields() {
+        var apiKeyInput = document.getElementById('apiKeyInput');
+        var decryptApiKeyInput = document.getElementById('DecryptApiKey');
+        var clientIdInput = document.getElementById('ClientId');
+        var decryptClientIdInput = document.getElementById('DecryptClientId');
+
+        if (decryptApiKeyInput && apiKeyInput) {
+            decryptApiKeyInput.value = apiKeyInput.value;
+        }
+        if (decryptClientIdInput && clientIdInput) {
+            decryptClientIdInput.value = clientIdInput.value;
+        }
+    }
+
+    document.querySelector('form').addEventListener('submit', updateHiddenFields);
+
+    var apiKeyInput = document.getElementById('apiKeyInput');
+    if (apiKeyInput) {
+        apiKeyInput.addEventListener('input', updateHiddenFields);
+    }
+
+    var togglePassword = document.getElementById('togglePassword');
+    if (togglePassword) {
+        togglePassword.addEventListener('click', function (e) {
+            var passwordInput = document.getElementById('apiKeyInput');
+            if (passwordInput) {
+                var type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+
+                this.querySelector('svg').classList.toggle('bi-eye-fill');
+                this.querySelector('svg').classList.toggle('bi-eye-slash-fill');
+            }
+        });
+    }
+</script>
+
+<div>
+    <a asp-action="Index">К списку клиентов</a>
+</div>
+
+@section Scripts {
+@{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

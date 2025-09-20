@@ -1,0 +1,272 @@
+﻿@model OrderHistoryViewModel
+
+@{
+    ViewData["Title"] = $"История заказа - {@Model.ShipmentNumber}";
+}
+
+<div class="container mt-4">
+    <div class="card shadow-sm mb-5 rounded-4">
+        <div class="card-body">
+            <h4 class="card-title">Общая информация о заказе</h4>
+            <p><strong>Номер заказа:</strong> @Model.ShipmentNumber</p>
+            <p><strong>Код товара:</strong> @Model.ProductName</p>
+            <p><strong>Наименование товара:</strong> @Model.Article</p>
+            <p><strong>Клиент:</strong> @Model.ClientName</p>
+
+            @{
+                var createdRecord = Model.Histories
+                    .SelectMany(g => g.Value)
+                    .FirstOrDefault(c => c.ColumnDisplayName == "Создание записи");
+            }
+
+            @if (createdRecord != null)
+            {
+                <hr />
+                <p class="mb-1">
+                    <strong>Создано:</strong>
+                    @createdRecord.ChangedAt.ToString("dd.MM.yyyy HH:mm:ss")
+                </p>
+                <p>
+                    <strong>Кем:</strong> @createdRecord.ChangedBy
+                </p>
+            }
+        </div>
+    </div>
+
+    <!-- Навигация по датам -->
+    @if (Model.Histories.Any())
+    {
+        <div class="sticky-top bg-white py-3 shadow-sm mb-5 rounded-4" style="top: 56px; z-index: 1000;">
+            <div class="container">
+                <div class="d-flex justify-content-between align-items-center flex-wrap">
+                    <h4 class="mb-0">История изменений</h4>
+                    
+                    <div class="d-flex align-items-center gap-2">
+                        <!-- Выбор даты -->
+                        <div class="dropdown">
+                            <button class="btn btn-outline-primary dropdown-toggle" type="button" id="dateDropdown" 
+                                    data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-calendar-alt me-2"></i>Перейти к дате
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="dateDropdown">
+                                @foreach (var date in Model.Histories.Keys.OrderByDescending(d => d))
+                                {
+                                    <li>
+                                        <a class="dropdown-item" href="#date-@date.ToString("yyyy-MM-dd")">
+                                            @date.ToString("dd.MM.yyyy") 
+                                            <span class="badge bg-secondary ms-2">@Model.Histories[date].Count</span>
+                                        </a>
+                                    </li>
+                                }
+                                
+                                <!-- Добавленная ссылка на историю заказов -->
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item" asp-area="Studio2" asp-controller="OrderHistory" asp-action="Index">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-clock-history text-primary me-2" viewBox="0 0 16 16">
+                                            <path d="M8.515 1.019A7 7 0 0 0 8 1V0a8 8 0 0 1 .589.022l-.074.997zm2.004.45a7.003 7.003 0 0 0-.985-.299l.219-.976c.383.086.76.2 1.126.342l-.36.933zm1.37.71a7.01 7.01 0 0 0-.439-.27l.493-.87a8.025 8.025 0 0 1 .979.654l-.615.789a6.996 6.996 0 0 0-.418-.302zm1.834 1.79a6.99 6.99 0 0 0-.653-.796l.724-.69c.27.285.52.59.747.91l-.818.576zm.744 1.352a7.08 7.08 0 0 0-.214-.468l.893-.45a7.976 7.976 0 0 1 .45 1.088l-.95.313a7.023 7.023 0 0 0-.179-.483zm.53 2.507a6.991 6.991 0 0 0-.1-1.025l.985-.17c.067.386.106.778.116 1.17l-1 .025zm-.131 1.538c.033-.17.06-.339.081-.51l.993.123a7.957 7.957 0 0 1-.23 1.155l-.964-.267c.046-.165.086-.332.12-.501zm-.952 2.379c.184-.29.346-.594.486-.908l.914.405c-.16.36-.345.706-.555 1.038l-.845-.535zm-.964 1.205c.122-.122.239-.248.35-.378l.758.653a8.073 8.073 0 0 1-.401.432l-.707-.707z"/>
+                                            <path d="M8 1a7 7 0 1 0 4.95 11.95l.707.707A8.001 8.001 0 1 1 8 0v1z"/>
+                                            <path d="M7.5 3a.5.5 0 0 1 .5.5v5.21l3.248 1.856a.5.5 0 0 1-.496.868l-3.5-2A.5.5 0 0 1 7 9V3.5a.5.5 0 0 1 .5-.5z"/>
+                                        </svg>
+                                        История заказов
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" asp-area="Studio2" asp-controller="FileUploadRecords" asp-action="Index">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-upload text-primary me-2" viewBox="0 0 16 16">
+                                            <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5"/>
+                                            <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708z"/>
+                                        </svg>
+                                        Заказы из Dropbox
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" asp-area="Studio2" asp-controller="HangfireQueue" asp-action="Index">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-bar-chart-line text-primary me-2" viewBox="0 0 16 16">
+                                            <path d="M0 0h1v15h15v1H0V0z"/>
+                                            <path d="M10 10h1v3h-1v-3zM7 6h1v7H7V6zM4 8h1v5H4V8z"/>
+                                        </svg>
+                                        Статистика Hangfire
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <!-- Быстрая навигация -->
+                        <div class="btn-group" role="group">
+                            <a href="#top" class="btn btn-outline-secondary" title="В начало">
+                                <i class="fas fa-arrow-up"></i>
+                            </a>
+                            <a href="#latest" class="btn btn-outline-primary" title="К последним изменениям">
+                                <i class="fas fa-arrow-down"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Хлебные крошки дат -->
+                <div class="mt-3">
+                    <nav aria-label="Навигация по датам">
+                        <div class="d-flex flex-wrap gap-2">
+                            @foreach (var date in Model.Histories.Keys.OrderByDescending(d => d))
+                            {
+                                <a href="#date-@date.ToString("yyyy-MM-dd")" 
+                                   class="btn btn-sm btn-outline-primary position-relative rounded-pill">
+                                    @date.ToString("dd.MM")
+                                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                        @Model.Histories[date].Count
+                                    </span>
+                                </a>
+                            }
+                        </div>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Контент истории -->
+    <div id="history-content">
+        @if (!Model.Histories.Any())
+        {
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>История изменений отсутствует
+            </div>
+        }
+        else
+        {
+            foreach (var group in Model.Histories.OrderByDescending(g => g.Key))
+            {
+                <div id="date-@group.Key.ToString("yyyy-MM-dd")" class="date-section mb-5">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <h5 class="text-primary mb-0">
+                            <i class="fas fa-calendar-day me-2"></i>
+                            @group.Key.ToString("dd.MM.yyyy")
+                            <span class="badge bg-primary ms-2">@group.Value.Count изменений</span>
+                        </h5>
+                        <a href="#top" class="btn btn-sm btn-outline-secondary">
+                            <i class="fas fa-arrow-up"></i> Наверх
+                        </a>
+                    </div>
+
+                    <div>
+                        @{
+                            var operationGroups = group.Value
+                                .OrderByDescending(h => h.ChangedAt)
+                                .GroupBy(h => new
+                                {
+                                    RoundedTime = new DateTime(h.ChangedAt.Ticks - (h.ChangedAt.Ticks % TimeSpan.TicksPerMinute), h.ChangedAt.Kind),
+                                    h.ChangedBy
+                                });
+
+                        }
+
+                        @foreach (var operation in operationGroups)
+                        {
+                            // Берем максимальное время в группе для отображения
+                            var maxTimeInGroup = operation.Max(h => h.ChangedAt);
+    
+                            <div class="card mb-3 border-2 border-primary shadow-sm operation-group">
+                                <div class="card-header bg-light">
+                                    <small class="text-muted">
+                                        <i class="fas fa-clock me-1"></i>
+                                        @maxTimeInGroup.ToString("HH:mm:ss") 
+                                        <i class="fas fa-user ms-2 me-1"></i>
+                                        @operation.Key.ChangedBy
+                                        <span class="badge bg-primary ms-2">@operation.Count() изменений</span>
+                                    </small>
+                                </div>
+                                <div class="card-body p-0">
+                                    @foreach (var change in operation.OrderBy(h => h.ColumnDisplayName))
+                                    {
+                                        <div class="p-3 border-bottom">
+                                            <div class="d-flex align-items-center flex-wrap">
+                                                <strong class="me-2">@change.ColumnDisplayName:</strong>
+                                                <span class="text-danger me-2">@change.FormattedOldValue</span>
+                                                <i class="fas fa-arrow-right text-muted mx-1"></i>
+                                                <span class="text-success">@change.FormattedNewValue</span>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                                <div class="card-footer bg-light">
+                                    <small class="text-muted">
+                                        Операция выполнена: @maxTimeInGroup.ToString("HH:mm:ss")
+                                    </small>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            <!-- Якорь для последних изменений -->
+            <div id="latest"></div>
+        }
+    </div>
+</div>
+
+<style>
+    .date-section {
+        scroll-margin-top: 120px;
+    }
+    
+    .sticky-top {
+        backdrop-filter: blur(10px);
+        background: rgba(255, 255, 255, 0.95) !important;
+        border-radius: 1rem !important;
+        margin: 0 0.5rem;
+    }
+    
+    .rounded-3 {
+        border-radius: 1rem !important;
+    }
+    
+    .operation-group {
+        border-radius: 0.5rem !important;
+    }
+    
+    .operation-group .card-body > div:last-child {
+        border-bottom: none !important;
+    }
+</style>
+
+@section Scripts {
+    <script>
+        // Плавная прокрутка к якорям
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Подсветка активной даты при прокрутке
+        window.addEventListener('scroll', function() {
+            const dateSections = document.querySelectorAll('.date-section');
+            const navLinks = document.querySelectorAll('.dropdown-item, .btn-outline-primary');
+            
+            let currentSection = '';
+            
+            dateSections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                if (scrollY >= sectionTop - 150) {
+                    currentSection = '#' + section.id;
+                }
+            });
+            
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === currentSection) {
+                    link.classList.add('active');
+                }
+            });
+        });
+    </script>
+}

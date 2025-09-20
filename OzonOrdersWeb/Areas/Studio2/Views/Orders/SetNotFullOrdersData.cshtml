@@ -1,0 +1,1267 @@
+﻿@using OzonOrdersWeb.ViewModels.OrderViewModels
+
+@model NotFullOrdersViewModel
+
+
+<link rel="stylesheet" href="~/css/table.css" />
+<style>
+
+    th {
+        white-space: nowrap;
+    }
+
+    .container .row .col-md-4 {
+        flex: 0 0 auto;
+        max-width: 33.3333%;
+    }
+
+    .container .custom-width-large {
+        width: 400px; /* Устанавливаем фиксированную ширину для поля "Наименование товара" */
+    }
+
+
+    .custom-white {
+        background-color: #fff;
+    }
+
+    .custom-gray {
+        background-color: #585858;
+        color: #fff;
+    }
+
+        .custom-gray:hover {
+            color: #fff;
+        }
+
+    .custom-red {
+        background-color: #DC143C;
+        color: #fff;
+    }
+
+    .custom-red2 {
+        background-color: #FF5A75; /* Светлее, чем #DC143C */
+        color: #fff;
+    }
+
+    .custom-red:hover {
+        color: #fff;
+    }
+
+    .custom-red2:hover {
+        color: #fff;
+    }
+
+    .product-popup {
+        display: none;
+        position: absolute;
+        z-index: 1;
+    }
+
+    .product-cell {
+        font-size: 11px;
+    }
+
+        .product-cell:hover .product-popup {
+            display: block;
+        }
+
+    #processingDateFilter,
+    #shippingDateFilter {
+        width: 70px;
+    }
+
+    #deliveryPeriodInput,
+    #timeLeftDayInput {
+        width: 50px;
+    }
+
+    #statusFilter,
+    #statusFilterHead,
+    #appStatusFilterInput,
+    #supplierFilter {
+        width: 103px;
+    }
+
+    #ozonClientFilterInput,
+    #deliveryCityFilter {
+        width: 125px;
+    }
+
+    #currentPriceWithDiscountFilter,
+    #quantityFilter,
+    #priceFilter,
+    #shipmentAmountFilter,
+    #purchasePriceFilter,
+    #costPriceFilter,
+    #ozonCommissionFilter,
+    #profitFilter,
+    #discountFilter {
+        width: 70px;
+        max-width: 70px;
+    }
+
+    a {
+        text-decoration: none;
+    }
+
+    .horizontal-line {
+        border-top: 1px solid #ccc;
+        margin: 20px 0;
+    }
+
+    #infoWindow {
+        position: fixed;
+        display: none;
+        border: 1px solid #ccc;
+        background-color: #fff;
+        padding: 10px;
+        z-index: 9999;
+    }
+
+    th.active {
+        background-color: #f4f4f4; /* Цвет подсветки */
+    }
+
+    .button-container {
+        display: flex;
+        gap: 10px; /* Расстояние между кнопками */
+    }
+
+    .horizontal-inputs {
+        display: flex;
+        align-items: center;
+    }
+
+        .horizontal-inputs > div {
+            margin-right: 10px; /* Отступ между элементами */
+        }
+
+    .vertical-align {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-between;
+        height: 100%;
+    }
+
+        .vertical-align > * {
+            margin: 2px 0; /* Минимальный отступ между элементами */
+        }
+
+    .checkbox-column {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 10px;
+    }
+
+    .nowrap {
+        white-space: nowrap;
+    }
+
+    .product-cell {
+        /* Убедитесь, что ширина элемента установлена */
+        width: 100%; /* Или установите конкретную ширину, если нужно */
+        /* Обрезка текста и добавление многоточия */
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* Изначально скрываем кнопку */
+    .clear-btn {
+        display: none;
+        position: absolute;
+        left: 100%;
+        transform: translateX(0) translateY(-50%); /* Прижимаем к основной кнопке и центрируем по вертикали */
+        z-index: 10; /* Поверх других элементов */
+        top: 50%; /* Центрируем по вертикали относительно главной кнопки */
+        opacity: 0; /* Прозрачность кнопки */
+        border: solid 1px;
+    }
+
+        /* Показываем кнопку при наведении на основную или на саму кнопку очистки */
+        .btn-container:hover .clear-btn,
+        .clear-btn:hover {
+            display: block;
+            opacity: 1; /* Увеличиваем непрозрачность при наведении */
+            border: solid 1px;
+        }
+
+    /* Обёртка для кнопок */
+    .btn-container {
+        position: relative;
+        display: inline-block;
+    }
+
+    .bg-green-300 {
+        background-color: #d4edda !important; /* Bootstrap's 'bg-success' color */
+    }
+
+    .placeholder {
+        min-height: 1em; /* Вы можете настроить минимальную высоту по вашему усмотрению */
+    }
+
+    .highlight {
+        background-color: #f0f8ff; /* Light blue background */
+        transition: background-color 0.3s; /* Smooth transition */
+    }
+</style>
+
+
+
+<nav class="navbar navbar-expand-lg navbar-light bg-light sticky-top">
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+        <div class="navbar-nav">
+            <a class="nav-link" href="#one-match">Заказы с одним совпадением</a>
+            <a class="nav-link" href="#multiple-matches">Заказы с несколькими совпадениями</a>
+            <a class="nav-link" href="#unique-orders">Новые заказы</a>
+            <a class="nav-link" href="#sendOrders">Отправить заказы</a>
+            <a class="nav-link" href="#exportToExcel">Экспорт в Excel</a>
+        </div>
+    </div>
+</nav>
+
+<div id="messageContainer" class="position-fixed top-0 end-0 p-3" style="z-index: 1050;">
+    <div id="flashMessage" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <strong class="me-auto">Сообщение</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">
+            <span id="flashMessageText"></span>
+        </div>
+    </div>
+</div>
+
+@{
+    string updateStatusResult = (string)ViewData["UpdateStatusResult"]; 
+    string updateStatusResultInfo = (string)ViewData["UpdateStatusResultInfo"];
+}
+@if (updateStatusResult != null)
+{
+    <div class="alert alert-dismissible alert-success">
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <p>@Html.Raw(updateStatusResult)</p>
+        <p id="statusInfo" class="d-none">@Html.Raw(updateStatusResultInfo)</p>
+        <button type="button" id="toggleStatusInfo" class="btn btn-link">Подробно...</button>
+    </div>
+
+    <script>
+        document.getElementById('toggleStatusInfo').addEventListener('click', function () {
+            var statusInfo = document.getElementById('statusInfo');
+            if (statusInfo.classList.contains('d-none')) {
+                statusInfo.classList.remove('d-none');
+                this.textContent = 'Скрыть информацию';
+            } else {
+                statusInfo.classList.add('d-none');
+                this.textContent = 'Показать информацию';
+            }
+        });
+    </script>
+
+}
+
+
+<form asp-area="Studio2" asp-controller="Orders" asp-action="SetNotFullOrdersData" method="post">
+<table class="table table-striped" id="shipmentTable">
+    <thead>
+        <tr>
+
+            <th id="thShipmentNumber">
+                    <small>№/Номер заказа &nbsp;</small>
+                    <input id="shipmentNumberFilter" class="form-control form-control-sm" readonly />
+            </th>
+            <th>
+
+                    <div id="thOzonClient">
+                        <small>Клиент &nbsp; </small>
+                        <input id="ozonClientFilterInput" class="form-control form-control-sm" autocomplete="off" readonly />
+                    </div>
+
+                    <div id="thDeliveryCity" class="text-muted" title="Город доставки">
+                        <small>Город. &nbsp;</small>
+                        <input id="deliveryCityFilter" class="form-control form-control-sm" readonly />
+                    </div>
+            </th>
+            <th>
+                    <div id="thProcessingDate" title="Принят в обработку">
+                        <small>Принят.  &nbsp;</small>
+                        <input id="processingDateFilter" class="form-control form-control-sm" type="date" readonly />
+                    </div>
+
+                    <div id="thShippingDate" class="text-muted" title="Дата отгрузки">
+                        <small>Дата отгр.  &nbsp;</small>
+                        <input id="shippingDateFilter" class="form-control form-control-sm" type="date" readonly />
+                    </div>
+            </th>
+
+            <th style="width: 20px">
+                    <div id="thDeliveryPeriod" title="Срок доставки">
+                        <small>Срок.  &nbsp;</small>
+                        <input id="deliveryPeriodInput" class="form-control form-control-sm" type="text" placeholder="1 д. 1 ч." readonly />
+                    </div>
+
+                    <div id="thDeliveryPeriod" class="text-muted" title="Осталось времени">
+                        <small>Остал.  &nbsp;</small>
+                        <input id="timeLeftDayInput" class="form-control form-control-sm" type="number" placeholder="1 д." readonly />
+                    </div>
+            </th>
+            <th>
+
+                    <div id="thStatusOzon">
+                        <small>Статус клиента  &nbsp;</small>
+                        <input id="statusFilter" class="form-control form-control-sm statusFilterHead" autocomplete="off" readonly />
+                    </div>
+
+                    <div id="thStatus" class="text-muted">
+                        <div id="thStatus" class="text-muted">
+                            <small>Статус  &nbsp;</small>
+                            <div id="thStatus">
+                                <select id="statusFilter" class="form-control form-control-sm statusFilter" onchange="handleStatusChange(this)">
+                                    <option value="">Выберите статус</option>
+                                    @foreach (var status in Model.AppStatuses)
+                                    {
+                                        <option value="@status.Id">@status.Name</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+            </th>
+
+            <th>
+                <div class="container">
+                    <div class="row mb-0 justify-content-between">
+                        <div id="thArticle" class="col-md-4 d-flex flex-column">
+                            <small>Key &nbsp;</small>
+                            <input id="articleFilter" class="form-control form-control-sm" readonly />
+                        </div>
+                        <div id="thManufacturer" class="col-md-4 d-flex flex-column">
+                            <small>Производитель &nbsp;</small>
+                            <input id="manufacturerFilter" class="form-control form-control-sm" readonly />
+                        </div>
+                        <div id="thArticle2" class="col-md-4 d-flex flex-column">
+                            <small>Код товара  &nbsp;</small>
+                            <input id="articleFilter2" class="form-control form-control-sm" readonly />
+                        </div>
+                    </div>
+                    <div class="row mt-0">
+                        <div id="thProductName" class="custom-width-large text-muted">
+                            <small>Наименование товара &nbsp;</small>
+                            <input id="productNameFilter" class="form-control form-control-sm" readonly />
+                        </div>
+                    </div>
+                </div>
+            </th>
+
+            <th class="checkbox-column">
+
+            </th>
+
+            <th>
+                    <div id="thShipmentWarehouse">
+                        <small>Склад отгрузки &nbsp;</small>
+                        <input id="shipmentWarehouseFilter" class="form-control form-control-sm" autocomplete="off" readonly />
+                    </div>
+            </th>
+            <th>
+                    <div id="thSupplier">
+                        <small>Поставщик &nbsp;</small>
+                        <input id="shipmentWarehouseFilter" class="form-control form-control-sm" id="universalSelect" autocomplete="off" readonly />
+                    </div>
+
+                    <div id="thOrderNumberToSupplierSort" class="text-muted" title="Номер заказа поставщику">
+                        <small>Номер зак. п. &nbsp;</small>
+                    <input type="text" class="form-control form-control-sm universalOrderNumberToSupplie" id="universalOrderNumberToSupplier" readonly />
+                    </div>
+            </th>
+            <th>
+                    <div id="thCategory">
+                        <small>Категория &nbsp;</small>
+                        <input id="commercialCategoryFilter" class="form-control form-control-sm" readonly />
+                    </div>
+
+                    <div id="thVolume" class="text-muted">
+                        <small>Вес V &nbsp;</small>
+                        <input id="volumetricWeightFilter" class="form-control form-control-sm" readonly />
+                    </div>
+            </th>
+            <th>
+                    <div id="thPurchasePrice" title="Цена сайта">
+                        <small>Цена с. &nbsp;</small>
+                        <input id="currentPriceWithDiscountFilter" class="form-control form-control-sm" readonly />
+                    </div>
+
+                    <div id="thQuantity" class="text-muted" title="Количество">
+                        <small>Кол. &nbsp;</small>
+                        <input id="quantityFilter" class="form-control form-control-sm" readonly />
+                    </div>
+            </th>
+            <th>
+                    <div id="thPrice">
+                        <small>Цена &nbsp;</small>
+                        <input id="priceFilter" class="form-control form-control-sm" readonly />
+                    </div>
+
+                    <div id="thShipmentAmount" class="text-muted" title="Сумма отправления">
+                        <small>Сумма о. &nbsp;</small>
+                        <input id="shipmentAmountFilter" class="form-control form-control-sm" readonly />
+                    </div>
+            </th>
+
+            <th>
+                    <div id="thCurrentPrice" title="Цена закупки">
+                        <small>Цена заку. &nbsp;</small>
+                        <input id="purchasePriceFilter" class="form-control form-control-sm" readonly />
+                    </div>
+
+                    <div id="thCostPriceсе" class="text-muted" title="Себестоимость">
+                        <small>Себест. &nbsp;</small>
+                        <input id="costPriceFilter" class="form-control form-control-sm" readonly />
+                    </div>
+            </th>
+            <th id="thOzonCommission" title="Комиссия ОЗОН">
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <div>
+                            <small>Комис. &nbsp;</small>
+                        </div>
+                        <div style="text-align: center; font-size: 10px;" class="text-muted">
+                            <div><small>min</small></div>
+                            <div><small>max</small></div>
+                        </div>
+                    </div>
+                    <input id="ozonCommissionFilter" class="form-control form-control-sm" readonly />
+            </th>
+            <th id="thProfit" title="Прибыль">
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <div>
+                            <small>Приб. &nbsp;</small>
+                        </div>
+                        <div style="text-align: center; font-size: 10px;" class="text-muted">
+                            <div><small>min</small></div>
+                            <div><small>max</small></div>
+                        </div>
+                    </div>
+                    <input id="profitFilter" class="form-control form-control-sm" readonly />
+            </th>
+
+            <th id="thDiscount" title="Наценка %">
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <div>
+                            <small>Нацен.% &nbsp;</small>
+                        </div>
+                        <div style="text-align: center; font-size: 10px;" class="text-muted">
+                            <div><small>min</small></div>
+                            <div><small>max</small></div>
+                        </div>
+                    </div>
+                    <input id="discountFilter" class="form-control form-control-sm" readonly />
+            </th>
+        </tr>
+    </thead>
+
+    <tbody>
+        @{
+            int orderNumber = 0;
+        }
+
+        @if (Model.OrdersWithOneMatches.Count > 0)
+        {
+            <tr id="one-match">
+                    <td class="table-primary">
+                        <b>Заказы с одним совпадением в системе</b>
+                    </td>
+                    <td class="table-primary">
+                        <div id="thOzonClient">
+                            <select id="ozonClientFilterInput" class="form-control form-control-sm" onchange="handleOzonClientChange(this)">
+                                <option value="">Выберите клиента</option>
+                                @foreach (var client in Model.OzonClients)
+                                {
+                                    <option value="@client.Id">@client.Name</option>
+                                }
+                            </select>
+                        </div>
+                    </td>
+
+                    <td colspan="2" class="table-primary"></td>
+                    <td class="table-primary">
+                    </td>
+                    <td colspan="11" class="table-primary"></td>
+            </tr>
+            @foreach (var item in Model.OrdersWithOneMatches)
+            {
+                FileOrderRowViewModel fileOrderRowViewModel = new FileOrderRowViewModel() { Order = item.Key, 
+                                                                                            NumberInExcel = item.Key.NumberInExcel, 
+                                                                                            Index = orderNumber,
+                                                                                            AppStatuses = Model.AppStatuses,
+                                                                                            OzonClients = Model.OzonClients,
+                                                                                            SelectedAppStatus = Model.SelectedAppStatus
+                                                                                          };
+
+                @await Html.PartialAsync("_FileOrderRow", fileOrderRowViewModel)
+
+                <td colspan="16" style="border-top: 1px solid #585858;">
+                </td>
+
+                OrderRowViewModel orderRowViewModel = new OrderRowViewModel() { Order = item.Value,
+                                                                                Index = orderNumber,
+                                                                                OrderWithOneMatches = true,
+                                                                                FileOrderManufacturer = item.Key.Manufacturer,
+                                                                              };
+                @await Html.PartialAsync("_OrderRow", orderRowViewModel)
+
+                <td colspan="16" style="border-top: 2px solid black;">
+                </td>
+                orderNumber++;
+            }
+            
+        }
+        else
+        {
+            <tr>
+                <td colspan="16" class="table-primary">
+                    <b>Нет заказов с совпадениями</b>
+                </td>
+            </tr>
+        }
+
+        @if (Model.OrdersWithMultipleMatches.Count > 0)
+        {
+            <tr id="multiple-matches">
+                <td colspan="16" class="table-primary">
+                    <b>Заказы с несколькими совпадениями в системе</b>
+                </td>
+            </tr>
+            @foreach (var item in Model.OrdersWithMultipleMatches)
+            {
+                FileOrderRowViewModel fileOrderRowViewModel = new FileOrderRowViewModel() { Order = item.Key, 
+                                                                                            NumberInExcel = item.Key.NumberInExcel, 
+                                                                                            Index = orderNumber,
+                                                                                            AppStatuses = Model.AppStatuses,
+                                                                                            OzonClients = Model.OzonClients,
+                                                                                            SelectedAppStatus = Model.SelectedAppStatus
+                                                                                            };
+
+                @await Html.PartialAsync("_FileOrderRow", fileOrderRowViewModel)
+
+                <td colspan="16" style="border-top: 1px solid #585858;">
+                </td>
+
+                foreach(var value in item.Value)
+                {
+                    OrderRowViewModel orderRowViewModel = new OrderRowViewModel() { Order = value, Index = orderNumber, };
+                    @await Html.PartialAsync("_OrderRow", orderRowViewModel)
+                }
+
+                <td colspan="16" style="border-top: 2px solid black;">
+                </td>
+                orderNumber++;
+            }
+        }
+        else
+        {
+            <tr>
+                <td colspan="16">
+                    <b>Нет заказов с совпадениями</b>
+                </td>
+            </tr>
+        }
+
+        @if (Model.UniqueOrders.Count > 0)
+        {
+            <tr id="unique-orders">
+                <td>
+                    <b>Новые заказы в системе</b>
+                    <br />
+                    <input class="form-control form-control-sm" id="shipmentNumberFilterInput" placeholder="Номер заказа" style="width: 175px;" />
+                </td>
+                <td>
+                    <div id="thOzonClient">
+                        <select id="ozonClientFilterInput" class="form-control form-control-sm" onchange="handleOzonClientChangeUnique(this)">
+                            <option value="">Выберите клиента</option>
+                                @foreach (var client in Model.OzonClients)
+                                {
+                                <option value="@client.Id">@client.Name</option>
+                                }
+                        </select>
+                    </div>
+                </td>
+
+                <td colspan="2"></td>
+                <td>
+                </td>
+                <td colspan="11"></td>
+            </tr>
+                @foreach(var item in Model.UniqueOrders)
+                {
+                    FileOrderRowViewModel fileOrderRowViewModel = new FileOrderRowViewModel() { Order = item, 
+                                                                                                NumberInExcel = item.NumberInExcel,
+                                                                                                Index = orderNumber,
+                                                                                                AppStatuses = Model.AppStatuses,
+                                                                                                OzonClients = Model.OzonClients,
+                                                                                                UniqueOrder = true,
+                                                                                                SelectedAppStatus = Model.SelectedAppStatus
+                                                                                                };
+                    @await Html.PartialAsync("_FileOrderRow", fileOrderRowViewModel)
+                    orderNumber++;
+                }
+        }
+        else
+        {
+            <tr>
+                <td colspan="16">
+                    <b>Новых заказов нет</b>
+                </td>
+            </tr>
+        }
+    </tbody>
+
+</table>
+    <input type="hidden" id="toExcel" name="toExcel" value="false" />
+    <input type="hidden" name="userName" value="@User.Identity.Name" />
+    <br />
+    <button id="sendOrders" type="submit" class="btn btn-primary" onclick="setToExcel(false)">Отправить заказы</button>
+    <br />
+    <br />
+    <button id="exportToExcel" type="submit" class="btn btn-primary" onclick="setToExcel(true)">Экспорт в Excel</button>
+
+</form>
+
+<script>
+    function setToExcel(value) {
+        document.getElementById('toExcel').value = value;
+    }
+</script>
+
+<script>
+
+    function toggleClientField(checkbox, index) {
+        var clientContainer = document.getElementById('clientContainer_' + index);
+        var clientSelect = document.getElementById('clientFilter_' + index);
+
+        if (checkbox.checked) {
+            // Скрываем контейнер и сбрасываем значение
+            clientContainer.style.display = 'none';
+            clientSelect.value = ""; // Сбрасываем до значения по умолчанию (пустое)
+        } else {
+            // Показываем контейнер
+            clientContainer.style.display = 'block';
+        }
+    }
+
+    function updateOrderIds(checkbox, index) {
+        let orderIdsInput = document.getElementById('orderIds');
+        let ids = orderIdsInput.value ? orderIdsInput.value.split(',') : [];
+        const orderId = checkbox.value;
+        const dataOrder = checkbox.getAttribute('data-order');
+
+        const quantityField = document.getElementById('quantityFilter_' + index);
+        const hiddenQuantityField = document.getElementById('hiddenQuantity_' + index);  // Скрытое поле
+        let quantity = parseFloat(quantityField.value);
+        var newOrderButton = document.getElementById('newOrderButton_' + index);
+        console.log(newOrderButton)
+
+        const checkboxQuantity = parseFloat(checkbox.getAttribute('data-quantity') || 1); // Укажите значение по умолчанию, если его нет
+        // Обновляем список ID заказов
+        if (checkbox.checked) {
+            if (!ids.includes(orderId)) {
+                ids.push(orderId);
+            }
+
+            // Найти все чекбоксы с таким же data-order и отключить их
+            document.querySelectorAll('.record-checkbox[data-order="' + dataOrder + '"]').forEach(function (cb) {
+                if (cb !== checkbox) {  // Не отключаем текущий чекбокс
+                    cb.disabled = true;
+                }
+            });
+            quantity -= checkboxQuantity;
+        } else {
+            // Если чекбокс деактивирован, включаем все чекбоксы с таким data-order
+            document.querySelectorAll('.record-checkbox[data-order="' + dataOrder + '"]').forEach(function (cb) {
+                cb.disabled = false;
+            });
+
+            // Удаляем ID из списка
+            ids = ids.filter(id => id !== orderId);
+
+            quantity += checkboxQuantity;
+        }
+
+        // Обновляем значение input с ID заказов
+        orderIdsInput.value = ids.join(',');
+
+        quantityField.value = Math.round(parseFloat(quantity));
+        hiddenQuantityField.value = Math.round(parseFloat(quantity));
+
+        toggleClientField(checkbox, index); // Поле OzonClient
+
+        if (newOrderButton) {
+            console.log(hiddenQuantityField.value)
+            if (parseInt(hiddenQuantityField.value, 10) > 0) {
+                newOrderButton.style.display = 'block'; // Показываем кнопку, если значение больше 0
+            } else {
+                newOrderButton.style.display = 'none'; // Скрываем кнопку, если значение 0
+            }
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        // Найти все чекбоксы с data-one-matches="true"
+        const checkboxes = document.querySelectorAll('input[type="checkbox"][data-one-matches="true"]');
+
+        // Пройти по каждому чекбоксу и установить его активным, если он не отключён (не имеет атрибута disabled)
+        checkboxes.forEach(function (checkbox) {
+            if (!checkbox.disabled) {
+                checkbox.checked = true;
+
+                // Вызвать событие change, если требуется
+                checkbox.dispatchEvent(new Event('change'));
+            }
+        });
+    });
+
+
+    function handleOzonClientChangeUnique(selectElement) {
+        var selectedClientId = selectElement.value;
+
+        // Обновляем все элементы с классом .ozonClientFilter, которые не находятся внутри скрытого контейнера
+        document.querySelectorAll('.ozonClientFilterUnique').forEach(function (clientSelect) {
+            // Убедитесь, что элемент не является тем, который был изменен
+            if (clientSelect !== selectElement) {
+                // Убедитесь, что элемент не находится внутри скрытого контейнера
+                if (!clientSelect.closest('.client-container[style*="display:none;"]')) {
+                    clientSelect.value = selectedClientId;
+                }
+            }
+        });
+    }
+
+    function handleStatusChange(selectElement) {
+        var selectedStatusId = selectElement.value;
+
+        // Обновляем все элементы с классом .statusFilter
+        document.querySelectorAll('.statusFilter').forEach(function (statusSelect) {
+            // Убедитесь, что элемент не является тем, который был изменен
+            if (statusSelect !== selectElement) {
+                    statusSelect.value = selectedStatusId;
+            }
+        });
+    }
+
+    function handleOzonClientChange(selectElement) {
+        var selectedClientId = selectElement.value;
+
+        // Обновляем все элементы с классом .ozonClientFilter, которые не находятся внутри скрытого контейнера
+        document.querySelectorAll('.ozonClientFilter').forEach(function (clientSelect) {
+            // Убедитесь, что элемент не является тем, который был изменен
+            if (clientSelect !== selectElement) {
+                // Убедитесь, что элемент не находится внутри скрытого контейнера
+                if (!clientSelect.closest('.client-container[style*="display:none;"]')) {
+                    clientSelect.value = selectedClientId;
+                }
+            }
+        });
+    }
+
+    document.getElementById('shipmentNumberFilterInput').addEventListener('input', function () {
+        const shipmentNumber = this.value;  // Получаем значение из поля ввода
+        // Находим все элементы с классом orderNumberToSupplie-field и обновляем их значение
+        document.querySelectorAll('.orderNumberToSupplie-field').forEach(function (element) {
+            element.value = shipmentNumber;
+        });
+    });
+    ///////////////////////////////////////////////
+    
+    function cloneRow(button) {
+        // Получаем родительскую строку таблицы
+        const row = button.closest('tr');
+        // Клонируем строку
+        const newRow = row.cloneNode(true);
+
+        const buttonId = button.id;
+        const index = buttonId.split('_')[1];
+
+        console.log(index);
+
+        // Получаем максимальный индекс для обновления
+        const allRows = document.querySelectorAll('tr');
+        let maxIndex = 0;
+        allRows.forEach(r => {
+            r.querySelectorAll('input, select').forEach(el => {
+                const match = el.name.match(/\[(\d+)\]/);
+                if (match) {
+                    const index = parseInt(match[1], 10);
+                    if (index > maxIndex) {
+                        maxIndex = index;
+                    }
+                }
+            });
+        });
+        const newIndex = maxIndex + 1;
+
+        // Получаем все элементы input и select в клонированной строке
+        const inputs = newRow.querySelectorAll('input, select');
+        inputs.forEach(input => {
+            const name = input.name;
+            if (name) {
+                // Изменяем индекс в имени атрибута
+                input.name = name.replace(/\[\d+\]/, `[${newIndex}]`);
+                input.id = input.id.replace(/_\d+$/, `_${newIndex}`);
+            }
+        });
+
+        // Замена кнопки на input в клонированной строке
+        const buttonElement = newRow.querySelector('.moveToNewButton');
+        if (buttonElement) {
+            const inputField = document.createElement('input');
+            inputField.className = 'form-control form-control-sm orderNumberToSupplie-field';
+            inputField.name = `NotFullOrders[${newIndex}].Order.ShipmentNumber`;
+            inputField.id = `shipmentNumber_${newIndex}`;
+            inputField.placeholder = 'Номер заказа';
+            inputField.value = ''; // Можно задать начальное значение
+
+            buttonElement.replaceWith(inputField);
+        }
+
+        // Обновляем блок clientContainer только в новой строке
+        const newClientContainer = newRow.querySelector(`#clientContainer_${index}`);
+        if (newClientContainer) {
+            newClientContainer.id = `clientContainer_${newIndex}`;
+            newClientContainer.style.display = 'block';  // Разблокируем в клонированной строке
+        }
+
+        // Обновляем значения полей количества
+        const quantityField = document.getElementById('quantityFilter_' + index);
+        const hiddenQuantityField = document.getElementById('hiddenQuantity_' + index);
+
+        if (quantityField && hiddenQuantityField) {
+            const newQuantityField = newRow.querySelector(`#quantityFilter_${newIndex}`);
+            const newHiddenQuantityField = newRow.querySelector(`#hiddenQuantity_${newIndex}`);
+
+            if (newQuantityField) {
+                newQuantityField.value = Math.round(parseFloat(quantityField.value));
+            }
+
+            if (newHiddenQuantityField) {
+                newHiddenQuantityField.value = Math.round(parseFloat(quantityField.value));
+            }
+
+            quantityField.value = 0;
+            hiddenQuantityField.value = 0;
+        }
+
+        // Добавляем новую строку в конец таблицы
+        row.parentNode.appendChild(newRow);
+
+        // Скрываем кнопку в основной строке
+        button.style.display = 'none';
+
+    }
+
+
+
+    ///////////////////////////////////////////////////////////////
+
+    function updateColumnValuesFromMainOrder(checkbox) {
+        console.log('Checkbox:', checkbox);
+
+        // Получаем индекс из data-атрибута чекбокса
+        let index = checkbox.getAttribute('data-index');
+        console.log('Original Index:', index);
+        splitIindex = index.split('-')[0]; // Берём только часть до дефиса
+
+        // Получаем оригинальные значения
+        const originalPurchasePriceElement = document.getElementById('originalPurchasePrice_origin_' + splitIindex);
+        const currencyCodeElement = document.getElementById('currencyCode_origin_' + splitIindex);
+        const purchasePriceElement = document.getElementById('purchasePrice_origin_' + splitIindex);
+        const costPriceElement = document.getElementById('costPrice_origin_' + splitIindex);
+
+        // Проверяем существование элементов перед доступом к textContent
+        if (originalPurchasePriceElement && currencyCodeElement && purchasePriceElement && costPriceElement) {
+            const originalPurchasePrice = originalPurchasePriceElement.textContent;
+            const currencyCode = currencyCodeElement.textContent;
+            const purchasePrice = purchasePriceElement.textContent;
+            const costPrice = costPriceElement.textContent;
+
+            // Получаем элементы с новыми id для полей
+            const currentPriceElement = document.getElementById('currentPriceWithDiscount_' + index);
+            const quantityElement = document.getElementById('quantity_' + index);
+            const priceElement = document.getElementById('price_' + index);
+            const shipmentAmountElement = document.getElementById('shipmentAmount_' + index);
+            const minOzonCommissionElement = document.getElementById('minOzonCommission_' + index);
+            const maxOzonCommissionElement = document.getElementById('maxOzonCommission_' + index);
+            const minProfitElement = document.getElementById('minProfit_' + index);
+            const maxProfitElement = document.getElementById('maxProfit_' + index);
+            const minDiscountElement = document.getElementById('minDiscount_' + index);
+            const maxDiscountElement = document.getElementById('maxDiscount_' + index);
+
+            // Приведение к decimal (в JS это будет float)
+            const currentPriceWithDiscount = parseFloat(currentPriceElement.textContent.replace(/\s/g, '')) || 0;
+            const quantity = parseFloat(quantityElement.textContent.replace(/\s/g, '')) || 0;
+            const price = parseFloat(priceElement.textContent.replace(/\s/g, '')) || 0;
+            const shipmentAmount = parseFloat(shipmentAmountElement.textContent.replace(/\s/g, '')) || 0;
+            const minOzonCommission = parseFloat(minOzonCommissionElement.textContent.replace(/\s/g, '')) || 0;
+            const maxOzonCommission = parseFloat(maxOzonCommissionElement.textContent.replace(/\s/g, '')) || 0;
+            const minProfit = parseFloat(minProfitElement.textContent.replace(/\s/g, '')) || 0;
+            const maxProfit = parseFloat(maxProfitElement.textContent.replace(/\s/g, '')) || 0;
+            const minDiscount = parseFloat(minDiscountElement.textContent.replace(/\s/g, '')) || 0;
+            const maxDiscount = parseFloat(maxDiscountElement.textContent.replace(/\s/g, '')) || 0;
+
+            if (checkbox.checked) {
+                // Обновляем значения из оригинальных данных
+                document.getElementById('originalPurchasePrice_' + index).textContent = originalPurchasePrice;
+                document.getElementById('currencyCode_' + index).textContent = currencyCode;
+                document.getElementById('purchasePrice_' + index).textContent = purchasePrice;
+                document.getElementById('costPrice_' + index).textContent = costPrice;
+
+                var startCommission = price - parseFloat(costPriceElement.textContent.replace(/\s/g, '')) || 0;
+                var newMinProfit = startCommission - maxOzonCommission;
+                var newMaxProfit = startCommission - minOzonCommission;
+
+                var newMinDiscount = (newMinProfit / parseFloat(costPriceElement.textContent.replace(/\s/g, '')) || 0) * 100;
+                var newMaxDiscount = (newMaxProfit / parseFloat(costPriceElement.textContent.replace(/\s/g, '')) || 0) * 100;
+
+                document.getElementById('minProfit_' + index).textContent = Math.round(newMinProfit);
+                document.getElementById('maxProfit_' + index).textContent = Math.round(newMaxProfit);
+
+                document.getElementById('minDiscount_' + index).textContent = Math.round(newMinDiscount);
+                document.getElementById('maxDiscount_' + index).textContent = Math.round(newMaxDiscount);
+
+                // Обновление прибыли с проверкой на отрицательные значения
+                minProfitElement.textContent = Math.round(newMinProfit);
+                if (newMinProfit < 0) {
+                    minProfitElement.style.color = "red";
+                } else {
+                    minProfitElement.style.color = "";
+                }
+
+                maxProfitElement.textContent = Math.round(newMaxProfit);
+                if (newMaxProfit < 0) {
+                    maxProfitElement.style.color = "red";
+                } else {
+                    maxProfitElement.style.color = "";
+                }
+
+                // Обновление скидки с проверкой на отрицательные значения
+                minDiscountElement.textContent = Math.round(newMinDiscount);
+                if (newMinDiscount < 0) {
+                    minDiscountElement.style.color = "red";
+                } else {
+                    minDiscountElement.style.color = "";
+                }
+
+                maxDiscountElement.textContent = Math.round(newMaxDiscount);
+                if (newMaxDiscount < 0) {
+                    maxDiscountElement.style.color = "red";
+                } else {
+                    maxDiscountElement.style.color = "";
+                }
+
+                console.log('Updated values for index ' + index);
+            }
+            else {
+                // Восстанавливаем исходные значения из скрытых контейнеров (origin_row)
+                const originalPurchasePriceElementRow = document.getElementById('originalPurchasePrice_origin_row_' + index);
+                const currencyCodeElementRow = document.getElementById('currencyCode_origin_row_' + index);
+                const purchasePriceElementRow = document.getElementById('purchasePrice_origin_row_' + index);
+                const costPriceElementRow = document.getElementById('costPrice_origin_row_' + index);
+
+                // Восстанавливаем значения прибыли и скидки
+                const maxProfitElementRow = document.getElementById('maxProfit_origin_row_' + index);
+                const minProfitElementRow = document.getElementById('minProfit_origin_row_' + index);
+                const maxDiscountElementRow = document.getElementById('maxDiscount_origin_row_' + index);
+                const minDiscountElementRow = document.getElementById('minDiscount_origin_row_' + index);
+
+                if (originalPurchasePriceElementRow && currencyCodeElementRow && purchasePriceElementRow && costPriceElementRow &&
+                    maxProfitElementRow && minProfitElementRow && maxDiscountElementRow && minDiscountElementRow) {
+
+                    document.getElementById('originalPurchasePrice_' + index).textContent = originalPurchasePriceElementRow.textContent;
+                    document.getElementById('currencyCode_' + index).textContent = currencyCodeElementRow.textContent;
+                    document.getElementById('purchasePrice_' + index).textContent = purchasePriceElementRow.textContent;
+                    document.getElementById('costPrice_' + index).textContent = costPriceElementRow.textContent;
+
+                    // Восстанавливаем значения прибыли и подсвечиваем отрицательные
+                    const maxProfitElement = document.getElementById('maxProfit_' + index);
+                    const minProfitElement = document.getElementById('minProfit_' + index);
+                    maxProfitElement.textContent = maxProfitElementRow.textContent;
+                    if (parseFloat(maxProfitElementRow.textContent) < 0) {
+                        maxProfitElement.style.color = "red";
+                    } else {
+                        maxProfitElement.style.color = "";
+                    }
+
+                    minProfitElement.textContent = minProfitElementRow.textContent;
+                    if (parseFloat(minProfitElementRow.textContent) < 0) {
+                        minProfitElement.style.color = "red";
+                    } else {
+                        minProfitElement.style.color = "";
+                    }
+
+                    // Восстанавливаем значения скидки и подсвечиваем отрицательные
+                    const maxDiscountElement = document.getElementById('maxDiscount_' + index);
+                    const minDiscountElement = document.getElementById('minDiscount_' + index);
+                    maxDiscountElement.textContent = maxDiscountElementRow.textContent;
+                    if (parseFloat(maxDiscountElementRow.textContent) < 0) {
+                        maxDiscountElement.style.color = "red";
+                    } else {
+                        maxDiscountElement.style.color = "";
+                    }
+
+                    minDiscountElement.textContent = minDiscountElementRow.textContent;
+                    if (parseFloat(minDiscountElementRow.textContent) < 0) {
+                        minDiscountElement.style.color = "red";
+                    } else {
+                        minDiscountElement.style.color = "";
+                    }
+
+                    console.log('Restored original values for index ' + index);
+                } else {
+                    console.error('Original values for index ' + index + ' are missing');
+                }
+            }
+        } else {
+            console.error('One or more elements are missing for index ' + index);
+        }
+    }
+
+    function updateFieldsBasedOnPrice(index, price) {
+        // Получаем элементы с исходными значениями
+        const maxProfitElementRow = document.getElementById('maxProfit_origin_' + index);
+        const minProfitElementRow = document.getElementById('minProfit_origin_' + index);
+        const maxDiscountElementRow = document.getElementById('maxDiscount_origin_' + index);
+        const minDiscountElementRow = document.getElementById('minDiscount_origin_' + index);
+        const costPriceElement = document.getElementById('costPrice_origin_' + index);
+
+        // Получаем элементы с комиссиями
+        const minOzonCommissionElement = document.getElementById('minOzonCommission_hidden_' + index);
+        const maxOzonCommissionElement = document.getElementById('maxOzonCommission_hidden_' + index);
+
+        // Получаем элементы для обновления
+        const maxProfitElement = document.getElementById('maxProfit_origin_' + index);
+        const minProfitElement = document.getElementById('minProfit_origin_' + index);
+        const maxDiscountElement = document.getElementById('maxDiscount_origin_' + index);
+        const minDiscountElement = document.getElementById('minDiscount_origin_' + index);
+
+        if (price == null || isNaN(price)) {
+            // Если цена не задана, сбрасываем значения и стили
+            if (maxProfitElement) {
+                maxProfitElement.textContent = '';
+                maxProfitElement.style.color = '';
+            }
+            if (minProfitElement) {
+                minProfitElement.textContent = '';
+                minProfitElement.style.color = '';
+            }
+            if (maxDiscountElement) {
+                maxDiscountElement.textContent = '';
+                maxDiscountElement.style.color = '';
+            }
+            if (minDiscountElement) {
+                minDiscountElement.textContent = '';
+                minDiscountElement.style.color = '';
+            }
+            return;
+        }
+
+        // Убедимся, что все элементы существуют
+        if (maxProfitElementRow && minProfitElementRow && maxDiscountElementRow && minDiscountElementRow &&
+            costPriceElement && minOzonCommissionElement && maxOzonCommissionElement) {
+
+            const costPrice = parseFloat(costPriceElement.textContent.replace(/\s/g, '')) || 0;
+            const minOzonCommission = parseFloat(minOzonCommissionElement.value.replace(/\s/g, '')) || 0;
+            const maxOzonCommission = parseFloat(maxOzonCommissionElement.value.replace(/\s/g, '')) || 0;
+
+            // Вычисляем значения
+            const startCommission = price - costPrice;
+            const newMinProfit = startCommission - maxOzonCommission;
+            const newMaxProfit = startCommission - minOzonCommission;
+
+            const newMinDiscount = (newMinProfit / costPrice) * 100 || 0;
+            const newMaxDiscount = (newMaxProfit / costPrice) * 100 || 0;
+
+            // Обновляем значения и стили
+            if (maxProfitElement) {
+                maxProfitElement.textContent = Math.round(newMaxProfit);
+                maxProfitElement.style.color = newMaxProfit < 0 ? "red" : "";
+            }
+
+            if (minProfitElement) {
+                minProfitElement.textContent = Math.round(newMinProfit);
+                minProfitElement.style.color = newMinProfit < 0 ? "red" : "";
+            }
+
+            if (maxDiscountElement) {
+                maxDiscountElement.textContent = Math.round(newMaxDiscount);
+                maxDiscountElement.style.color = newMaxDiscount < 0 ? "red" : "";
+            }
+
+            if (minDiscountElement) {
+                minDiscountElement.textContent = Math.round(newMinDiscount);
+                minDiscountElement.style.color = newMinDiscount < 0 ? "red" : "";
+            }
+        } else {
+            console.error('Некоторые элементы отсутствуют для индекса ' + index);
+        }
+    }
+
+    // Пример использования
+    document.querySelectorAll('[id^="priceFilter_"]').forEach(function (inputElement) {
+        inputElement.addEventListener('input', function () {
+            const elementId = this.id;
+            const index = elementId.split('_')[1];
+            const price = parseFloat(this.value.replace(/\s/g, ''));
+
+            // Обновляем поля на основе новой цены
+            updateFieldsBasedOnPrice(index, isNaN(price) ? null : price);
+        });
+    });
+</script>
+
+<script>
+    function showToast(message) {
+        const toastBody = document.getElementById('flashMessageText');
+        toastBody.textContent = message;
+        const toast = new bootstrap.Toast(document.getElementById('flashMessage'));
+        toast.show();
+    }
+
+    let selectedRow = null; 
+
+
+    function selectRowForMerge(event, index) {
+        console.log(event.target.tagName)
+        
+        if (event.target.tagName === 'TD' ||
+            event.target.tagName === 'DIV' ||
+            event.target.tagName === 'SPAN') {
+            const selectedRowElement = document.getElementById(`selectRowForMerge_${index}`);
+
+            if (selectedRow === null) {
+                selectedRow = index;
+
+                if (selectedRowElement) {
+                    selectedRowElement.classList.remove("table-info");
+                    selectedRowElement.classList.add("table-warning");
+                }
+
+                showToast("Выберите строку для объединения с первой выбранной строкой.");
+            } else {
+                if (selectedRow === index) {
+                    // Deselect the first row if clicked again
+                    if (selectedRowElement) {
+                        selectedRowElement.classList.add("table-info");
+                        selectedRowElement.classList.remove("table-warning");
+                    }
+                    selectedRow = null;
+                } else {
+                    // Merge with the second row and reset the first row's highlight
+                    mergeQuantities(selectedRow, index);
+                    const firstRowElement = document.getElementById(`selectRowForMerge_${selectedRow}`);
+                    if (firstRowElement) {
+                        firstRowElement.classList.add("table-info");
+                        firstRowElement.classList.remove("table-warning");
+                    }
+                    selectedRow = null;
+                }
+            }
+        }
+    }
+    
+    // Функция для объединения значений Quantity и скрытия строк ниже второй строки
+    function mergeQuantities(firstIndex, secondIndex) {
+        // Получаем вторую строку для проверки наличия выбранного чекбокса
+        const secondRow = document.querySelector(`tr.quantity-row[data-index="${secondIndex}"]`);
+        if (secondRow) {
+            const checkboxInSecondRow = secondRow.querySelector('.record-checkbox');
+
+            // Проверяем, если установлен чекбокс в самой второй строке
+            if (checkboxInSecondRow && checkboxInSecondRow.checked) {
+                showToast("Операция объединения прервана: выбрана строка для которой выбрано сопрставление.");
+                return; // Прерываем функцию до внесения каких-либо изменений
+            }
+
+            // Проверяем строки ниже второй строки на наличие установленного чекбокса
+            let nextRow = secondRow.nextElementSibling;
+            while (nextRow && !nextRow.classList.contains('quantity-row')) {
+                const checkboxInRow = nextRow.querySelector('.record-checkbox');
+
+                // Если установлен чекбокс в одной из строк ниже
+                if (checkboxInRow && checkboxInRow.checked) {
+                    showToast("Операция объединения прервана: выбрана строка для которой выбрано сопрставление.");
+                    return; 
+                }
+                nextRow = nextRow.nextElementSibling; 
+            }
+        }
+
+        // Если нет выбранных чекбоксов, выполняем объединение Quantity и скрытие строк
+        const firstQuantity = parseFloat(document.getElementById(`hiddenQuantity_${firstIndex}`).value) || 0;
+        const secondQuantity = parseFloat(document.getElementById(`quantityFilter_${secondIndex}`).value) || 0;
+        const newQuantity = firstQuantity + secondQuantity;
+
+        // Обновляем значение Quantity в первой строке
+        document.getElementById(`hiddenQuantity_${firstIndex}`).value = newQuantity;
+        document.getElementById(`quantityFilter_${firstIndex}`).value = newQuantity;
+
+        // Скрываем вторую строку и обновляем поле Hidden
+        secondRow.style.display = 'none';
+        const hiddenField = secondRow.querySelector('.hiddenField');
+        if (hiddenField) {
+            hiddenField.value = 'True';
+        }
+
+        // Скрываем строки ниже второй строки, пока не встретим строку с классом quantity-row
+        let nextRow = secondRow.nextElementSibling;
+        while (nextRow && !nextRow.classList.contains('quantity-row')) {
+            nextRow.style.display = 'none'; // Скрываем строку
+            const hiddenFieldBelow = nextRow.querySelector('.hiddenField');
+            if (hiddenFieldBelow) {
+                hiddenFieldBelow.value = 'True'; // Устанавливаем значение Hidden в true
+            }
+
+            nextRow = nextRow.nextElementSibling; // Переходим к следующей строке
+        }
+
+        showToast(`Значение объединено Кол: ${newQuantity}`);
+    }
+</script>
+
+<script>
+    // Универсальная функция для расчета суммы элементов по переданному классу
+    function calculateTotalSum(className) {
+        const elements = document.querySelectorAll(`.${className}`);
+        let totalSum = 0;
+
+        elements.forEach(element => {
+            // Убираем пробелы из текста и преобразуем его в число
+            const numericValue = parseFloat(element.textContent.replace(/\s/g, '')) || 0;
+            totalSum += numericValue;
+        });
+
+        console.log(`Сумма для класса .${className}:`, totalSum);
+    }
+
+    // Функция для отслеживания изменений значений элементов по переданному классу
+    function observeChanges(className) {
+        const elements = document.querySelectorAll(`.${className}`);
+
+        elements.forEach(element => {
+            // Создаем новый MutationObserver для отслеживания изменений в элементе
+            const observer = new MutationObserver(() => calculateTotalSum(className));
+
+            // Настраиваем наблюдатель на изменения в тексте элемента
+            observer.observe(element, { characterData: true, subtree: true, childList: true });
+        });
+    }
+
+    // Пример использования
+    observeChanges("purchasePrice"); // Отслеживаем изменения для элементов с классом 'purchasePrice'
+
+    // Выполняем начальный расчет для класса 'purchasePrice'
+    calculateTotalSum("purchasePrice");
+
+</script>

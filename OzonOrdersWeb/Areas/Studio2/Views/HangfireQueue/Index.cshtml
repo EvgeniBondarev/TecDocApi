@@ -1,0 +1,116 @@
+﻿@model OzonOrdersWeb.Areas.Studio2.ViewModels.HangfireQueue.HangfireJobsViewModel
+@{
+    ViewData["Title"] = $"Задания в очереди {Model.QueueName}";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<style>
+    .legend-color {
+        border: 1px solid #dee2e6;
+        border-radius: 3px;
+    }
+    .chart-container {
+        min-height: 400px;
+    }
+</style>
+
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h2 class="mb-0">@ViewData["Title"]</h2>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <form method="get" class="row g-2 align-items-center">
+                            <div class="col-auto">
+                                <label for="queueName" class="col-form-label">Очередь:</label>
+                            </div>
+                            <div class="col-auto">
+                                <select name="queueName" id="queueName" class="form-select">
+                                    @foreach (var queue in Model.AvailableQueues)
+                                    {
+                                        <option value="@queue" selected="@(queue == Model.QueueName)">@queue</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-auto">
+                                <input type="hidden" name="tab" value="@Model.ActiveTab" />
+                                <button type="submit" class="btn btn-primary">Показать</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <ul class="nav nav-tabs mb-3">
+                        <li class="nav-item">
+                            <a class="nav-link @(Model.ActiveTab == "enqueued" ? "active" : "")" 
+                               href="@Url.Action("Index", new { queueName = Model.QueueName, tab = "enqueued" })">
+                                В очереди (@Model.EnqueuedJobs.Count)
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link @(Model.ActiveTab == "processing" ? "active" : "")" 
+                               href="@Url.Action("Index", new { queueName = Model.QueueName, tab = "processing" })">
+                                Выполняются (@Model.ProcessingJobs.Count)
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link @(Model.ActiveTab == "succeeded" ? "active" : "")" 
+                               href="@Url.Action("Index", new { queueName = Model.QueueName, tab = "succeeded" })">
+                                Выполненные (@Model.SucceededJobs.Count)
+                            </a>
+                        </li>
+                        <ul class="nav nav-tabs mb-3">
+                            <!-- Существующие вкладки -->
+                            <li class="nav-item">
+                                <a class="nav-link @(Model.ActiveTab == "deleted" ? "active" : "")" 
+                                   href="@Url.Action("Index", new { queueName = Model.QueueName, tab = "deleted" })">
+                                    Удаленные (@Model.DeletedJobs.Count)
+                                </a>
+                            </li>
+                        </ul>
+                        <li class="nav-item">
+                            <a class="nav-link @(Model.ActiveTab == "statistics" ? "active" : "")" 
+                               href="@Url.Action("Index", new { queueName = Model.QueueName, tab = "statistics" })">
+                                Статистика
+                            </a>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content">
+                        @if (Model.ActiveTab == "enqueued")
+                        {
+                            <div class="tab-pane active">
+                                <partial name="_EnqueuedJobsPartial" model="Model.EnqueuedJobs" />
+                            </div>
+                        }
+                        else if (Model.ActiveTab == "processing")
+                        {
+                            <div class="tab-pane active">
+                                <partial name="_ProcessingJobsPartial" model="Model.ProcessingJobs" />
+                            </div>
+                        }
+                        else if (Model.ActiveTab == "succeeded")
+                        {
+                            <div class="tab-pane active">
+                                <partial name="_SucceededJobsPartial" model="Model.SucceededJobs" />
+                            </div>
+                        }
+                        else if (Model.ActiveTab == "deleted")
+                        {
+                            <div class="tab-pane active">
+                                <partial name="_DeletedJobsPartial" model="Model.DeletedJobs" />
+                            </div>
+                        }
+                        else if (Model.ActiveTab == "statistics")
+                        {
+                            <div class="tab-pane active">
+                                <partial name="_StatisticsPartial" model="Model.SucceededJobs" />
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

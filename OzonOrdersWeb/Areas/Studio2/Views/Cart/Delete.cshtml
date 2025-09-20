@@ -1,0 +1,89 @@
+﻿@model OzonDomains.Models.OrderCarts.OrderCart
+
+@{
+    ViewData["Title"] = "Удаление корзины заказов";
+    Layout = "_Layout";
+}
+
+<div class="container mt-4">
+    <h2>@ViewData["Title"]</h2>
+    <h3>Вы уверены, что хотите удалить эту корзину?</h3>
+    
+    <div class="card border-danger mt-4">
+        <div class="card-header bg-danger text-white">
+            <h4>Информация о корзине</h4>
+        </div>
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-3">ID:</dt>
+                <dd class="col-sm-9">@Model.Id</dd>
+
+                <dt class="col-sm-3">Поставщик:</dt>
+                <dd class="col-sm-9">@Model.Provider</dd>
+
+                <dt class="col-sm-3">Статус:</dt>
+                <dd class="col-sm-9">@Model.CartStatus?.Name</dd>
+
+                <dt class="col-sm-3">Дата создания:</dt>
+                <dd class="col-sm-9">@Model.CreatedAt.ToString("g")</dd>
+
+                <dt class="col-sm-3">Кол-во товаров:</dt>
+                <dd class="col-sm-9">@(Model.OrderItems?.Count ?? 0)</dd>
+
+                @if (!string.IsNullOrEmpty(Model.Comment))
+                {
+                    <dt class="col-sm-3">Комментарий:</dt>
+                    <dd class="col-sm-9">@Model.Comment</dd>
+                }
+
+                @if (!string.IsNullOrEmpty(Model.ClientOrderNumber))
+                {
+                    <dt class="col-sm-3">Номер заказа клиента:</dt>
+                    <dd class="col-sm-9">@Model.ClientOrderNumber</dd>
+                }
+            </dl>
+
+            @if (Model.OrderItems != null && Model.OrderItems.Any())
+            {
+                <div class="mt-4">
+                    <h5>Товары в корзине:</h5>
+                    <table class="table table-sm table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>ID</th>
+                                <th>ItemId</th>
+                                <th>Количество</th>
+                                <th>Комментарий</th>
+                                <th>Статус</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.OrderItems)
+                            {
+                                <tr>
+                                    <td>@item.Id</td>
+                                    <td>@item.ItemId</td>
+                                    <td>@item.Quantity</td>
+                                    <td>@item.Comment</td>
+                                    <td>@item.ItemStatus?.Name</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+
+    <form asp-action="Delete" class="mt-4">
+        <input type="hidden" asp-for="Id" />
+        <div class="form-group">
+            <button type="submit" class="btn btn-danger">
+                <i class="fas fa-trash-alt"></i> Удалить
+            </button>
+            <a asp-action="Index" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Назад к списку
+            </a>
+        </div>
+    </form>
+</div>

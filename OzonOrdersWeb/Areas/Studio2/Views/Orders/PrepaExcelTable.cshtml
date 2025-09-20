@@ -1,0 +1,982 @@
+﻿@using Newtonsoft.Json
+@using OzonOrdersWeb.ViewModels.OrderViewModels
+
+@model ExelDataViewModel
+
+<style>
+    .scrollable-list {
+        border: 1px solid #dee2e6;
+        border-radius: 0.25rem;
+    }
+    
+    .scrollable-list .list-group-item {
+        border-left: none;
+        border-right: none;
+    }
+    
+    .scrollable-list .list-group-item:first-child {
+        border-top: none;
+    }
+    
+    .scrollable-list .list-group-item:last-child {
+        border-bottom: none;
+    }
+    
+    /* Стиль для скроллбара */
+    .scrollable-list::-webkit-scrollbar {
+        width: 8px;
+    }
+    
+    .scrollable-list::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+    
+    .scrollable-list::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 4px;
+    }
+    
+    .scrollable-list::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+</style>
+
+@{
+    var currencyCodeMap = new Dictionary<int, string>
+    {
+        { 1, "USD" },
+        { 2, "EUR" },
+        { 3, "RUB" },
+        { 4, "BYN" }
+    };
+
+    var currencyCodeMapJson = JsonConvert.SerializeObject(currencyCodeMap);
+}
+
+
+<!-- Модальное окно для сохранения состояния -->
+<div class="modal fade" id="saveMappingModal" tabindex="-1" role="dialog" aria-labelledby="saveMappingModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="saveMappingModalLabel">Сохранить состояние сопоставлений столбцов</h5>
+            </div>
+            <div class="modal-body">
+                <p>Введите название для сохранения (необязательно):</p>
+                <input type="text" id="saveMappingName" class="form-control">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" onclick="submitFormWithSave()">Сохранить и загрузить</button>
+                <button type="button" class="btn btn-primary" onclick="submitFormWithoutSave()">Продолжить без сохранения</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        width: 100%;
+    }
+</style>
+
+<div class="container">
+    <h2>Выбор сопоставлений столбцов</h2>
+
+    <div class="form-group">
+        <label for="savedMappings">Выберите сохраненное сопоставление:</label>
+        <select id="savedMappings" class="form-control" onchange="loadSavedMapping(this.value)">
+            <option value="">Выберите сохраненное сопоставление</option>
+            @foreach (var mapping in Model.SavedMappings)
+            {
+                <option value="@mapping.Id">@mapping.MappingName</option>
+            }
+        </select>
+    </div>
+    <br />
+    <form asp-area="Studio2" asp-controller="Orders" asp-action="CheckFile" method="post" onsubmit="return validateForm()" id="saveForm">
+        <h3>Сопоставление столбцов</h3>
+        <div class="table-responsive">
+            <table class="table table-striped table-bordered">
+                <thead>
+                <tr>
+                    <th>Столбцы таблицы заказов</th>
+                    <th>Столбцы таблицы из файла</th>
+                </tr>
+                </thead>
+                <tbody>
+                @for (int i = 0; i < Model.MainTableHeaders.Count; i++)
+                {
+                    var mainHeader = Model.MainTableHeaders[i];
+                    var inputId = "input-" + mainHeader.Replace(" ", "-");
+                    <tr id="row-@i">
+                        <td class="main-header">@mainHeader</td>
+                        <td>
+                            @if (@mainHeader == "Клиент")
+                            {
+                                <div class="d-flex align-items-center">
+                                        
+                                    <select name="ColumnMappings[@mainHeader]" class="form-control"
+                                            id="input-Клиент-Таблица"
+                                            data-row-id="@i"
+                                            data-main-header="@mainHeader"
+                                            onchange="updateTableHeader(this)">
+                                        <option value="">Выберите столбец</option>
+                                        @foreach (var tempHeader in Model.TableHeaders)
+                                        {
+                                            <option value="@tempHeader">@tempHeader</option>
+                                        }
+                                    </select>
+
+                                    <p>&nbsp;&nbsp;&nbsp;&nbsp;</p>
+
+                                    <select name="SelectedClient.Id" class="form-control"
+                                            id="input-Клиент"
+                                            data-row-id="@i"
+                                            data-main-header="@mainHeader"
+                                            onchange="updateClient(this)">
+                                        <option value="">Выберите клиента</option>
+                                        @foreach (var client in Model.OzonClients)
+                                        {
+                                            <option value="@client.Id">@client.Name</option>
+                                        }
+                                    </select>
+
+                                </div>
+                            }
+                            else if (mainHeader == "Принят в обработку")
+                            {
+                                <div class="d-flex align-items-center">
+                                    <select name="ColumnMappings[@mainHeader]" class="form-control"
+                                            id="@inputId"
+                                            data-row-id="@i"
+                                            data-main-header="@mainHeader"
+                                            onchange="updateTableHeader(this)">
+                                        <option value="">Выберите столбец</option>
+                                        @foreach (var tempHeader in Model.TableHeaders)
+                                        {
+                                            <option value="@tempHeader">@tempHeader</option>
+                                        }
+                                    </select>
+
+                                    <p>&nbsp;&nbsp;&nbsp;&nbsp;</p>
+
+                                    <input asp-for="@Model.ColumnMappings" name="SelectedProcessingDate" class="form-control form-control-xs" type="date" id="input-Принят-в-обработку-Календарь" />
+                                </div>
+                            }
+                            else if (mainHeader == "Дата отгрузки")
+                            {
+                                <div class="d-flex align-items-center">
+                                    <select name="ColumnMappings[@mainHeader]" class="form-control"
+                                            id="@inputId"
+                                            data-row-id="@i"
+                                            data-main-header="@mainHeader"
+                                            onchange="updateTableHeader(this)">
+                                        <option value="">Выберите столбец</option>
+                                        @foreach (var tempHeader in Model.TableHeaders)
+                                        {
+                                            <option value="@tempHeader">@tempHeader</option>
+                                        }
+                                    </select>
+
+                                    <p>&nbsp;&nbsp;&nbsp;&nbsp;</p>
+
+                                    <input asp-for="@Model.ColumnMappings" name="SelectedShippingDate" class="form-control form-control-xs" type="date" id="input-Дата-отгрузки-Календарь" />
+                                </div>
+                            }
+                            else if (@mainHeader == "Статус клинта")
+                            {
+                                <div class="d-flex align-items-center">
+
+                                                                                
+                                    <select name="ColumnMappings[@mainHeader]" class="form-control"
+                                            id="input-Статус-Клиента-Таблица"
+                                            data-row-id="@i"
+                                            data-main-header="@mainHeader"
+                                            onchange="updateTableHeader(this)">
+                                        <option value="">Выберите столбец</option>
+                                        @foreach (var tempHeader in Model.TableHeaders)
+                                        {
+                                            <option value="@tempHeader">@tempHeader</option>
+                                        }
+                                    </select>
+
+                                    <p>&nbsp;&nbsp;&nbsp;&nbsp;</p>
+
+                                    <select name="SelectedStatus" class="form-control"
+                                            id="input-Статус-Клиента"
+                                            data-row-id="@i"
+                                            data-main-header="@mainHeader"
+                                            onchange="updateClient(this)">
+                                        <option value="">Выберите статус</option>
+                                        @foreach (var status in Model.Statuses)
+                                        {
+                                            <option value="@status.Value">@status.Text</option>
+                                        }
+                                    </select>
+
+                                </div>
+                            }
+                            else if(mainHeader == "Производитель")
+                            {
+                                <div class="d-flex align-items-center">
+
+                                    <select name="ColumnMappings[@mainHeader]" class="form-control"
+                                            id="input-Производитель-Таблица"
+                                            data-row-id="@i"
+                                            data-main-header="@mainHeader"
+                                            onchange="updateTableHeader(this)">
+                                        <option value="">Выберите столбец</option>
+                                        @foreach (var tempHeader in Model.TableHeaders)
+                                        {
+                                            <option value="@tempHeader">@tempHeader</option>
+                                        }
+                                    </select>
+
+                                    <p>&nbsp;&nbsp;&nbsp;&nbsp;</p>
+
+                                    <select name="SelectedManufacturer.Id" class="form-control"
+                                            id="input-Производитель"
+                                            data-row-id="@i"
+                                            data-main-header="@mainHeader"
+                                            onchange="updateClient(this)">
+                                        <option value="">Выберите производителя</option>
+                                        <option value="-1">На основе трёх последних символов артикула</option>
+                                        <option value="-2">Из названия</option>
+                                        @foreach (var manufacturer in Model.Manufacturers)
+                                        {
+                                            <option value="@manufacturer.Id">@manufacturer.Name</option>
+                                        }
+                                    </select>
+
+                                </div>
+                            }
+                            else if (mainHeader == "Склад отгрузки")
+                            {
+
+                                <div class="d-flex align-items-center">
+                                    <select name="ColumnMappings[@mainHeader]" class="form-control"
+                                            id="input-Склад-Oтгрузки-Таблица"
+                                            data-row-id="@i"
+                                            data-main-header="@mainHeader"
+                                            onchange="updateTableHeader(this)">
+                                        <option value="">Выберите столбец</option>
+                                        @foreach (var tempHeader in Model.TableHeaders)
+                                        {
+                                            <option value="@tempHeader">@tempHeader</option>
+                                        }
+                                    </select>
+                                        
+                                    <p>&nbsp;&nbsp;&nbsp;&nbsp;</p>
+
+                                    <select name="SelectedWarehouse.Id" class="form-control"
+                                            id="input-Склад-Oтгрузки"
+                                            data-row-id="@i"
+                                            data-main-header="@mainHeader"
+                                            onchange="updateClient(this)">
+                                        <option value="">Выберите cклад отгрузки</option>
+                                        @foreach (var warehouse in Model.Warehouses)
+                                        {
+                                            <option value="@warehouse.Id">@warehouse.Name</option>
+                                        }
+                                    </select>
+
+                                </div>
+                            }
+                            else if (mainHeader == "Поставщик")
+                            {
+
+                                <div class="d-flex align-items-center">
+                                    <select class="form-control" style="visibility: hidden;">
+                                    </select>
+
+                                    <p>&nbsp;&nbsp;&nbsp;&nbsp;</p>
+
+                                    <select name="SelectedSupplier.Id" class="form-control"
+                                            id="input-Поставщик"
+                                            data-row-id="@i"
+                                            data-main-header="@mainHeader"
+                                            onchange="updateClient(this)">
+                                        <option value="">Выберите поставщика</option>
+                                        @foreach (var warehouse in Model.Suppliers)
+                                        {
+                                            <option value="@warehouse.Id">@warehouse.Name</option>
+                                        }
+                                    </select>
+
+                                </div>
+                            }
+                            else if (mainHeader == "Код валюты отправления")
+                            {
+                                <div class="d-flex align-items-center">
+                                    <select class="form-control" style="visibility: hidden;">
+                                               
+                                    </select>
+
+                                    <p>&nbsp;&nbsp;&nbsp;&nbsp;</p>
+
+                                    <select name="SelectedCurrencyCode" class="form-control"
+                                            id="input-Код-Валюты-Отправления"
+                                            data-row-id="@i"
+                                            data-main-header="@mainHeader"
+                                            onchange="updateClient(this)">
+                                        <option value="">Выберите код валюты отправления</option>
+                                        @foreach (var сurrencyCode in Model.CurrencyCodes)
+                                        {
+                                            <option value="@сurrencyCode.Item1">@сurrencyCode.Item2</option>
+                                        }
+                                    </select>
+
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="col-md-6 d-flex align-items-center justify-content-end">
+                                    <select name="ColumnMappings[@mainHeader]" class="form-control"
+                                            id="@inputId"
+                                            data-row-id="@i"
+                                            data-main-header="@mainHeader"
+                                            onchange="updateTableHeader(this)">
+                                        <option value="">Выберите столбец</option>
+                                        @foreach (var tempHeader in Model.TableHeaders)
+                                        {
+                                            <option value="@tempHeader">@tempHeader</option>
+                                        }
+                                    </select>
+                                    <p>&nbsp;&nbsp;</p>
+                                </div>
+                            }
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+
+        <h3>Результат сопоставлений  / @Model.FileName</h3>
+        <div class="table-responsive">
+            <table class="table table-striped table-bordered">
+                <thead>
+                <tr>
+                    @foreach (var header in Model.TableHeaders)
+                    {
+                        <th id="header-@header.Replace(" ", "-")">@header <span id="mapping-@header.Replace(" ", "-")"></span></th>
+                    }
+                </tr>
+                </thead>
+                <tbody>
+                @for (int i = 0; i < Model.TableData.Count; i++)
+                {
+                    if (i < 3 || i >= Model.TableData.Count - 3)
+                    {
+                        <tr>
+                            @foreach (var header in Model.TableHeaders)
+                            {
+                                <td class="table-cell" data-header="@header">@Model.TableData[i][header]</td>
+                            }
+                        </tr>
+                    }
+                    else if (i == 3)
+                    {
+                        <tr>
+                            <td colspan="@Model.TableHeaders.Count" class="text-center">...</td>
+                        </tr>
+                    }
+                }
+                </tbody>
+            </table>
+        </div>
+
+        <input type="hidden" id="saveName" name="saveName" value="">
+        <input type="hidden" id="FilePath" name="FilePath" value="@Model.FilePath">
+        <input type="hidden" id="FileName" name="FileName" value="@Model.FileName">
+
+        <label for="notFullCheckbox">Проверить соответствие с заказами в системе</label>
+        <input type="checkbox" id="notFullCheckbox" name="notFull" value="false" onclick="this.value = this.checked ? 'true' : 'false';" />
+        <br/>
+
+        <label for="groupCheckbox">Сгруппировать</label>
+        <input type="checkbox" id="groupCheckbox" name="isGroup" value="false" onchange="submitToAlternativeMethod(this)" />
+        <br />
+        <br />
+        <button type="button" id="submitButton" class="btn btn-primary" onclick="validateForm()">Загрузить заказы</button>
+        <button type="button" class="btn btn-secondary" id="appendBtn">Дополнить файл</button>
+    </form>
+</div>
+
+<!-- Модальное окно для выбора столбцов -->
+<div class="modal fade" id="columnsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Выберите столбцы для дополнения</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Сравнить с (ключевые столбцы):</h6>
+                        <div class="list-group scrollable-list" id="compareColumns" style="max-height: 400px; overflow-y: auto;">
+                            @for (int i = 0; i < Model.MainTableHeaders.Count; i++)
+                            {
+                                var mainHeader = Model.MainTableHeaders[i];
+                                <label class="list-group-item">
+                                    <input class="form-check-input me-1" type="checkbox" name="compareColumns" value="@mainHeader">
+                                    @mainHeader
+                                </label>
+                            }
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Добавить (новые столбцы):</h6>
+                        <div class="list-group scrollable-list" id="addColumns" style="max-height: 400px; overflow-y: auto;">
+                            @for (int i = 0; i < Model.MainTableHeaders.Count; i++)
+                            {
+                                var mainHeader = Model.MainTableHeaders[i];
+                                <label class="list-group-item">
+                                    <input class="form-check-input me-1" type="checkbox" name="addColumns" value="@mainHeader">
+                                    @mainHeader
+                                </label>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" id="confirmAppend">Подтвердить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('appendBtn').addEventListener('click', function() {
+        // Показываем модальное окно
+        var modal = new bootstrap.Modal(document.getElementById('columnsModal'));
+        modal.show();
+    });
+
+    document.getElementById('confirmAppend').addEventListener('click', function() {
+        // Собираем выбранные столбцы
+        const compareColumns = Array.from(document.querySelectorAll('input[name="compareColumns"]:checked'))
+            .map(el => el.value);
+        
+        const addColumns = Array.from(document.querySelectorAll('input[name="addColumns"]:checked'))
+            .map(el => el.value);
+
+        if (compareColumns.length === 0 || addColumns.length === 0) {
+            alert('Пожалуйста, выберите хотя бы один столбец в каждом списке');
+            return;
+        }
+
+        // Проверяем, что нет пересечений между выбранными столбцами
+        const intersection = compareColumns.filter(value => addColumns.includes(value));
+        if (intersection.length > 0) {
+            alert('Следующие столбцы выбраны в обоих списках: ' + intersection.join(', ') + 
+                  '\nПожалуйста, выберите столбцы для сравнения и добавления без пересечений');
+            return;
+        }
+
+        // Создаем скрытые поля для передачи данных
+        const form = document.getElementById('saveForm');
+        
+        // Очищаем предыдущие скрытые поля (если есть)
+        document.querySelectorAll('input[name="compareColumnsList"]').forEach(el => el.remove());
+        document.querySelectorAll('input[name="addColumnsList"]').forEach(el => el.remove());
+
+        // Добавляем выбранные столбцы для сравнения
+        compareColumns.forEach(col => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'compareColumnsList';
+            input.value = col;
+            form.appendChild(input);
+        });
+
+        // Добавляем выбранные столбцы для добавления
+        addColumns.forEach(col => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'addColumnsList';
+            input.value = col;
+            form.appendChild(input);
+        });
+
+        // Изменяем action формы
+        form.action = '@Url.Action("AppendFile", "Orders", new { area = "Studio2" })';
+        
+        // Добавляем скрытое поле для указания типа действия
+        const hiddenInput = document.createElement('input');
+        hiddenInput.type = 'hidden';
+        hiddenInput.name = 'actionType';
+        hiddenInput.value = 'append';
+        form.appendChild(hiddenInput);
+        
+        // Закрываем модальное окно
+        var modal = bootstrap.Modal.getInstance(document.getElementById('columnsModal'));
+        modal.hide();
+        
+        // Отправляем форму
+        form.submit();
+    });
+</script>
+
+<script>
+    function submitToAlternativeMethod(checkbox) {
+        // Проверяем, что чекбокс активирован
+        if (checkbox.checked) {
+            let form = document.getElementById("saveForm");
+
+            // Меняем value чекбокса
+            checkbox.value = 'true';
+
+            // Устанавливаем новый action (укажите нужный метод)
+            form.action = "/Studio2/Orders/GroupFileData";
+
+            form.submit();
+
+            // После отправки формы вернем action к исходному значению
+            form.action = "/Studio2/Orders/CheckFile";
+        }
+    }
+</script>
+
+<script>
+    var currencyCodeMap = @Html.Raw(currencyCodeMapJson);
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const statusSelect = document.getElementById('input-Статус-Клиента');
+        const statusColumnSelect = document.getElementById('input-Статус-Клиента-Таблица');
+        const clientSelect = document.getElementById('input-Клиент');
+        const clientColumnSelect = document.getElementById('input-Клиент-Таблица');
+        const manufacturerSelect = document.getElementById('input-Производитель');
+        const manufacturerColumnSelect = document.getElementById('input-Производитель-Таблица');
+        const warehouseSelect = document.getElementById('input-Склад-Oтгрузки');
+        const warehouseColumnSelect = document.getElementById('input-Склад-Oтгрузки-Таблица');
+        const selectedProcessingDate = document.getElementById('input-Принят-в-обработку');
+        const selectedColumnProcessingDate = document.getElementById('input-Принят-в-обработку-Календарь');
+        const selectedShippingDate = document.getElementById('input-Дата-отгрузки');
+        const selectedColumnShippingDate = document.getElementById('input-Дата-отгрузки-Календарь');
+        const keySelect = document.getElementById('input-Key');
+        const articleSelect = document.getElementById('input-Артикул');
+
+        function handleSelectChange(primarySelect, dependentSelect, additionalFields = []) {
+            primarySelect.addEventListener('change', function () {
+                const isSelected = primarySelect.value !== "";
+                dependentSelect.disabled = isSelected;
+
+                if (primarySelect === keySelect) {
+                    additionalFields.forEach(field => {
+                        field.disabled = isSelected;
+                    });
+
+                    if (isSelected) {
+                        // Если keySelect заполнен, устанавливаем значение "-1" для manufacturerSelect
+                        if (manufacturerSelect) {
+                            manufacturerSelect.value = "-1";
+                        }
+                    } else {
+                        additionalFields.forEach(field => {
+                            field.disabled = false;
+                        });
+                    }
+                }
+            });
+
+            dependentSelect.addEventListener('change', function () {
+                const isSelected = dependentSelect.value !== "";
+                primarySelect.disabled = isSelected;
+            });
+        }
+
+        handleSelectChange(statusSelect, statusColumnSelect);
+        handleSelectChange(clientSelect, clientColumnSelect);
+        handleSelectChange(manufacturerSelect, manufacturerColumnSelect);
+        handleSelectChange(warehouseSelect, warehouseColumnSelect);
+        handleSelectChange(selectedProcessingDate, selectedColumnProcessingDate);
+        handleSelectChange(selectedShippingDate, selectedColumnShippingDate);
+
+        // Для keySelect и articleSelect с влиянием на manufacturerSelect и manufacturerColumnSelect
+        handleSelectChange(keySelect, articleSelect, [manufacturerSelect, manufacturerColumnSelect]);
+    });
+
+</script>
+
+
+<script>
+    function loadSavedMapping(mappingId) {
+        var mappings = @Html.Raw(JsonConvert.SerializeObject(Model.SavedMappings));
+        var columnMappings = @Html.Raw(JsonConvert.SerializeObject(Model.ColumnMappings));
+        var selectedMapping = mappings.find(mapping => mapping.Id == mappingId);
+
+        console.log(selectedMapping);
+
+        // Сброс блокировки и подсветки для всех элементов
+        resetAllSelections();
+        
+
+        if (selectedMapping) {
+            handleMapping(selectedMapping);
+        } else {
+            // Если сопоставление не найдено, применяем настройки по умолчанию
+            applyDefaultMappings(columnMappings);
+        }
+    }
+
+    function resetAllSelections() {
+        var allSelectElements = document.querySelectorAll('select');
+        allSelectElements.forEach(function (select) {
+            // Сброс блокировки
+            select.disabled = false;
+
+            // Сброс подсветки текущих выделений
+            var previousValue = select.getAttribute('data-selected-value');
+            if (previousValue) {
+                var previousColumnCells = document.querySelectorAll('td[data-header="' + previousValue + '"]');
+                previousColumnCells.forEach(function (cell) {
+                    cell.classList.remove('table-success');
+                });
+
+                // Сброс заголовков
+                updateHeaders(previousValue, "");
+            }
+
+            // Сброс значения в элементе select
+            select.value = "";
+            select.setAttribute('data-selected-value', "");
+        });
+
+        // Убираем выделение с рядов таблицы
+        var allRows = document.querySelectorAll('tr.table-success');
+        allRows.forEach(function (row) {
+            row.classList.remove('table-success');
+        });
+    }
+
+    function handleMapping(selectedMapping) {
+        updateClientSelection(selectedMapping);
+        updateStatusSelection(selectedMapping);
+        updateManufacturerSelection(selectedMapping);
+        updateWarehouseSelection(selectedMapping);
+        updateCurrencySelection(selectedMapping);
+        updateColumnMappings(selectedMapping);
+        updateDateFields(selectedMapping);
+        updateSupplierSelection(selectedMapping)
+    }
+
+    function updateClientSelection(selectedMapping) {
+        var clientElement = document.getElementById("input-Клиент");
+        var clientTableElement = document.getElementById("input-Клиент-Таблица");
+        if (clientElement) {
+            if (selectedMapping.SelectedClientId) {
+                clientElement.value = selectedMapping.SelectedClientId;
+                clientTableElement.disabled = true;
+            } else if (selectedMapping.ColumnMappings["Клиент"]) {
+                clientTableElement.value = selectedMapping.ColumnMappings["Клиент"];
+                clientElement.disabled = true;
+            }
+            updateTableHeader(clientTableElement);
+        }
+    }
+
+    function updateSupplierSelection(selectedMapping) {
+        var supplierElement = document.getElementById("input-Поставщик");
+        console.log(supplierElement)
+        if (supplierElement) {
+            if (selectedMapping.SelectedSupplier != null) {
+            supplierElement.value = selectedMapping.SelectedSupplierId;
+            updateTableHeader(clientTableElement);
+            }
+        }
+    }
+
+    function updateStatusSelection(selectedMapping) {
+        var statusElement = document.getElementById("input-Статус-Клиента");
+        var statusTableElement = document.getElementById("input-Статус-Клиента-Таблица");
+        if (statusElement) {
+            if (selectedMapping.SelectedStatus) {
+                statusElement.value = selectedMapping.SelectedStatus;
+                statusTableElement.disabled = true;
+            } else if (selectedMapping.ColumnMappings["Статус клиента"]) {
+                statusTableElement.value = selectedMapping.ColumnMappings["Статус клиента"];
+                statusElement.disabled = true;
+            }
+            updateTableHeader(statusTableElement);
+        }
+    }
+
+    function updateManufacturerSelection(selectedMapping) {
+        var manufacturerElement = document.getElementById("input-Производитель");
+        var manufacturerTableElement = document.getElementById("input-Производитель-Таблица");
+        if (manufacturerElement) {
+            if (selectedMapping.ManufacturerFromArticle) {
+                manufacturerElement.value = "-1";
+                manufacturerTableElement.disabled = true;
+            } else if (selectedMapping.SelectedManufacturerId) {
+                manufacturerElement.value = selectedMapping.SelectedManufacturerId;
+                manufacturerTableElement.disabled = true;
+            } else if (selectedMapping.ColumnMappings["Производитель"]) {
+                manufacturerTableElement.value = selectedMapping.ColumnMappings["Производитель"];
+                manufacturerElement.disabled = true;
+            }
+            updateTableHeader(manufacturerTableElement);
+        }
+    }
+
+    function updateWarehouseSelection(selectedMapping) {
+        var warehouseElement = document.getElementById("input-Склад-Oтгрузки");
+        var warehouseTableElement = document.getElementById("input-Склад-Oтгрузки-Таблица");
+        if (warehouseElement) {
+            if (selectedMapping.SelectedWarehouseId) {
+                warehouseElement.value = selectedMapping.SelectedWarehouseId;
+                warehouseTableElement.disabled = true;
+            } else if (selectedMapping.ColumnMappings["Склад отгрузки"]) {
+                warehouseTableElement.value = selectedMapping.ColumnMappings["Склад отгрузки"];
+                warehouseElement.disabled = true;
+            }
+            updateTableHeader(warehouseTableElement);
+        }
+    }
+
+    function updateCurrencySelection(selectedMapping) {
+        var currencyElement = document.getElementById("input-Код-Валюты-Отправления");
+        if (currencyElement) {
+            if (selectedMapping.SelectedCurrencyCode) {
+                var currencyCode = currencyCodeMap[selectedMapping.SelectedCurrencyCode];
+                currencyElement.value = currencyCode ? currencyCode : "";
+            }
+        }
+    }
+
+    function updateColumnMappings(selectedMapping) {
+        for (var mainHeader in selectedMapping.ColumnMappings) {
+            var fileHeader = selectedMapping.ColumnMappings[mainHeader];
+            var selectElement = document.querySelector('select[data-main-header="' + mainHeader + '"]');
+            if (selectElement) {
+                selectElement.value = fileHeader ? fileHeader : "";
+                selectElement.setAttribute('data-selected-value', fileHeader);
+                updateTableHeader(selectElement);
+            }
+        }
+    }
+
+    function updateDateFields(selectedMapping) {
+        const selectedProcessingDate = document.getElementById('input-Принят-в-обработку');
+        const selectedColumnProcessingDate = document.getElementById('input-Принят-в-обработку-Календарь');
+        const selectedShippingDate = document.getElementById('input-Дата-отгрузки');
+        const selectedColumnShippingDate = document.getElementById('input-Дата-отгрузки-Календарь');
+        const keySelect = document.getElementById('input-Key');
+        const articleSelect = document.getElementById('input-Артикул');
+        const manufacturerSelect = document.getElementById('input-Производитель');
+        const manufacturerColumnSelect = document.getElementById('input-Производитель-Таблица');
+
+        // Обработка полей даты
+        if (selectedProcessingDate && selectedColumnProcessingDate) {
+            if (selectedProcessingDate.value || selectedColumnProcessingDate.value) {
+                selectedProcessingDate.value ? selectedColumnProcessingDate.disabled = true : selectedProcessingDate.disabled = true;
+            }
+        }
+
+        if (selectedShippingDate && selectedColumnShippingDate) {
+            if (selectedShippingDate.value || selectedColumnShippingDate.value) {
+                selectedShippingDate.value ? selectedColumnShippingDate.disabled = true : selectedShippingDate.disabled = true;
+            }
+        }
+
+        // Обработка блокировки элементов в зависимости от выбора
+        if (keySelect && articleSelect) {
+            const isKeySelected = keySelect.value !== "";
+            const isArticleSelected = articleSelect.value !== "";
+
+            if (isKeySelected) {
+                // Если выбрано значение в keySelect, блокируем articleSelect и разблокируем manufacturerSelect и manufacturerColumnSelect
+                articleSelect.disabled = true;
+                if (manufacturerSelect) {
+                    manufacturerSelect.disabled = true;
+                }
+                if (manufacturerColumnSelect) {
+                    manufacturerColumnSelect.disabled = true;
+                }
+            } else if (isArticleSelected) {
+                // Если выбрано значение в articleSelect, блокируем keySelect и разблокируем manufacturerSelect и manufacturerColumnSelect
+                keySelect.disabled = true;
+                if (manufacturerSelect) {
+                    manufacturerSelect.disabled = false;
+                }
+                if (manufacturerColumnSelect) {
+                    manufacturerColumnSelect.disabled = false;
+                }
+            } else {
+                // Если ничего не выбрано, разблокируем все
+                articleSelect.disabled = false;
+                keySelect.disabled = false;
+                if (manufacturerSelect) {
+                    manufacturerSelect.disabled = false;
+                }
+                if (manufacturerColumnSelect) {
+                    manufacturerColumnSelect.disabled = false;
+                }
+            }
+        }
+    }
+
+
+    function updateTableHeader(selectElement) {
+        var rowId = selectElement.getAttribute('data-row-id');
+        var selectedValue = selectElement.value;
+        var rowElement = document.getElementById('row-' + rowId);
+        var mainHeader = selectElement.getAttribute('data-main-header');
+        var previousValue = selectElement.getAttribute('data-selected-value');
+
+        // Снимаем выделение с предыдущего значения
+        if (previousValue) {
+            var previousColumnCells = document.querySelectorAll('td[data-header="' + previousValue + '"]');
+            previousColumnCells.forEach(function (cell) {
+                cell.classList.remove('table-success');
+            });
+
+            // Обновление заголовков для предыдущего значения
+            updateHeaders(previousValue, "");
+        }
+
+        // Подсветка соответствующего столбца в таблице данных
+        if (selectedValue !== "") {
+            var columnCells = document.querySelectorAll('td[data-header="' + selectedValue + '"]');
+            columnCells.forEach(function (cell) {
+                cell.classList.add('table-success');
+            });
+        }
+
+        // Обновление атрибута данных с выбранным значением
+        selectElement.setAttribute('data-selected-value', selectedValue);
+
+        // Обновление цвета строки выбора
+        if (rowElement) {
+            if (selectedValue !== "") {
+                rowElement.classList.add('table-success');
+            } else {
+                rowElement.classList.remove('table-success');
+            }
+        }
+
+        // Обновление заголовков для нового выбранного значения
+        updateHeaders(selectedValue, mainHeader);
+    }
+
+    function updateHeaders(selectedValue, mainHeader) {
+        var headerElement = document.getElementById('header-' + selectedValue.replace(/\s+/g, "-"));
+        var spanElement = document.getElementById('mapping-' + selectedValue.replace(/\s+/g, "-"));
+        if (headerElement && spanElement) {
+            spanElement.textContent = mainHeader ? "(" + mainHeader + ")" : "";
+        }
+    }
+
+    // Инициализация значений атрибутов данных для всех селекторов и обновление заголовков при загрузке
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('select').forEach(function (selectElement) {
+            var selectedValue = selectElement.value;
+            selectElement.setAttribute('data-selected-value', selectedValue);
+            if (selectedValue) {
+                var mainHeader = selectElement.getAttribute('data-main-header');
+                updateHeaders(selectedValue, mainHeader);
+            }
+        });
+    });
+
+
+
+    function validateForm() {
+        var numberInput = document.getElementById("input-Номер-заказа");
+        var clientInput = document.getElementById("input-Клиент");
+        var columnInput = document.getElementById("input-Клиент-Таблица");
+        var orderNameInput = document.getElementById("input-Наименование-товара");
+        var articleInput = document.getElementById("input-Артикул");
+        var quntInput = document.getElementById("input-Кол.");
+        var priceInput = document.getElementById("input-Цена");
+        var keySelect = document.getElementById('input-Key');
+        var notFullCheckbox = document.getElementById('notFullCheckbox');
+
+        var missingFields = [];
+
+        // If checkbox is checked, only validate "Артикул" or "Key"
+        if (notFullCheckbox.checked) {
+            if (!articleInput.value && !keySelect.value) {
+                missingFields.push("Артикул или Key");
+            }
+        } else {
+            // Normal validation if checkbox is not checked
+            if (!numberInput.value) {
+                missingFields.push("Номер заказа");
+            }
+            if (!clientInput.value && !columnInput.value) {
+                missingFields.push("Клиент");
+            }
+            if (!orderNameInput.value) {
+                missingFields.push("Наименование товара");
+            }
+            if (!articleInput.value && !keySelect.value) {
+                missingFields.push("Артикул или Key");
+            }
+            if (!priceInput.value) {
+                missingFields.push("Цена");
+            }
+            if (!quntInput.value) {
+                missingFields.push("Кол.");
+            }
+        }
+
+        // Handle missing fields
+        if (missingFields.length > 0) {
+            var message = "Вы не выбрали столбцы для следующих полей:\n";
+            for (var i = 0; i < missingFields.length; i++) {
+                message += "- " + missingFields[i] + "\n";
+            }
+
+            message += "\nПожалуйста, заполните все обязательные поля.";
+            alert(message);
+
+            // Focus the first missing field
+            if (!numberInput.value) {
+                numberInput.focus();
+            } else if (!clientInput.value && !columnInput.value) {
+                clientInput.focus();
+            } else if (!orderNameInput.value) {
+                orderNameInput.focus();
+            } else if (!articleInput.value) {
+                articleInput.focus();
+            } else if (!priceInput.value) {
+                priceInput.focus();
+            }
+
+            return false; // Prevent form submission
+        } else {
+            // Validation successful - show modal
+            $('#saveMappingModal').modal('show');
+            return false; // Prevent form submission immediately after showing modal
+        }
+    }
+
+
+    // Функция для отправки формы с сохранением
+    function submitFormWithSave() {
+        var saveName = document.getElementById('saveMappingName').value;
+        document.getElementById('saveName').value = saveName;
+        document.getElementById('saveForm').submit();
+    }
+
+    // Функция для отправки формы без сохранения
+    function submitFormWithoutSave() {
+        document.getElementById('saveName').value = null;
+        document.getElementById('saveForm').submit();
+    }
+</script>
+
+<style>
+    .table-success {
+        background-color: #d4edda !important;
+    }
+</style>

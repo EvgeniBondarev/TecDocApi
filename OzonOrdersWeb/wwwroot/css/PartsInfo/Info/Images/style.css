@@ -1,0 +1,77 @@
+﻿.folder-list {
+    max-height: 400px;
+    overflow-y: auto;
+    display: none;
+}
+.folder-item {
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.folder-item:hover {
+    background-color: #f8f9fa;
+}
+.folder-icon {
+    color: #6c757d;
+    margin-right: 8px;
+}
+#folderSearchContainer {
+    position: relative;
+}
+#folderDropdown {
+    position: absolute;
+    width: 100%;
+    z-index: 1000;
+    margin-top: 5px;
+}
+.code-input-container {
+    margin-top: 15px;
+}
+#searchButton {
+    margin-top: 15px;
+}
+#imagesContainer {
+    margin-top: 20px;
+}
+.image-item {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 10px;
+}
+.carousel-inner {
+    max-height: 100%;
+}
+.carousel-control-prev svg,
+.carousel-control-next svg {
+    fill: var(--bs-primary);
+}
+.carousel-indicators [data-bs-target] {
+    background-color: var(--bs-primary); /* делает все кружки синими */
+    opacity: 0.5;
+}
+
+.carousel-indicators .active {
+    opacity: 1; /* активный индикатор — насыщенный синий */
+}
+.mini-image-item {
+    position: relative;
+    min-height: 150px; /* чтобы была высота, пока нет картинки */
+}
+
+.image-loader {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1;
+}
+
+.mini-image-item img {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+.mini-image-item img.loaded {
+    opacity: 1;
+}
+
+

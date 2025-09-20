@@ -1,0 +1,567 @@
+﻿@using System.ComponentModel.DataAnnotations
+@using System.Reflection
+@using Microsoft.IdentityModel.Tokens
+@using OzonOrdersWeb.Areas.PartsInfo.Models.FullInfo
+@model ArticleFullModel
+
+@{
+  var code = ViewData["SearchCode"]?.ToString();
+  var supplierName = ViewData["SearchSupplier"]?.ToString();
+  var isSearch = !string.IsNullOrEmpty(code) && !string.IsNullOrEmpty(supplierName);
+  var dynamicTitle = isSearch ? $"{Model.Description} {code} - {supplierName}" : "Parts Info — Поиск автозапчастей";
+  var metaDescription = isSearch ? $"Купить {Model.Description} ({code}) от {supplierName}. Характеристики, совместимость, аналоги." : "Поиск автозапчастей по коду производителя";
+  var canonicalUrl = $"https://interparts.mpsuper.ru/PartsInfo/Info/CodeInfo?code={code}&supplier={supplierName}";
+  var firstImageUrl = "https://s3.timeweb.cloud/25f554fc-6f66254e-9650-4d17-8e13-77b5b7d3242e/AppData/Studio2/IMG/PartsInfo.jpg";
+}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <!-- Основные мета-теги -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <!-- Open Graph / Telegram, WhatsApp, VK -->
+  <meta property="og:title" content="@dynamicTitle">
+  <meta property="og:description" content="@metaDescription">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="@canonicalUrl">
+  <meta property="og:image" content="@firstImageUrl">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="@Model.Description">
+  <meta property="og:site_name" content="Parts Info">
+  <meta property="og:image:secure_url" content="@firstImageUrl">
+  <meta property="og:updated_time" content="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ssZ")">
+  
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="@dynamicTitle">
+  <meta name="twitter:description" content="@metaDescription">
+  <meta name="twitter:image" content="@firstImageUrl">
+  
+  <meta name="description" content="@metaDescription">
+  <meta name="keywords" content="@code, @supplierName, @Model.Description, автозапчасти, запчасти @supplierName, аналоги @code, кросскоды @code">
+  
+  <!-- Open Graph / Социальные сети -->
+  <meta property="og:title" content="@dynamicTitle">
+  <meta property="og:description" content="@metaDescription">
+  <meta property="og:type" content="product.item">
+  <meta property="og:url" content="@canonicalUrl">
+  @if(Model.ImgUrls.Any()) {
+    <meta property="og:image" content="@Model.ImgUrls.First()">
+    <meta property="og:image:alt" content="@Model.Description - фото товара">
+  }
+  
+  <!-- Каноническая ссылка -->
+  <link rel="canonical" href="@canonicalUrl" />
+  
+  <!-- Favicon -->
+  <link rel="icon" href="https://s3.timeweb.cloud/25f554fc-6f66254e-9650-4d17-8e13-77b5b7d3242e/AppData/Studio2/IMG/Ico.jpg" type="image/png">
+  
+  <!-- Заголовок страницы -->
+  <title>@dynamicTitle</title>
+  
+  <!-- Стили -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="~/css/PartsInfo/FullData/Info/style.css" />
+  
+  <!-- Schema.org разметка -->
+  <script type="application/ld+json">
+  {
+    "context": "https://schema.org",
+    "type": "Product",
+    "name": "@Model.Description",
+    "description": "@metaDescription",
+    "brand": {
+      "type": "Brand",
+      "name": "@supplierName"
+    },
+    "sku": "@code",
+    "mpn": "@code",
+    @if (!string.IsNullOrEmpty(Model.ArticleEan?.Ean)) {
+      <text>"gtin": "@Model.ArticleEan.Ean",</text>
+    }
+    "image": [
+      @foreach(var img in Model.ImgUrls.Take(5)) {
+        <text>"@img"@(img != Model.ImgUrls.Last() ? "," : "")</text>
+      }
+    ],
+    "offers": {
+      "type": "Offer",
+      "url": "@canonicalUrl",
+      "priceCurrency": "RUB",
+      "availability": "https://schema.org/InStock",
+      "itemCondition": "https://schema.org/NewCondition"
+    }
+  }
+  </script>
+  
+  <!-- Разметка для хлебных крошек -->
+  <script type="application/ld+json">
+  {
+    "context": "https://schema.org",
+    "type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "type": "ListItem",
+        "position": 1,
+        "name": "Поиск",
+        "item": "https://interparts.mpsuper.ru/PartsInfo/Info/CodeInfo"
+      },
+      {
+        "type": "ListItem",
+        "position": 2,
+        "name": "@code",
+        "item": "https://interparts.mpsuper.ru/PartsInfo/Info/CodeInfo?code=@code"
+      },
+      {
+        "type": "ListItem",
+        "position": 3,
+        "name": "@supplierName",
+        "item": "@canonicalUrl"
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <!-- Навигация -->
+  <nav itemscope itemtype="https://schema.org/WebSite">
+    <div class="nav-wrapper container">
+      <a href="#" class="brand-logo" style="display: flex; align-items: center;" itemprop="url">
+        <img src="https://s3.timeweb.cloud/25f554fc-6f66254e-9650-4d17-8e13-77b5b7d3242e/AppData/Studio2/IMG/PartsInfo.jpg" alt="Inter Cars" itemprop="logo">
+      </a>
+    </div>
+  </nav>
+
+  <!-- Основной контент -->
+  <main class="container" itemscope itemtype="https://schema.org/Product">
+    <!-- Хлебные крошки -->
+    <div class="breadcrumb" aria-label="Навигационная цепочка">
+      <a href="@Url.Action("CodeInfo", "Info", new { area = "PartsInfo" })" class="product-card-link">Поиск</a>
+      @if (!string.IsNullOrEmpty(code))
+      {
+          <span aria-hidden="true">&nbsp;&gt;&nbsp;</span>
+          <a href="@Url.Action("CodeInfo", "Info", new { area = "PartsInfo", code = code })" class="product-card-link">@code</a>
+      }
+      <span aria-hidden="true">&nbsp;&gt;&nbsp;</span>
+      <span class="current">@supplierName</span>
+    </div>
+
+    <div class="row">
+      <!-- Основная информация о товаре -->
+      <div class="col s12 m8">
+        <div class="product-container">
+          <h1 class="product-title" itemprop="name">@Model.Description</h1>
+          
+          @if (!string.IsNullOrEmpty(Model.PrData?.VendorCategoryName))
+          {
+            <div class="product-category" itemprop="category">
+              @Html.DisplayNameFor(m => m.PrData.VendorCategoryName): @Model.PrData.VendorCategoryName
+            </div>
+          }
+          
+          <div class="product-codes">
+            @if (!string.IsNullOrEmpty(Model.NormalizedArticle))
+            {
+              <div itemprop="sku">
+                <strong>@Html.DisplayNameFor(m => m.NormalizedArticle):</strong> @Model.NormalizedArticle
+              </div>
+            }
+            @if (!string.IsNullOrEmpty(Model.ArticleEan?.Ean))
+            {
+              <div itemprop="gtin">
+                <strong>@Html.DisplayNameFor(m => m.ArticleEan.Ean):</strong> @Model.ArticleEan.Ean
+              </div>
+            }
+            @if (!string.IsNullOrEmpty(Model.PrData?.OemCode))
+            {
+              <div>
+                <strong>@Html.DisplayNameFor(m => m.PrData.OemCode):</strong> @Model.PrData.OemCode
+              </div>
+            }
+            @if (!string.IsNullOrEmpty(Model.PrData?.OemMark))
+            {
+              <div>
+                <strong>@Html.DisplayNameFor(m => m.PrData.OemMark):</strong> @Model.PrData.OemMark
+              </div>
+            }
+          </div>
+          
+          <!-- Галерея изображений и основные характеристики -->
+          <div class="row equal-height">
+            <div class="col s12 m6">
+              <div class="gc-fotorama" itemscope itemtype="https://schema.org/ImageGallery">
+                <div class="arrow left-arrow">
+                  <i class="fas fa-chevron-left"></i>
+                </div>
+                <div class="arrow right-arrow">
+                  <i class="fas fa-chevron-right"></i>
+                </div>
+                <div class="photo-main">
+                  @for (int i = 0; i < Model.ImgUrls.Count; i++)
+                  {
+                    var imgUrl = Model.ImgUrls[i];
+                    var className = i == 0 ? "container-img current" : "container-img next";
+                    var transform = i == 0 ? "translateX(0px)" : "translateX(100%)";
+                    <div class="@className" style="transform: @transform;" itemprop="image">
+                      <img src="@imgUrl" alt="@Model.Description - фото @(i + 1)" loading="lazy" />
+                    </div>
+                  }
+                </div>
+                <div class="thumbnails left-aligned">
+                  @for (int i = 0; i < Model.ImgUrls.Count; i++)
+                  {
+                    var imgUrl = Model.ImgUrls[i];
+                    var thumbClass = i == 0 ? "thumbnail active" : "thumbnail";
+                    <div class="@thumbClass">
+                      <img src="@imgUrl" data-src="@imgUrl" alt="Миниатюра @Model.Description @(i + 1)" loading="lazy" />
+                    </div>
+                  }
+                </div>
+                <div class="pagination-dots">
+                  @for (int i = 0; i < Model.ImgUrls.Count; i++)
+                  {
+                    var dotClass = i == 0 ? "dot active-dot" : "dot";
+                    <div class="@dotClass"></div>
+                  }
+                </div>
+              </div>
+            </div>
+            
+            <!-- Основные характеристики -->
+            <div class="col s12 m6">
+              <div class="price-box">
+                <h2 class="visually-hidden">Основные характеристики</h2>
+                <table class="details-table">
+                  @{
+                    var topAttributes = Model?.DetailAttributes?
+                      .Where(attr => !string.IsNullOrWhiteSpace(attr.Description) &&
+                                   !string.IsNullOrWhiteSpace(attr.DisplayValue))
+                      .Take(5)
+                      .ToList() ?? new List<DetailAttributeModel>();
+
+                    int remainingRows = 5 - topAttributes.Count;
+                  }
+
+                  @foreach (var attr in topAttributes)
+                  {
+                    <tr itemprop="additionalProperty" itemscope itemtype="https://schema.org/PropertyValue">
+                      <td itemprop="name">@attr.Description</td>
+                      <td itemprop="value">@attr.DisplayValue</td>
+                    </tr>
+                  }
+
+                  @for (int i = 0; i < remainingRows; i++)
+                  {
+                    <tr>
+                      <td>&nbsp;</td>
+                      <td>&nbsp;</td>
+                    </tr>
+                  }
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Детальная информация о товаре -->
+          <div class="product-details">
+            <h2 class="visually-hidden">Детальная информация о товаре</h2>
+            <ul class="tabs" role="tablist">
+              <li class="tab" role="presentation">
+                <a class="active" href="#tab-parameters" role="tab" aria-selected="false" aria-controls="tab-parameters">Характеристики</a>
+              </li>
+              <li class="tab" role="presentation">
+                <a href="#tab-compatibility" role="tab" aria-selected="false" aria-controls="tab-compatibility">Применение</a>
+              </li>
+              <li class="tab" role="presentation">
+                <a href="#tab-crosscodes" role="tab" aria-selected="false" aria-controls="tab-crosscodes">Кросскоды</a>
+              </li>
+              <li class="tab" role="presentation">
+                <a href="#tab-description" role="tab" aria-selected="true" aria-controls="tab-description">TecDoc Описание</a>
+              </li>
+            </ul>
+
+            <!-- Описание товара -->
+            <div id="tab-description" class="tab-content active" role="tabpanel" aria-labelledby="tab-description" itemprop="description">
+              <table class="details-table">
+                @{
+                  var schema = Model?.ArticleSchema;
+                  if (schema != null)
+                  {
+                    var props = typeof(ArticleSchemaModel).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+                    foreach (var prop in props)
+                    {
+                      var displayAttr = prop.GetCustomAttribute<DisplayAttribute>();
+                      var displayName = displayAttr?.Name ?? prop.Name;
+                      var value = prop.GetValue(schema);
+
+                      string displayValue;
+                      if (value is bool b)
+                        displayValue = b ? "Да" : "Нет";
+                      else if (value == null)
+                        displayValue = "";
+                      else
+                        displayValue = value.ToString();
+
+                      <tr itemprop="additionalProperty" itemscope itemtype="https://schema.org/PropertyValue">
+                        <td itemprop="name">@displayName</td>
+                        <td itemprop="value">@displayValue</td>
+                      </tr>
+                    }
+                  }
+                }
+              </table>
+            </div>
+            
+            <!-- Характеристики -->
+            <div id="tab-parameters" class="tab-content" role="tabpanel" aria-labelledby="tab-parameters" hidden>
+              <table class="details-table">
+                @if(Model?.DetailAttributes != null && Model.DetailAttributes.Count > 0)
+                {
+                  @foreach (var attr in Model.DetailAttributes)
+                  {
+                    <tr itemprop="additionalProperty" itemscope itemtype="https://schema.org/PropertyValue">
+                      <td itemprop="name">@attr.Description</td>
+                      <td itemprop="value">@attr.DisplayValue</td>
+                    </tr>
+                  }
+                }
+              </table>
+
+              <div class="divider"></div>
+
+              <table class="details-table">
+                @if(Model?.PrData?.DetailAttributes.Count > 0)
+                {
+                  @foreach (var prattr in Model.PrData.DetailAttributes)
+                  {
+                    <tr itemprop="additionalProperty" itemscope itemtype="https://schema.org/PropertyValue">
+                      <td itemprop="name">@prattr.Name</td>
+                      <td itemprop="value">@prattr.Value</td>
+                    </tr>
+                  }
+                }
+              </table>
+            </div>
+
+            <!-- Совместимость -->
+            <div id="tab-compatibility" class="tab-content" role="tabpanel" aria-labelledby="tab-compatibility" hidden>
+              <ul class="tabs compatibility-tabs" role="tablist">
+                <li class="tab" role="presentation">
+                  <a class="active" href="#specific-compatibility" role="tab" aria-selected="true" aria-controls="specific-compatibility">Автомобиль</a>
+                </li>
+                <li class="tab" role="presentation">
+                  <a href="#general-compatibility" role="tab" aria-selected="false" aria-controls="general-compatibility">Двигатель</a>
+                </li>
+                @if (Model.PrData?.Models.Count > 0)
+                {
+                  <li class="tab" role="presentation">
+                    <a href="#general-pr" role="tab" aria-selected="false" aria-controls="general-pr">Доп. применение</a>
+                  </li>
+                }
+              </ul>
+  
+              <div id="search-container" style="display: none;">
+                <div class="search-box input-field">
+                  <label for="substitute-search" class="visually-hidden">Поиск по модификациям</label>
+                  <input type="text" id="substitute-search" placeholder="Поиск по модификациям..." class="search-input">
+                </div>
+              </div>
+  
+              <div id="specific-compatibility" class="tab-content active" role="tabpanel" aria-labelledby="specific-compatibility">
+                <div id="substitutes-container">
+                  <!-- Список основной совместимости -->
+                </div>
+              </div>
+  
+              <div id="general-compatibility" class="tab-content" role="tabpanel" aria-labelledby="general-compatibility" hidden>
+                <div id="substitutes-container-general">
+                  <!-- Список общей совместимости -->
+                </div>
+              </div>
+              
+              @if (Model.PrData?.Models.Count > 0)
+              {
+                <div id="general-pr" class="tab-content" role="tabpanel" aria-labelledby="general-pr" hidden>
+                  <div id="substitutes-container-pr">
+                    <ul>
+                      @foreach (var itemModel in Model.PrData.Models)
+                      {
+                        <li>@itemModel</li>
+                      }
+                    </ul>
+                  </div>
+                </div>
+              }
+            </div>
+
+            <!-- Кросскоды -->
+            <div id="tab-crosscodes" class="tab-content" role="tabpanel" aria-labelledby="tab-crosscodes" hidden>
+              <!-- Содержимое будет загружено динамически -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Боковая панель с информацией о поставщике -->
+      <div class="col s12 m4">
+        @if (Model?.Supplier != null)
+        {
+            var supplier = Model.Supplier;
+            double rating = supplier.Rating < 0 ? 0 : (supplier.Rating > 10 ? 10 : supplier.Rating);
+            double starsCount = rating / 2.0;
+
+            int fullStars = (int)starsCount;
+            bool halfStar = (starsCount - fullStars) >= 0.5;
+            int emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
+            
+            <div class="product-container manufacturer-box" itemscope itemtype="https://schema.org/Organization">
+                <h3 class="section-title">Поставщик</h3>
+                <div class="manufacturer-info">
+
+                    @if (!string.IsNullOrWhiteSpace(supplier.Code))
+                    {
+                        <div class="manufacturer-field">
+                            <span class="field-label">@Html.DisplayNameFor(m => m.Supplier.Code):</span>
+                            <span class="field-value" itemprop="identifier">@supplier.Code</span>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(supplier.Name))
+                    {
+                        <div class="manufacturer-field">
+                            <span class="field-label">@Html.DisplayNameFor(m => m.Supplier.Name):</span>
+                            <span class="field-value" itemprop="name">@supplier.Name</span>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(supplier.Description))
+                    {
+                        <div class="manufacturer-field">
+                            <span class="field-label">@Html.DisplayNameFor(m => m.Supplier.Description):</span>
+                            <span class="field-value" itemprop="description">@supplier.Description</span>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(supplier.ImageUrl))
+                    {
+                        <div class="manufacturer-field">
+                            <span class="field-label">@Html.DisplayNameFor(m => m.Supplier.ImageUrl):</span>
+                            <span class="field-value">
+                                <a href="@supplier.ImageUrl" target="_blank" itemprop="logo">@supplier.ImageUrl</a>
+                            </span>
+                        </div>
+                    }
+
+                    @if (supplier.Rating >= 0)
+                    {
+                        <div class="manufacturer-field">
+                            <span class="field-label">@Html.DisplayNameFor(m => m.Supplier.Rating):</span>
+                            <div class="rating-stars" itemprop="aggregateRating" itemscope itemtype="https://schema.org/AggregateRating">
+                                @for (int i = 0; i < fullStars; i++)
+                                {
+                                    <i class="fas fa-star" style="color: gold;"></i>
+                                }
+                                @if (halfStar)
+                                {
+                                    <i class="fas fa-star-half-alt" style="color: gold;"></i>
+                                }
+                                @for (int i = 0; i < emptyStars; i++)
+                                {
+                                    <i class="far fa-star" style="color: gold;"></i>
+                                }
+                                <span style="margin-left: 5px; color: #333;">
+                                  <span itemprop="ratingValue">@starsCount.ToString("0.0")</span>/<span itemprop="bestRating">5.0</span>
+                                </span>
+                            </div>
+                        </div>
+                    }
+
+                    <div class="supplier-ids"
+                         style="font-size: 12px; color: #888; margin-top: 5px;"
+                         data-tecdoc-id="@supplier.TecdocSupplierId"
+                         data-js-id="@supplier.JSSupplierId">
+                      @Html.DisplayNameFor(m => m.Supplier.TecdocSupplierId): @supplier.TecdocSupplierId |
+                      @Html.DisplayNameFor(m => m.Supplier.JSSupplierId): @supplier.JSSupplierId
+                    </div>
+                </div>
+            </div>
+        }
+      </div>
+    </div>
+  </main>
+
+  <!-- Модальное окно галереи -->
+  <div id="galleryModal" class="modal-gallery" role="dialog" aria-modal="true" aria-label="Галерея изображений">
+    <div class="modal-gallery-content">
+      <button class="modal-gallery-close" aria-label="Закрыть галерею">&times;</button>
+      <div class="modal-gallery-nav modal-gallery-prev" aria-label="Предыдущее изображение">
+        <i class="fas fa-chevron-left"></i>
+      </div>
+      <div class="modal-gallery-img-container">
+        <img class="modal-gallery-img" src="" alt="" itemprop="image">
+      </div>
+      <div class="modal-gallery-nav modal-gallery-next" aria-label="Следующее изображение">
+        <i class="fas fa-chevron-right"></i>
+      </div>
+      <div class="modal-gallery-thumbnails"></div>
+    </div>
+  </div>
+
+  <!-- Скрипты -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+  
+  <!-- Наши скрипты -->
+  
+  <script src="~/js/PartsInfo/FullData/Info/compatibility.js"></script>
+  <script src="~/js/PartsInfo/FullData/Info/crossCodes.js"></script>
+  <script src="~/js/PartsInfo/FullData/Info/productInfo.js"></script>
+  <script src="~/js/PartsInfo/FullData/Info/main.js"></script>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const imageUrls = [
+        @foreach (var url in Model.ImgUrls)
+        {
+          <text>'@Html.Raw(System.Text.Json.JsonEncodedText.Encode(url))',</text>
+        }
+      ];
+      initGallery(imageUrls);
+      
+      // Инициализация табов с доступностью
+      const tabs = document.querySelectorAll('.tabs a');
+      tabs.forEach(tab => {
+        tab.addEventListener('click', function(e) {
+          const tabId = this.getAttribute('href');
+          const allTabContents = document.querySelectorAll('.tab-content');
+          const allTabs = document.querySelectorAll('.tabs a');
+          
+          // Скрыть все содержимое табов
+          allTabContents.forEach(content => {
+            content.setAttribute('hidden', 'true');
+            content.classList.remove('active');
+          });
+          
+          // Убрать активное состояние у всех табов
+          allTabs.forEach(t => {
+            t.classList.remove('active');
+            t.setAttribute('aria-selected', 'false');
+          });
+          
+          // Показать выбранное содержимое
+          document.querySelector(tabId).removeAttribute('hidden');
+          document.querySelector(tabId).classList.add('active');
+          this.classList.add('active');
+          this.setAttribute('aria-selected', 'true');
+          
+          e.preventDefault();
+        });
+      });
+    });
+  </script>
+</body>
+</html>
