@@ -127,6 +127,8 @@ namespace Servcies.FiltersServcies.DataFilterManagers
                 filterData.Manufacturer, exactMatch);
             orders = _filter.FilterByString(orders, pr => pr.OzonClient != null ? pr.OzonClient.Name : "",
                 filterData.OzonClient);
+            orders = _filter.FilterByString(orders, pr => pr.Delivery != null ? pr.Delivery.Provider.Name : "",
+                filterData.Provider);
 
             orders = _filter.FilterByDate(orders, pr => pr.ProcessingDate, filterData.ProcessingDate);
             orders = _filter.FilterByDate(orders, pr => pr.ShippingDate, filterData.ShippingDate);

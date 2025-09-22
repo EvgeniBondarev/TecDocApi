@@ -15,7 +15,7 @@ namespace OzonDomains
         [Display(Name = "Все")]
         All = 1,
 
-        [Display(Name = "Отгружен постащиком")]
+        [Display(Name = "Отгружен поставщиком")]
         ShippedBySupplier = 2,
     }
 }

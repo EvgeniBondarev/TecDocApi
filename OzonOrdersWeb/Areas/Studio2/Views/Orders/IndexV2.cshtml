@@ -285,17 +285,22 @@
 
         dropdownToggle.addEventListener('click', function () {
             dropdownMenu.innerHTML = '';
-            // Получаем выбранные ID из сессии
             getSelectedIdsFromSession(function (selectedIds) {
                 if (selectedIds.length > 0) {
                     var listItem1 = document.createElement('li');
                     listItem1.className = 'dropdown-item';
-                    listItem1.innerHTML = '<a href="#" onclick="openOrderForm()" class="btn btn-link">Заказан поставщику</a>';
+                    listItem1.innerHTML = '<a href="#" onclick="createOrderToSupplierTransaction()" class="btn btn-link link-success">Заказан поставщику</a>';
 
                     var listItem2 = document.createElement('li');
                     listItem2.className = 'dropdown-item';
-                    listItem2.innerHTML = '<a href="#" onclick="cancellationOrders()" class="btn btn-link link-danger">Отменить заказы</a><br/>';
+                    listItem2.innerHTML = '<a href="#" onclick="createShippedBySupplierTransaction()" class="btn btn-link link-info">Отгружен поставщиком</a>';
+
+                    var listItem3 = document.createElement('li');
+                    listItem3.className = 'dropdown-item';
+                    listItem3.innerHTML = '<a href="#" onclick="cancellationOrders()" class="btn btn-link link-danger">Отменить заказы</a><br/>';
+                    
                     dropdownMenu.appendChild(listItem1);
+                    dropdownMenu.appendChild(listItem2);
                     dropdownMenu.appendChild(listItem2);
                 } else {
                     var listItem1 = document.createElement('li');
@@ -314,11 +319,16 @@
         });
     }
 
-    // Пример функции для открытия формы заказа
-    function openOrderForm() {
-        // Используйте getSelectedIdsFromSession для получения ID
+    function createOrderToSupplierTransaction() {
         getSelectedIdsFromSession(function (selectedIds) {
             var url = '/Studio2/Orders/CreateOrderToSupplierTransactionV2?ids=' + selectedIds.join(',') + '&page=' + @Model.PageNumber;
+            window.location.href = url;
+        });
+    }
+
+    function createShippedBySupplierTransaction() {
+        getSelectedIdsFromSession(function (selectedIds) {
+            var url = '/Studio2/Orders/CreateShippedBySupplierTransaction?ids=' + selectedIds.join(',') + '&page=' + @Model.PageNumber;
             window.location.href = url;
         });
     }
@@ -361,14 +371,7 @@
             });
         });
     });
-
-    function openOrderForm() {
-        getSelectedIdsFromSession(function (selectedIds) {
-            var url = '/Studio2/Orders/CreateOrderToSupplierTransactionV2?ids=' + selectedIds + '&page=' + @Model.PageNumber;
-            window.location.href = url;
-        });
-    }
-
+    
     function printLableForm() {
         getSelectedIdsFromSession(function (selectedIds) {
             var url = '/Studio2/Orders/PrintOrdersLableV2?ids=' + selectedIds + '&page=' + @Model.PageNumber;
@@ -398,11 +401,66 @@
             @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Номер заказа"))
             {
                 <th id="thShipmentNumber">
-                    <a class="text-dark" asp-action="IndexV2" asp-route-sortOrder="@ViewBag.ShipmentNumberSort">
-                        <small>@(ViewBag.ShipmentNumberSort == OrderSortState.ShipmentNumberAsc ? "Номер заказа↑" : "Номер заказа↓")</small>
-                    </a>
-                    <input asp-for="@Model.FilterModel.ShipmentNumber" id="shipmentNumberFilter" name="ShipmentNumber" class="form-control form-control-sm" />
+                    <div id="thShipmentNumberSort">
+                        <a class="text-dark" asp-action="IndexV2" asp-route-sortOrder="@ViewBag.ShipmentNumberSort">
+                            <small>@(ViewBag.ShipmentNumberSort == OrderSortState.ShipmentNumberAsc ? "Номер заказа↑" : "Номер заказа↓")</small>
+                        </a>
+                        <input asp-for="@Model.FilterModel.ShipmentNumber" id="shipmentNumberFilter" name="ShipmentNumber" class="form-control form-control-sm"/>
+                    </div>
+                    <div id="thDeliverySort">
+                        <a class="text-muted"  asp-action="IndexV2" asp-route-sortOrder="@ViewBag.DeliverySort" title="Доставка">
+                            <small>@(ViewBag.DeliverySort == OrderSortState.DeliveryAsc ? "Доставка↑" : "Доставка↓")</small>
+                        </a>
+                        <div class="position-relative">
+                            <input asp-for="@Model.FilterModel.Provider" 
+                                   id="deliveryFilter" 
+                                   name="Provider" 
+                                   class="form-control form-control-sm" 
+                                   autocomplete="off" />
+
+                            <ul id="deliveryDropdown" class="dropdown-menu" style="display: none; max-height: 200px; overflow-y: auto;">
+                                <li><a href="#" data-value="Все" style="font-weight: normal;">&nbsp;Все</a></li>
+                                @foreach (var wh in ViewBag.Providers)
+                                {
+                                    <li><a href="#" data-value="@wh.Text" style="font-weight: normal;">&nbsp;@wh.Text</a></li>
+                                }
+                            </ul>
+                        </div>
+                        <script>
+                            $(document).ready(function () {
+                                $('#deliveryFilter').focus(function () {
+                                    $('#deliveryDropdown').show();
+                                });
+                        
+                                $('#deliveryDropdown').on('click', 'a', function (e) {
+                                    e.preventDefault();
+                                    var selectedValue = $(this).data('value');
+                                    $('#deliveryFilter').val(selectedValue);
+                                    $('#deliveryFilter').focus();
+                                    $('#deliveryDropdown').hide();
+                                });
+                        
+                                // Авто-скрытие при клике вне поля
+                                $(document).on('click', function (e) {
+                                    if (!$(e.target).closest('#deliveryFilter').length && !$(e.target).closest('#deliveryDropdown').length) {
+                                        $('#deliveryDropdown').hide();
+                                    }
+                                });
+                        
+                                // Фильтрация по вводу
+                                $('#deliveryFilter').on('input', function () {
+                                    var inputVal = $(this).val().toLowerCase();
+                                    $('#deliveryDropdown li').each(function () {
+                                        var text = $(this).text().toLowerCase();
+                                        $(this).toggle(text.includes(inputVal));
+                                    });
+                                    $('#deliveryDropdown').show();
+                                });
+                            });
+                        </script>
+                    </div>
                 </th>
+                
             }
             <th>
                 @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Клиент"))
@@ -711,12 +769,12 @@
                 }
                 @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Номер заказа поставщику"))
                 {
-                <div id="thOrderNumberToSupplierSort">
-                    <a class="text-info" asp-action="IndexV2" asp-route-sortOrder="@ViewBag.OrderNumberToSupplierSort" title="Номер заказа поставщику">
-                        <small>@(ViewBag.OrderNumberToSupplierSort == OrderSortState.OrderNumberToSupplierAsc ? "Номер заказа п.↑" : "Номер заказа п.↓")</small>
-                    </a>
-                    <input asp-for="@Model.FilterModel.OrderNumberToSupplier" id="orderNumberToSupplierFilter" name="OrderNumberToSupplier" class="form-control form-control-sm" />
-                </div>
+                    <div id="thOrderNumberToSupplierSort">
+                        <a class="text-info" asp-action="IndexV2" asp-route-sortOrder="@ViewBag.OrderNumberToSupplierSort" title="Номер заказа поставщику">
+                            <small>@(ViewBag.OrderNumberToSupplierSort == OrderSortState.OrderNumberToSupplierAsc ? "Номер заказа п.↑" : "Номер заказа п.↓")</small>
+                        </a>
+                        <input asp-for="@Model.FilterModel.OrderNumberToSupplier" id="orderNumberToSupplierFilter" name="OrderNumberToSupplier" class="form-control form-control-sm" />
+                    </div>
                 }
             </th>
                 <th>
@@ -884,7 +942,7 @@
                 rowClass = "table-danger";
             }
             
-            if (item.AppStatus.Name  == "Отгружен постащиком")
+            if (item.AppStatus.Name  == "Отгружен поставщиком")
             {
                 rowClass = "table-info";
             }
@@ -927,12 +985,10 @@
                                 {
                                     delivery = delivery.Substring(0, 20) + "...";
                                 }
-                                <p title="@item.Delivery?.Name">@delivery</p>
+                                <span title="@item.Delivery?.Name">@delivery</span>
                             }
                         </div>
                     </td>
-
-
                 }
                 <td>
                     @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Клиент"))

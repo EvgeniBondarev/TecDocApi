@@ -141,5 +141,8 @@
         public string? DeliveryPeriod { get; set; }
 
         public DateTime? LastStatusChangeDate { get; set; }
+        
+        public string? Delivery   { get; set; }
+        public string? Provider {get; set; }
     }
 }

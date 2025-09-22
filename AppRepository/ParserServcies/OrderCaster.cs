@@ -418,11 +418,7 @@ namespace Servcies.ParserServcies
             order.Key = jsonOrder["id"].ToString() + jsonOrder["items"][0]["offerId"].ToString();
 
             order.ShipmentNumber = jsonOrder["id"].ToString();
-
-            if (order.ShipmentNumber == "48734722112")
-            {
-                
-            }
+            
             
             order.ProcessingDate = DateTime.TryParseExact(
                                     jsonOrder["creationDate"].ToString(),

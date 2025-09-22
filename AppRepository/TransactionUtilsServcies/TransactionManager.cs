@@ -5,16 +5,16 @@ using Servcies.DataServcies;
 
 namespace Servcies.TransactionUtilsServcies
 {
-    public class OrderToSupplierTransactionManager : ITransactionManager
+    public class TransactionManager : ITransactionManager
     {
         private readonly TransactionDataServcies _transactionDataServcies;
 
-        public OrderToSupplierTransactionManager(TransactionDataServcies transactionDataServcies)
+        public TransactionManager(TransactionDataServcies transactionDataServcies)
         {
             _transactionDataServcies = transactionDataServcies;
         }
 
-        public async Task<(int, string)> CreateTransaction(List<Order> orders, 
+        public async Task<(int, string)> CreateOrderToSupplierTransaction(List<Order> orders, 
                                                 string userName, 
                                                 DateTime createDateTime,
                                                 string comment)
@@ -35,6 +35,29 @@ namespace Servcies.TransactionUtilsServcies
                     
                 }
                 return (await _transactionDataServcies.SaveChanges(), $"{transaction.FormattedCreatedDate}\t{transaction.FormattedCreatedTime}");
+        }
+        
+        public async Task<(int, string)> CreateShippedBySupplierTransaction(List<Order> orders, 
+            string userName, 
+            DateTime createDateTime,
+            string comment)
+        {
+            Transaction transaction = new Transaction()
+            {
+                Type = TransactionType.ShippedBySupplier,
+                Orders = orders,
+                CreateBy = userName,
+                CreatedDateTime = createDateTime,
+                Comment = comment
+            };
+            await _transactionDataServcies.AddTransaction(transaction);
+
+            foreach(var order in orders)
+            {
+                ConfirmAccepted(order);
+                    
+            }
+            return (await _transactionDataServcies.SaveChanges(), $"{transaction.FormattedCreatedDate}\t{transaction.FormattedCreatedTime}");
         }
 
 

@@ -1,4 +1,5 @@
 ﻿using OzonDomains;
+using OzonDomains.Models;
 using OzonRepositories.Data;
 
 namespace Servcies.DataServcies;
@@ -25,5 +26,10 @@ public class DeliveryDataServcies
     public async Task<Delivery?> GetDeliveryAsync(int id)
     {
         return await _repository.GetByIdAsync(id);
+    }
+
+    public async Task<List<DeliveryProvider>> GetProviders()
+    {
+        return await _repository.GetAllProvider();
     }
 }

@@ -100,7 +100,7 @@ public static class RepositoryExtensions
         
         
 
-        services.AddTransient<OrderToSupplierTransactionManager>();
+        services.AddTransient<TransactionManager>();
 
         services.AddTransient<CurrencyRateFetcher>();
         services.AddTransient<OrderPriceManager>();

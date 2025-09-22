@@ -64,7 +64,7 @@ namespace OzonOrdersWeb.Controllers
         private readonly ReleaseManager _releaseManager;
         private readonly TransactionDataServcies _transactionDataServcies;
         private readonly TransactionCache _transactionCache;
-        private readonly OrderToSupplierTransactionManager _orderToSupplierTransaction;
+        private readonly TransactionManager _transaction;
         private readonly DuplicateOrdersServcies _duplicateOrdersServcies;
         private readonly OzonClientServcies _ozonClientServcies;
         private readonly UserManager<CustomIdentityUser> _userManager;
@@ -88,6 +88,7 @@ namespace OzonOrdersWeb.Controllers
         private readonly ProxyHttpClientService _proxyHttpClientService;
         private readonly ArticleFullModelBuilder _articleFullModelBuilder;
         private readonly ProductInformationModelBuilder _productInformationModelBuilder;
+        private readonly DeliveryDataServcies _deliveryDataServcies;
         public OrdersController(OzonOrderContext context,
                                 OrdersDataServcies orderRepository,
                                 AppStatusDataServcies appStatusDataServcies,
@@ -101,7 +102,7 @@ namespace OzonOrdersWeb.Controllers
                                 ReleaseManager releaseManager,
                                 TransactionDataServcies transactionDataServcies,
                                 TransactionCache transactionCache,
-                                OrderToSupplierTransactionManager orderToSupplierTransactionManager,
+                                TransactionManager transactionManager,
                                 DuplicateOrdersServcies duplicateOrdersServcies,
                                 OzonClientServcies ozonClientServcies,
                                 UserManager<CustomIdentityUser> userManager,
@@ -124,7 +125,8 @@ namespace OzonOrdersWeb.Controllers
                                 EtProducerDataServices etProducerDataServices,
                                 ProxyHttpClientService proxyHttpClientService,
                                 ArticleFullModelBuilder articleFullModelBuilder,
-                                ProductInformationModelBuilder productInformationModelBuilder)
+                                ProductInformationModelBuilder productInformationModelBuilder,
+                                DeliveryDataServcies deliveryDataServcies)
         {
             _context = context;
             _orderServcies = orderRepository;
@@ -139,7 +141,7 @@ namespace OzonOrdersWeb.Controllers
             _releaseManager = releaseManager;
             _transactionDataServcies = transactionDataServcies;
             _transactionCache = transactionCache;
-            _orderToSupplierTransaction = orderToSupplierTransactionManager;
+            _transaction = transactionManager;
             _duplicateOrdersServcies = duplicateOrdersServcies;
             _ozonClientServcies = ozonClientServcies;
             _userManager = userManager;
@@ -163,6 +165,7 @@ namespace OzonOrdersWeb.Controllers
             _proxyHttpClientService = proxyHttpClientService;
             _articleFullModelBuilder = articleFullModelBuilder;
             _productInformationModelBuilder = productInformationModelBuilder;
+            _deliveryDataServcies = deliveryDataServcies;
         }
 
         public async Task<IActionResult> Index(OrderSortState sortOrder = OrderSortState.StandardState, int page = 1)
@@ -1673,7 +1676,7 @@ namespace OzonOrdersWeb.Controllers
                     var appStatus = await _appStatusServcies.GetAppStatusAsync(new AppStatus() { Name = "Заказан поставщику" });
                     List<Order> ordersToTransaction = ordersToUpdate.Where(o => o.AppStatus.Id == appStatus.Id).ToList();
 
-                    (changeCount, dateTime) = await _orderToSupplierTransaction.CreateTransaction(ordersToTransaction,
+                    (changeCount, dateTime) = await _transaction.CreateOrderToSupplierTransaction(ordersToTransaction,
                                                                                                   userName,
                                                                                                   createAt,
                                                                                                   comment);
@@ -1804,8 +1807,7 @@ namespace OzonOrdersWeb.Controllers
                 return Json(new { success = false, message = "Ошибка на сервере" });
             }
         }
-
-
+        
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateOrderToSupplierTransactionV2(
@@ -1847,7 +1849,7 @@ namespace OzonOrdersWeb.Controllers
                     var appStatus = await _appStatusServcies.GetAppStatusAsync(new AppStatus() { Name = "Заказан поставщику" });
                     List<Order> ordersToTransaction = ordersToUpdate.Where(o => o.AppStatus.Id == appStatus.Id).ToList();
 
-                    (changeCount, dateTime) = await _orderToSupplierTransaction.CreateTransaction(ordersToTransaction,
+                    (changeCount, dateTime) = await _transaction.CreateOrderToSupplierTransaction(ordersToTransaction,
                                                                                                   userName,
                                                                                                   createAt,
                                                                                                   comment);
@@ -1890,8 +1892,196 @@ namespace OzonOrdersWeb.Controllers
                 return Json(new { redirectTo = Url.Action(nameof(IndexV2), new { sortOrder = GetSortStateCookie(), page = page }) });
 
             }
-
         }
+        
+        public async Task<IActionResult> CreateShippedBySupplierTransaction(string ids, int page)
+        {
+            var filteredStatuses = _context.AppStatuses
+                .Where(status => status.Name == "Отменен")
+                .ToList();
+
+            ViewBag.AppStatuses = new SelectList(filteredStatuses, "Id", "Name");
+            ViewBag.StatusColors = filteredStatuses.ToDictionary(s => s.Id.ToString(), s => s.GetStatusColor());
+
+            int[] idArray = ids.Split(',').Select(int.Parse).ToArray();
+            List<Order> ordersToTransaction = new List<Order>();
+            string errorReason = null;
+
+            var appStatus = await _appStatusServcies.GetAppStatusAsync(
+                new AppStatus() { Name = "Отгружен поставщиком" });
+
+            if (appStatus == null)
+            {
+                AppStatus newStatus = new AppStatus()
+                {
+                    Name = "Отгружен поставщиком"
+                };
+                _context.AppStatuses.Add(newStatus);
+                await _context.SaveChangesAsync();
+                appStatus = newStatus;
+            }
+
+            foreach (var orderId in idArray)
+            {
+                var concretOrder = await _orderServcies.GetOrder(orderId);
+                if (concretOrder.AppStatus?.Name == "Заказан поставщику")
+                {
+                    concretOrder.AppStatus = appStatus;
+                    ordersToTransaction.Add(concretOrder);
+                }
+                else
+                {
+                    errorReason = $"Заказ {concretOrder.ShipmentNumber} имеет статус '{concretOrder.AppStatus?.Name}', " +
+                                  $"а должен быть 'Заказан поставщику'.";
+                }
+            }
+
+            if (!ordersToTransaction.Any())
+            {
+                if (errorReason == null)
+                    errorReason = "Нет заказов со статусом 'Заказан поставщику'.";
+            }
+            else
+            {
+                var distinctSuppliers = ordersToTransaction
+                    .GroupBy(o => o.Supplier?.Name)
+                    .ToList();
+
+                if (distinctSuppliers.Count > 1)
+                {
+                    errorReason = "Выбраны заказы с разными поставщиками: " +
+                                  string.Join(", ", distinctSuppliers.SelectMany(g => g.Select(o =>
+                                      $"{o.ShipmentNumber} (поставщик: {g.Key})")));
+                    ordersToTransaction.Clear();
+                }
+
+                var distinctWarehouses = ordersToTransaction
+                    .GroupBy(o => o.ShipmentWarehouse?.Name)
+                    .ToList();
+
+                if (distinctWarehouses.Count > 1)
+                {
+                    errorReason = "Выбраны заказы с разными складами: " +
+                                  string.Join(", ", distinctWarehouses.SelectMany(g => g.Select(o =>
+                                      $"{o.ShipmentNumber} (склад: {g.Key})")));
+                    ordersToTransaction.Clear();
+                }
+            }
+
+            ViewData["ErrorReason"] = errorReason;
+
+            var pageViewModel = new MultiplayEditOrderViewModel()
+            {
+                RedirectPage = page,
+                Orders = ordersToTransaction.OrderBy(ot => ot.ShipmentNumber).ToList(),
+                User = await _userCacheService.GetCachedUserAsync(User),
+                Suppliers = (await _supplierDataServcies.GetSuppliers()).OrderBy(s => s.Name).ToList(),
+                RateEUR = await _currencyRateFetcher.GetEURRateAsync(),
+                RateUSD = await _currencyRateFetcher.GetUSDRateAsync(),
+                RateBYN = await _currencyRateFetcher.GetBYNRateAsync(),
+                UniqueArticles = await _orderServcies.GetUniqueArticles(),
+                UniqueDeliveryCitys = await _orderServcies.GetUniqueDeliveryCities(),
+                UniqueNumbers = await _orderServcies.GetUniqueShipmentNumbers(),
+                AppStatus = await _appStatusServcies.GetAppStatusAsync(
+                    new AppStatus() { Name = "Отгружен поставщиком" })
+            };
+
+            if (pageViewModel.User.UserAccessId != null)
+            {
+                pageViewModel.User.UserAccess = _context.UserAccess.Find(pageViewModel.User.UserAccessId);
+            }
+
+            RunBackgroundCacheTask(pageViewModel.Orders);
+            return View(pageViewModel);
+        }
+
+        
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateShippedBySupplierTransaction(
+            List<Order> orders,
+            string userName,
+            string comment,
+            int page,
+            string deletedOrders)
+        {
+            
+            if (orders == null)
+            {
+                TempData["ErorrResult"] = $"Не удалось провести выбранные заказы.<br>Было передано слишком большое количество записей.";
+                return RedirectToAction("Index");
+            }
+            else
+            {
+                if (deletedOrders != null)
+                {
+                    var deletedOrderIds = deletedOrders.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(int.Parse).ToList();
+                    orders = orders.Where(o => !deletedOrderIds.Contains(o.Id)).ToList();
+                }
+            }
+
+            try
+            {
+                if (orders.Count != 0)
+                {
+                    DateTime createAt = DateTime.Now;
+                    var changeCount = 0;
+                    var dateTime = "";
+                    List<Order> ordersToUpdate = new List<Order>();
+                    List<string> ordersNotFoundInOzone = [];
+                    foreach (var order in orders)
+                    {
+                        ordersToUpdate.Add(await _orderServcies.TransactOrder(order));
+                    }
+
+                    var appStatus = await _appStatusServcies.GetAppStatusAsync(new AppStatus() { Name = "Отгружен поставщиком" });
+                    List<Order> ordersToTransaction = ordersToUpdate.Where(o => o.AppStatus.Id == appStatus.Id).ToList();
+
+                    (changeCount, dateTime) = await _transaction.CreateShippedBySupplierTransaction(ordersToTransaction,
+                                                                                                  userName,
+                                                                                                  createAt,
+                                                                                                  comment);
+                    int cancelCount = ordersToUpdate.Where(o => o.AppStatus.Name == "Отменен").Count();
+
+                    if (changeCount > 0)
+                    {
+                        await _cacheUpdater.Update(_cache);
+                        string msg = $"Заказы добавлены в журнал<br/>" +
+                                     $"<b>{changeCount}</b> заказам изменен статус на '<b>Отгружен поставщиком</b>', <b>{cancelCount}</b> заказов были отменены." +
+                                     $"<br/>Время<b>: {dateTime}</b>" +
+                                     $"<br/>Пользователь<b>: {userName}</b>" +
+                                     $"<br/>Комментарий: {comment}" +
+                                     $"<br/>Заказы: {string.Join(" ", orders.Select(o => o.ShipmentNumber))}";
+                        await NotificationService.NotifyAllAsync(msg);
+                        TempData["TransactionResult"] = msg;
+
+                    }
+                    await _transactionCache.Update();
+
+                    if (ordersNotFoundInOzone.Count > 0)
+                    {
+                        TempData["OrdersNotFoundInOzone"] = $"Заказы не найдены в системе Ozon - {ordersNotFoundInOzone.Aggregate((x, y) => x + ", " + y)}";
+                    }
+                }
+                ClearSelectedIdsSession();
+                foreach (var order in orders)
+                {
+                    var cookieKey = $"PurchasePrice_{order.Id}";
+                    if (Request.Cookies.ContainsKey(cookieKey))
+                    {
+                        Response.Cookies.Delete(cookieKey);
+                    }
+                }
+                return Json(new { redirectTo = Url.Action(nameof(IndexV2), new { sortOrder = GetSortStateCookie(), page = page }) });
+            }
+            catch (Exception ex)
+            {
+                TempData["ErorrResult"] = $"Не удалось провести выбранные заказы ({ex.Message})";
+                return Json(new { redirectTo = Url.Action(nameof(IndexV2), new { sortOrder = GetSortStateCookie(), page = page }) });
+
+            }
+        }
+        
         public async Task<IActionResult> OrderDetailedInformation(int orderId)
         {
             Order order = await _orderServcies.GetOrder(orderId);
@@ -2363,7 +2553,7 @@ namespace OzonOrdersWeb.Controllers
             ViewData["CostPriceсеSort"] = sortOrder == OrderSortState.CostPriceAsc ? OrderSortState.CostPriceDesc : OrderSortState.CostPriceAsc;
             ViewData["TimeLeftSort"] = sortOrder == OrderSortState.TimeLeftAsc ? OrderSortState.TimeLeftDesc : OrderSortState.TimeLeftAsc;
             ViewData["LastStatusChangeDateSort"] = sortOrder == OrderSortState.LastStatusChangeDateAsc ? OrderSortState.LastStatusChangeDateDesc : OrderSortState.LastStatusChangeDateAsc;
-
+            ViewData["DeliverySort"] = sortOrder == OrderSortState.DeliveryAsc ? OrderSortState.DeliveryDesc : OrderSortState.DeliveryAsc;
         }
 
         public async Task<IEnumerable<Order>> ApplySortOrder(IEnumerable<Order> orders, OrderSortState sortOrder)
@@ -2462,6 +2652,9 @@ namespace OzonOrdersWeb.Controllers
 
                 OrderSortState.LastStatusChangeDateAsc => orders.OrderBy(o => o.LastStatusChangeDate),
                 OrderSortState.LastStatusChangeDateDesc => orders.OrderByDescending(o => o.LastStatusChangeDate),
+                
+                OrderSortState.DeliveryAsc => orders.OrderBy(o => o.Delivery?.Provider.Name),
+                OrderSortState.DeliveryDesc => orders.OrderByDescending(o => o.Delivery?.Provider.Name),
                 _ => orders
             };
         }
@@ -2482,6 +2675,7 @@ namespace OzonOrdersWeb.Controllers
             ViewBag.Clients = new SelectList((await _ozonClientServcies.GetOzonClients()).OrderBy(a => a.Name), "Name", "Name");
             ViewBag.Warehouses = new SelectList((await _warehouseDataServcies.GetWarehouses()).OrderBy(a => a.Name), "Name", "Name");
             ViewBag.Statuses = new SelectList(data.Select(s => s.Status).Distinct().Select(s => new { Name = s }).ToList().OrderBy(a => a.Name), "Name", "Name");
+            ViewBag.Providers = new SelectList((await _deliveryDataServcies.GetProviders()).OrderBy(a => a.Name), "Name", "Name");
         }
 
         public void SaveSortStateCookie(OrderSortState sortOrder)

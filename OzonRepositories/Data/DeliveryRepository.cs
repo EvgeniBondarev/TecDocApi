@@ -55,4 +55,8 @@ public class DeliveryRepository
         return provider;
     }
 
+    public async Task<List<DeliveryProvider>> GetAllProvider()
+    {
+        return await _context.DeliveryProviders.ToListAsync();
+    }
 }

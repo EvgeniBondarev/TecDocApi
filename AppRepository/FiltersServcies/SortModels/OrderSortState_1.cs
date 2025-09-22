@@ -66,5 +66,7 @@
         TimeLeftDesc,
         LastStatusChangeDateAsc,
         LastStatusChangeDateDesc,
+        DeliveryAsc,
+        DeliveryDesc,
     }
 }

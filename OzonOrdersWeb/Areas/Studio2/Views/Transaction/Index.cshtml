@@ -819,7 +819,7 @@
                             return type switch
                             {
                                 TransactionType.OrderedToSupplier => "Заказан поставщику",
-                                TransactionType.ShippedBySupplier => "Отгружен постащиком",
+                                TransactionType.ShippedBySupplier => "Отгружен поставщиком",
                                 TransactionType.All => "Все",
                                 _ => "Неизвестный тип транзакции",
                             };
@@ -843,7 +843,7 @@
                 {
                     string rowClass;
                     rowClass = item.AppStatus.Name == "Заказан поставщику" ? "table-success" : "custom-white";
-                    rowClass = item.AppStatus.Name == "Отгружен постащиком" ? "table-info" : rowClass;
+                    rowClass = item.AppStatus.Name == "Отгружен поставщиком" ? "table-info" : rowClass;
                     rowClass = item.Status == "Отменен" ? "custom-gray" : rowClass;
                     if (item.IsReturnable.Value != null && item.IsReturnable.Value == true)
                     {
