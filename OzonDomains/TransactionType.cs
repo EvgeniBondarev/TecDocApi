@@ -17,5 +17,8 @@ namespace OzonDomains
 
         [Display(Name = "Отгружен поставщиком")]
         ShippedBySupplier = 2,
+        
+        [Display(Name = "Отгружен реализатору")]
+        ShippedToSeller = 3,
     }
 }

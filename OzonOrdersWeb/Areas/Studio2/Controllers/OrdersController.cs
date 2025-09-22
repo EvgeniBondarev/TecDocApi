@@ -89,6 +89,8 @@ namespace OzonOrdersWeb.Controllers
         private readonly ArticleFullModelBuilder _articleFullModelBuilder;
         private readonly ProductInformationModelBuilder _productInformationModelBuilder;
         private readonly DeliveryDataServcies _deliveryDataServcies;
+        private readonly WarehouseMappingDataServcies _warehouseMappingDataServcies;
+        
         public OrdersController(OzonOrderContext context,
                                 OrdersDataServcies orderRepository,
                                 AppStatusDataServcies appStatusDataServcies,
@@ -126,7 +128,8 @@ namespace OzonOrdersWeb.Controllers
                                 ProxyHttpClientService proxyHttpClientService,
                                 ArticleFullModelBuilder articleFullModelBuilder,
                                 ProductInformationModelBuilder productInformationModelBuilder,
-                                DeliveryDataServcies deliveryDataServcies)
+                                DeliveryDataServcies deliveryDataServcies,
+                                WarehouseMappingDataServcies warehouseMappingDataServcies)
         {
             _context = context;
             _orderServcies = orderRepository;
@@ -166,6 +169,8 @@ namespace OzonOrdersWeb.Controllers
             _articleFullModelBuilder = articleFullModelBuilder;
             _productInformationModelBuilder = productInformationModelBuilder;
             _deliveryDataServcies = deliveryDataServcies;
+            _warehouseDataServcies = warehouseDataServcies;
+            _warehouseMappingDataServcies = warehouseMappingDataServcies;
         }
 
         public async Task<IActionResult> Index(OrderSortState sortOrder = OrderSortState.StandardState, int page = 1)
@@ -2048,6 +2053,222 @@ namespace OzonOrdersWeb.Controllers
                         await _cacheUpdater.Update(_cache);
                         string msg = $"Заказы добавлены в журнал<br/>" +
                                      $"<b>{changeCount}</b> заказам изменен статус на '<b>Отгружен поставщиком</b>', <b>{cancelCount}</b> заказов были отменены." +
+                                     $"<br/>Время<b>: {dateTime}</b>" +
+                                     $"<br/>Пользователь<b>: {userName}</b>" +
+                                     $"<br/>Комментарий: {comment}" +
+                                     $"<br/>Заказы: {string.Join(" ", orders.Select(o => o.ShipmentNumber))}";
+                        await NotificationService.NotifyAllAsync(msg);
+                        TempData["TransactionResult"] = msg;
+
+                    }
+                    await _transactionCache.Update();
+
+                    if (ordersNotFoundInOzone.Count > 0)
+                    {
+                        TempData["OrdersNotFoundInOzone"] = $"Заказы не найдены в системе Ozon - {ordersNotFoundInOzone.Aggregate((x, y) => x + ", " + y)}";
+                    }
+                }
+                ClearSelectedIdsSession();
+                foreach (var order in orders)
+                {
+                    var cookieKey = $"PurchasePrice_{order.Id}";
+                    if (Request.Cookies.ContainsKey(cookieKey))
+                    {
+                        Response.Cookies.Delete(cookieKey);
+                    }
+                }
+                return Json(new { redirectTo = Url.Action(nameof(IndexV2), new { sortOrder = GetSortStateCookie(), page = page }) });
+            }
+            catch (Exception ex)
+            {
+                TempData["ErorrResult"] = $"Не удалось провести выбранные заказы ({ex.Message})";
+                return Json(new { redirectTo = Url.Action(nameof(IndexV2), new { sortOrder = GetSortStateCookie(), page = page }) });
+
+            }
+        }
+        
+        public async Task<IActionResult> CreateShippedToSellerTransaction(string ids, int page)
+        {
+            var filteredStatuses = _context.AppStatuses
+                .Where(status => status.Name == "Отменен")
+                .ToList();
+
+            ViewBag.AppStatuses = new SelectList(filteredStatuses, "Id", "Name");
+            ViewBag.StatusColors = filteredStatuses.ToDictionary(s => s.Id.ToString(), s => s.GetStatusColor());
+
+            int[] idArray = ids.Split(',').Select(int.Parse).ToArray();
+            List<Order> ordersToTransaction = new List<Order>();
+            List<string> permittedWarehouses = (await _warehouseMappingDataServcies
+                .GetWarehouseMappings())
+                .Select(wm => wm.OzonWarehouseName)
+                .ToList();
+
+            string errorReason = null;
+
+            var appStatus = await _appStatusServcies.GetAppStatusAsync(
+                new AppStatus() { Name = "Отгружен реализатору" });
+
+            if (appStatus == null)
+            {
+                AppStatus newStatus = new AppStatus()
+                {
+                    Name = "Отгружен реализатору"
+                };
+                _context.AppStatuses.Add(newStatus);
+                await _context.SaveChangesAsync();
+                appStatus = newStatus;
+            }
+
+            foreach (var orderId in idArray)
+            {
+                var concretOrder = await _orderServcies.GetOrder(orderId);
+                if (concretOrder.AppStatus?.Name == "Заказан поставщику")
+                {
+                    concretOrder.AppStatus = appStatus;
+                    ordersToTransaction.Add(concretOrder);
+                }
+                else
+                {
+                    errorReason = $"Заказ {concretOrder.ShipmentNumber} имеет статус '{concretOrder.AppStatus?.Name}', " +
+                                  $"а должен быть 'Заказан поставщику'.";
+                }
+            }
+
+            if (!ordersToTransaction.Any())
+            {
+                if (errorReason == null)
+                    errorReason = "Нет заказов со статусом 'Заказан поставщику'.";
+            }
+            else
+            {
+                // проверка на поставщиков
+                var distinctSuppliers = ordersToTransaction
+                    .GroupBy(o => o.Supplier?.Name)
+                    .ToList();
+
+                if (distinctSuppliers.Count > 1)
+                {
+                    errorReason = "Выбраны заказы с разными поставщиками: " +
+                                  string.Join(", ", distinctSuppliers.SelectMany(g => g.Select(o =>
+                                      $"{o.ShipmentNumber} (поставщик: {g.Key})")));
+                    ordersToTransaction.Clear();
+                }
+
+                var invalidWarehouses = ordersToTransaction
+                    .Where(o => !permittedWarehouses.Contains(o.ShipmentWarehouse?.Name))
+                    .ToList();
+
+                if (invalidWarehouses.Any())
+                {
+                    var invalidWarehousesMessage = "Выбраны заказы с недопустимыми складами: " +
+                                                   string.Join(", ", invalidWarehouses.Select(o =>
+                                                       $"{o.ShipmentNumber} (склад: {o.ShipmentWarehouse?.Name})"));
+                    var allowedWarehousesMessage = "Допустимые склады: " +
+                                                   string.Join(", ", permittedWarehouses);
+                    errorReason = invalidWarehousesMessage + ". " + allowedWarehousesMessage;
+
+                    ordersToTransaction.Clear();
+
+                }
+                else
+                {
+                    // проверка на разные склады (только если все разрешённые)
+                    var distinctWarehouses = ordersToTransaction
+                        .GroupBy(o => o.ShipmentWarehouse?.Name)
+                        .ToList();
+
+                    if (distinctWarehouses.Count > 1)
+                    {
+                        errorReason = "Выбраны заказы с разными складами: " +
+                                      string.Join(", ", distinctWarehouses.SelectMany(g => g.Select(o =>
+                                          $"{o.ShipmentNumber} (склад: {g.Key})")));
+                        ordersToTransaction.Clear();
+                    }
+                }
+            }
+
+            ViewData["ErrorReason"] = errorReason;
+
+            var pageViewModel = new MultiplayEditOrderViewModel()
+            {
+                RedirectPage = page,
+                Orders = ordersToTransaction.OrderBy(ot => ot.ShipmentNumber).ToList(),
+                User = await _userCacheService.GetCachedUserAsync(User),
+                Suppliers = (await _supplierDataServcies.GetSuppliers()).OrderBy(s => s.Name).ToList(),
+                RateEUR = await _currencyRateFetcher.GetEURRateAsync(),
+                RateUSD = await _currencyRateFetcher.GetUSDRateAsync(),
+                RateBYN = await _currencyRateFetcher.GetBYNRateAsync(),
+                UniqueArticles = await _orderServcies.GetUniqueArticles(),
+                UniqueDeliveryCitys = await _orderServcies.GetUniqueDeliveryCities(),
+                UniqueNumbers = await _orderServcies.GetUniqueShipmentNumbers(),
+                AppStatus = await _appStatusServcies.GetAppStatusAsync(
+                    new AppStatus() { Name = "Отгружен поставщиком" })
+            };
+
+            if (pageViewModel.User.UserAccessId != null)
+            {
+                pageViewModel.User.UserAccess = _context.UserAccess.Find(pageViewModel.User.UserAccessId);
+            }
+
+            RunBackgroundCacheTask(pageViewModel.Orders);
+            return View(pageViewModel);
+        }
+
+
+        
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateShippedToSellerTransaction(
+            List<Order> orders,
+            string userName,
+            string comment,
+            int page,
+            string deletedOrders)
+        {
+            
+            if (orders == null)
+            {
+                TempData["ErorrResult"] = $"Не удалось провести выбранные заказы.<br>Было передано слишком большое количество записей.";
+                return RedirectToAction("Index");
+            }
+            else
+            {
+                if (deletedOrders != null)
+                {
+                    var deletedOrderIds = deletedOrders.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(int.Parse).ToList();
+                    orders = orders.Where(o => !deletedOrderIds.Contains(o.Id)).ToList();
+                }
+            }
+
+            try
+            {
+                if (orders.Count != 0)
+                {
+                    DateTime createAt = DateTime.Now;
+                    var changeCount = 0;
+                    var dateTime = "";
+                    List<Order> ordersToUpdate = new List<Order>();
+                    List<string> ordersNotFoundInOzone = [];
+                    foreach (var order in orders)
+                    {
+                        ordersToUpdate.Add(await _orderServcies.TransactOrder(order));
+                    }
+
+                    var appStatus = await _appStatusServcies.GetAppStatusAsync(new AppStatus() { Name = "Отгружен реализатору" });
+                    List<Order> ordersToTransaction = ordersToUpdate.Where(o => o.AppStatus.Id == appStatus.Id).ToList();
+                    
+
+                    (changeCount, dateTime) = await _transaction.CreateShippedToSellerTransaction(ordersToTransaction,
+                                                                                                  userName,
+                                                                                                  createAt,
+                                                                                                  comment);
+                    int cancelCount = ordersToUpdate.Where(o => o.AppStatus.Name == "Отменен").Count();
+
+                    if (changeCount > 0)
+                    {   
+                        await _cacheUpdater.Update(_cache);
+                        string msg = $"Заказы добавлены в журнал<br/>" +
+                                     $"<b>{changeCount}</b> заказам изменен статус на '<b>Отгружен реализатору</b>', <b>{cancelCount}</b> заказов были отменены." +
                                      $"<br/>Время<b>: {dateTime}</b>" +
                                      $"<br/>Пользователь<b>: {userName}</b>" +
                                      $"<br/>Комментарий: {comment}" +

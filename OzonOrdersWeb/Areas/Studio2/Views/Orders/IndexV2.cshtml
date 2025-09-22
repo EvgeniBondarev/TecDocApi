@@ -297,11 +297,16 @@
 
                     var listItem3 = document.createElement('li');
                     listItem3.className = 'dropdown-item';
-                    listItem3.innerHTML = '<a href="#" onclick="cancellationOrders()" class="btn btn-link link-danger">Отменить заказы</a><br/>';
+                    listItem3.innerHTML = '<a href="#" onclick="createShippedToSellerTransaction()" class="btn btn-link link-warning">Отгружен реализатором</a>';
+
+                    var listItem4 = document.createElement('li');
+                    listItem4.className = 'dropdown-item';
+                    listItem4.innerHTML = '<a href="#" onclick="cancellationOrders()" class="btn btn-link link-danger">Отменить заказы</a><br/>';
                     
                     dropdownMenu.appendChild(listItem1);
                     dropdownMenu.appendChild(listItem2);
-                    dropdownMenu.appendChild(listItem2);
+                    dropdownMenu.appendChild(listItem3);
+                    dropdownMenu.appendChild(listItem4);
                 } else {
                     var listItem1 = document.createElement('li');
                     listItem1.className = 'dropdown-item';
@@ -329,6 +334,13 @@
     function createShippedBySupplierTransaction() {
         getSelectedIdsFromSession(function (selectedIds) {
             var url = '/Studio2/Orders/CreateShippedBySupplierTransaction?ids=' + selectedIds.join(',') + '&page=' + @Model.PageNumber;
+            window.location.href = url;
+        });
+    }
+
+    function createShippedToSellerTransaction() {
+        getSelectedIdsFromSession(function (selectedIds) {
+            var url = '/Studio2/Orders/CreateShippedToSellerTransaction?ids=' + selectedIds.join(',') + '&page=' + @Model.PageNumber;
             window.location.href = url;
         });
     }
@@ -945,6 +957,11 @@
             if (item.AppStatus.Name  == "Отгружен поставщиком")
             {
                 rowClass = "table-info";
+            }
+            
+            if (item.AppStatus.Name  == "Отгружен реализатору")
+            {
+                rowClass = "table-warning";
             }
             
             <tr class=@rowClass oncontextmenu="showInfoAtCursor('@item.Id', '@item.CartItemId', event); return false;">
