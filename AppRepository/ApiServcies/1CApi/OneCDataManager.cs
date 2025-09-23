@@ -105,7 +105,7 @@ public class OneCDataManager : IApiDataManager<OneCDataManager>
                     continue;
                 }
 
-                // Создаем модель запроса для клиента
+                // Создаем модель запроса для клиентаwwe
                 var model = new MovementOfGoodsRequest()
                 {
                     Date = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz)
