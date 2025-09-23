@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
 using PartsInfo.HttpUtils;
+using Servcies.ApiServcies._1CApi;
 using Servcies.ApiServcies.AbcpApi;
 using Servcies.ApiServcies.AvdApiConfig;
 using Servcies.ApiServcies.DropBoxApi;
@@ -111,6 +112,26 @@ public static class ApiClientsExtensions
         });
         services.AddTransient<AvdApiClient>();
         
+        services.AddSingleton(new OneCApiConfig
+        {
+            User = configuration["OneC:User"],
+            Password = configuration["OneC:Password"],
+        });
+
+        services.AddTransient(serviceProvider =>
+        {
+            var config = serviceProvider.GetRequiredService<OneCApiConfig>();
+            return new OneCApiClient(config.User, config.Password);
+        });
+
+        services.AddTransient<OneCDataManager>(serviceProvider =>
+        {
+            var config = serviceProvider.GetRequiredService<OneCApiConfig>();
+            var cache = serviceProvider.GetRequiredService<IMemoryCache>();
+            return new OneCDataManager(config, cache);
+        });
+        
         services.AddScoped<ProxyHttpClientService>();
+        
     }
 }

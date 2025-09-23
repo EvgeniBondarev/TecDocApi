@@ -131,6 +131,19 @@ string status = (string)ViewData["EditInfo"];
                 <input asp-for="OzonClient.DecryptClientId" class="form-control" />
                 <span asp-validation-for="OzonClient.DecryptClientId" class="text-danger"></span>
             </div>
+            
+            <div class="form-group">
+                <label asp-for="OzonClient.INNCode" class="control-label"></label>
+                <input asp-for="OzonClient.INNCode" class="form-control" />
+                <span asp-validation-for="OzonClient.INNCode" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="OzonClient.WarehouseName" class="control-label"></label>
+                <input asp-for="OzonClient.WarehouseName" class="form-control" />
+                <span asp-validation-for="OzonClient.WarehouseName" class="text-danger"></span>
+            </div>
+
 
             <br />
             <div class="form-group">

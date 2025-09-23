@@ -45,6 +45,8 @@ namespace OzonRepositories.Data
             ordetToUpdate.ApiKey = value.ApiKey;
             ordetToUpdate.ClientId = value.ClientId;
             ordetToUpdate.CurrencyCode = value.CurrencyCode;
+            ordetToUpdate.INNCode = value.INNCode;
+            ordetToUpdate.WarehouseName = value.WarehouseName;
 
             _context.OzonClients.Update(ordetToUpdate);
 

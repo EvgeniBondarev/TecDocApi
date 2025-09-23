@@ -9,5 +9,11 @@
 
         CurrencyCodeAsc,
         CurrencyCodeDesc,
+
+        INNCodeAsc,
+        INNCodeDesc,
+
+        WarehouseNameAsc,
+        WarehouseNameDesc
     }
 }

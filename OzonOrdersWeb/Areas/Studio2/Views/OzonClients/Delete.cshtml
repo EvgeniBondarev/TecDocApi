@@ -35,6 +35,19 @@
         <dd class="col-sm-10">
             @Html.DisplayFor(model => model.CurrencyCode)
         </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.INNCode)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.INNCode)
+        </dd>
+
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.WarehouseName)
+        </dt>
+        <dd class="col-sm-10">
+            @Html.DisplayFor(model => model.WarehouseName)
+        </dd>
     </dl>
     
     <form asp-area="Studio2" asp-controller="OzonClients" asp-action="Delete">

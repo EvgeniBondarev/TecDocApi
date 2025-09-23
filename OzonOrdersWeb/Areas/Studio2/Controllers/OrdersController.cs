@@ -41,6 +41,7 @@ using OzonOrdersWeb.Areas.PartsInfo.ModelBuilders;
 using OzonOrdersWeb.Areas.PartsInfo.Models;
 using OzonOrdersWeb.Areas.PartsInfo.Models.FullInfo;
 using PartsInfo.HttpUtils;
+using Servcies.ApiServcies._1CApi;
 using Servcies.CacheServcies.Cache.CartCache;
 using Servcies.SignalRServcies;
 
@@ -90,6 +91,7 @@ namespace OzonOrdersWeb.Controllers
         private readonly ProductInformationModelBuilder _productInformationModelBuilder;
         private readonly DeliveryDataServcies _deliveryDataServcies;
         private readonly WarehouseMappingDataServcies _warehouseMappingDataServcies;
+        private readonly OneCDataManager _oneCDataManager;
         
         public OrdersController(OzonOrderContext context,
                                 OrdersDataServcies orderRepository,
@@ -129,7 +131,8 @@ namespace OzonOrdersWeb.Controllers
                                 ArticleFullModelBuilder articleFullModelBuilder,
                                 ProductInformationModelBuilder productInformationModelBuilder,
                                 DeliveryDataServcies deliveryDataServcies,
-                                WarehouseMappingDataServcies warehouseMappingDataServcies)
+                                WarehouseMappingDataServcies warehouseMappingDataServcies,
+                                OneCDataManager oneCDataManager)
         {
             _context = context;
             _orderServcies = orderRepository;
@@ -171,6 +174,7 @@ namespace OzonOrdersWeb.Controllers
             _deliveryDataServcies = deliveryDataServcies;
             _warehouseDataServcies = warehouseDataServcies;
             _warehouseMappingDataServcies = warehouseMappingDataServcies;
+            _oneCDataManager = oneCDataManager;
         }
 
         public async Task<IActionResult> Index(OrderSortState sortOrder = OrderSortState.StandardState, int page = 1)
@@ -2223,7 +2227,8 @@ namespace OzonOrdersWeb.Controllers
             string userName,
             string comment,
             int page,
-            string deletedOrders)
+            string deletedOrders,
+            bool processIn1C = false)
         {
             
             if (orders == null)
@@ -2256,12 +2261,56 @@ namespace OzonOrdersWeb.Controllers
 
                     var appStatus = await _appStatusServcies.GetAppStatusAsync(new AppStatus() { Name = "Отгружен реализатору" });
                     List<Order> ordersToTransaction = ordersToUpdate.Where(o => o.AppStatus.Id == appStatus.Id).ToList();
+
+                    string oneCResult = "";
+                    IEnumerable<string> oneCHash = [];
+                    if (processIn1C)
+                    {
+                        var transferResult = await _oneCDataManager.TransferStock(ordersToTransaction);
+                        var successfulTransfers = transferResult.Where(tr => tr.Success).ToList();
+                        var failedTransfers = transferResult.Where(tr => !tr.Success).ToList();
+
+                        if (failedTransfers.Count > 0)
+                        {
+                            // Есть ошибки
+                            var errorMessages = failedTransfers.Select(tr => tr.Message).Distinct().Take(3);
+                            var errorCount = failedTransfers.Count;
+                            var successCount = successfulTransfers.Count;
+                            var totalCount = transferResult.Count;
+
+                            string msg = $"<div class='alert alert-warning'>" +
+                                         $"<strong>⚠️ Частичный результат обработки в 1С</strong><br/>" +
+                                         $"Успешно: {successCount} из {totalCount} документов<br/>" +
+                                         $"С ошибками: {errorCount} документов<br/>" +
+                                         $"<small>Ошибки: {string.Join("; ", errorMessages)}" +
+                                         (errorCount > 3 ? "..." : "") + "</small>" +
+                                         "</div>";
+
+                            TempData["TransactionResult"] = msg;
+                            return Json(new { redirectTo = Url.Action(nameof(IndexV2), new { sortOrder = GetSortStateCookie(), page = page }) });
+                        }
+                        else
+                        {
+                            oneCHash = successfulTransfers.Select(h => h.TransactionId);
+                            var documentCount = successfulTransfers.Count;
+        
+                            oneCResult = $"<div class='alert alert-success'>" +
+                                         $"<strong>✅ Успешно создано в 1С</strong><br/>" +
+                                         $"Количество документов: {documentCount}<br/>" +
+                                         $"Номера транзакций: <code>{string.Join(", ", oneCHash)}</code>" +
+                                         $"</div>";
+                        }
+                    }
+                    else
+                    {
+                        oneCResult = "<div class='alert alert-info'><strong>ℹ️ Информация</strong><br/>Создание документов в 1С не требовалось</div>";
+                    }
                     
 
                     (changeCount, dateTime) = await _transaction.CreateShippedToSellerTransaction(ordersToTransaction,
                                                                                                   userName,
                                                                                                   createAt,
-                                                                                                  comment);
+                                                                                                  comment + string.Join(", ", oneCHash));
                     int cancelCount = ordersToUpdate.Where(o => o.AppStatus.Name == "Отменен").Count();
 
                     if (changeCount > 0)
@@ -2272,7 +2321,8 @@ namespace OzonOrdersWeb.Controllers
                                      $"<br/>Время<b>: {dateTime}</b>" +
                                      $"<br/>Пользователь<b>: {userName}</b>" +
                                      $"<br/>Комментарий: {comment}" +
-                                     $"<br/>Заказы: {string.Join(" ", orders.Select(o => o.ShipmentNumber))}";
+                                     $"<br/>Заказы: {string.Join(" ", orders.Select(o => o.ShipmentNumber))}"+
+                                     $"<br/>{oneCResult}";
                         await NotificationService.NotifyAllAsync(msg);
                         TempData["TransactionResult"] = msg;
 

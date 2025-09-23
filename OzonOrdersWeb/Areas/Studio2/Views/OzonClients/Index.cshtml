@@ -65,6 +65,16 @@
                                         <small>@(ViewBag.OzonClientCurrencyCodeSort == OzonClientSortState.CurrencyCodeAsc ? "Валюта↑" : "Валюта↓")</small>
                                     </a>
                                 </th>
+                                <th>
+                                    <a class="text-dark" asp-action="Index" asp-route-sortOrder="@ViewBag.OzonClientINNSort">
+                                        <small>@(ViewBag.OzonClientINNSort == OzonClientSortState.INNCodeAsc ? "ИНН↑" : "ИНН↓")</small>
+                                    </a>
+                                </th>
+                                <th>
+                                    <a class="text-dark" asp-action="Index" asp-route-sortOrder="@ViewBag.OzonClientWarehouseSort">
+                                        <small>@(ViewBag.OzonClientWarehouseSort == OzonClientSortState.WarehouseNameAsc ? "Склад↑" : "Склад↓")</small>
+                                    </a>
+                                </th>
                                 <th>Действие</th>
                             </tr>
                         </thead>
@@ -79,23 +89,31 @@
                                     </button>
                                 </td>
                                 <td>
-                                    <input asp-for="@Model.FilterModel.Name" id="nameFilter" name="Name" class="form-control form-control-sm" />
+                                    <input asp-for="@Model.FilterModel.Name" id="nameFilter" name="Name" class="form-control form-control-sm" placeholder="Название"/>
                                 </td>
                                 <td></td>
                                 <td></td>
                                 <td>
-                                    <input asp-for="@Model.FilterModel.CurrencyCode" id="currencyCodesFilterInput" value="@ViewData["DisplayCurrencyCode"]" class="form-control form-control-sm" autocomplete="off" />
+                                    <input asp-for="@Model.FilterModel.CurrencyCode" id="currencyCodesFilterInput" value="@ViewData["DisplayCurrencyCode"]" placeholder="Валюта" class="form-control form-control-sm" autocomplete="off" />
                                     <input type="hidden" id="currencyCodesFilterValue" name="CurrencyCode" value="@Model.FilterModel.CurrencyCode" />
 
                                     <ul id="currencyCodesDropdown" class="dropdown-menu" style="display: none;">
                                         <li><a href="#" data-value="NON">Все</a></li>
-                                                @foreach (var tuple in Model.CurrencyCodes)
-                                                {
-                                                    var transactionType = tuple.Item1;
-                                                    var displayName = tuple.Item2;
+                                        @foreach (var tuple in Model.CurrencyCodes)
+                                        {
+                                            var transactionType = tuple.Item1;
+                                            var displayName = tuple.Item2;
                                             <li><a href="#" data-value="@transactionType">@displayName</a></li>
-                                                }
+                                        }
                                     </ul>
+                                </td>
+                                <td>
+                                    <input asp-for="@Model.FilterModel.INNCode" id="innFilter" name="INNCode" 
+                                           class="form-control form-control-sm" placeholder="ИНН" />
+                                </td>
+                                <td>
+                                    <input asp-for="@Model.FilterModel.WarehouseName" id="warehouseFilter" name="WarehouseName" 
+                                           class="form-control form-control-sm" placeholder="Склад" />
                                 </td>
                                 <script>
                                     $(document).ready(function () {
@@ -162,11 +180,29 @@
                                                 <div class="underline-input">
                                                     <select name="CurrencyCode" class="form-control form-control-sm">
                                                         <option value="">@((item.CurrencyCode == CurrencyCode.NON) ? "Указать валюту" : item.CurrencyCode.ToString())</option>
-                                                            @foreach (var currency in Model.CurrencyCodes)
-                                                            {
+                                                        @foreach (var currency in Model.CurrencyCodes)
+                                                        {
                                                             <option value="@currency.Item1" selected="@(currency.Item1 == item.CurrencyCode)">@currency.Item1</option>
-                                                            }
+                                                        }
                                                     </select>
+                                                </div>
+                                                <button type="submit" class="btn btn-link" style="display: none;">Сохранить</button>
+                                            </form>
+                                        </td>
+                                        <td>
+                                            <form asp-area="Studio2" asp-controller="OzonClients" asp-action="Edit" method="post" oninput="toggleSaveButton(this)">
+                                                <input type="hidden" name="Id" value="@item.Id" />
+                                                <div class="underline-input">
+                                                    <input type="text" name="INNCode" class="form-control form-control-sm" value="@item.INNCode" placeholder="ИНН" />
+                                                </div>
+                                                <button type="submit" class="btn btn-link" style="display: none;">Сохранить</button>
+                                            </form>
+                                        </td>
+                                        <td>
+                                            <form asp-area="Studio2" asp-controller="OzonClients" asp-action="Edit" method="post" oninput="toggleSaveButton(this)">
+                                                <input type="hidden" name="Id" value="@item.Id" />
+                                                <div class="underline-input">
+                                                    <input type="text" name="WarehouseName" class="form-control form-control-sm" value="@item.WarehouseName" placeholder="Название склада" />
                                                 </div>
                                                 <button type="submit" class="btn btn-link" style="display: none;">Сохранить</button>
                                             </form>

@@ -2,9 +2,6 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace OzonDomains.Models
 {
@@ -24,6 +21,14 @@ namespace OzonDomains.Models
         [Display(Name = "Api Key")]
         public string? ApiKey { get; set; }
 
+        [MaxLength(20)]
+        [Display(Name = "ИНН")]
+        public string? INNCode { get; set; }
+
+        [MaxLength(100)]
+        [Display(Name = "Название склада")]
+        public string? WarehouseName { get; set; }
+
         [NotMapped]
         public string? DecryptClientId { get; set; }
 
@@ -34,6 +39,6 @@ namespace OzonDomains.Models
         public CurrencyCode CurrencyCode { get; set; }
 
         [Display(Name = "Тип клиента")]
-        public ClientType ClientType { get; set; }  
+        public ClientType ClientType { get; set; }
     }
 }

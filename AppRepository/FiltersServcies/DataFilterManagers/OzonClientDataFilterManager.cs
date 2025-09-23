@@ -15,6 +15,8 @@ namespace Servcies.FiltersServcies.DataFilterManagers
         public List<OzonClient> FilterByFilterData(List<OzonClient> ozonClients, OzonClientFilterModel filterData)
         {
             ozonClients = _filter.FilterByString(ozonClients, oc => oc.Name, filterData.Name).ToList();
+            ozonClients = _filter.FilterByString(ozonClients, oc => oc.INNCode, filterData.INNCode).ToList();
+            ozonClients = _filter.FilterByString(ozonClients, oc => oc.WarehouseName, filterData.WarehouseName).ToList();
             ozonClients = _filter.FilterByEnum(ozonClients, oc => oc.CurrencyCode, filterData.CurrencyCode).ToList();
 
             return ozonClients;
