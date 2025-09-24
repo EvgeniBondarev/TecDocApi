@@ -45,6 +45,11 @@ public class WarehouseMappingRepository : MainRepository, IRepository<WarehouseM
                 c.OzonWarehouseName == value.OzonWarehouseName &&
                 c.OzonClientId == value.OzonClientId); 
     }
+    
+    public async Task<WarehouseMapping> GetByOzonName(string ozonName)
+    {
+        return await _context.WarehouseMappings.FirstAsync(w => w.OzonWarehouseName == ozonName);
+    }
 
     // Новый метод для поиска по ID клиента
     public async Task<List<WarehouseMapping>> GetByClientIdAsync(int clientId)

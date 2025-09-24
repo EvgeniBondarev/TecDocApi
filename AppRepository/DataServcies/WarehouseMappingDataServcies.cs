@@ -36,6 +36,11 @@ public class WarehouseMappingDataServcies : IDataServcies
     {
         return await _repository.GetAsync(value);
     }
+    
+    public async Task<WarehouseMapping> GetByOzonName(string ozonName)
+    {
+        return await _repository.GetByOzonName(ozonName);
+    }
 
     public async Task<int> UpdateWarehouseMapping(WarehouseMapping value)
     {

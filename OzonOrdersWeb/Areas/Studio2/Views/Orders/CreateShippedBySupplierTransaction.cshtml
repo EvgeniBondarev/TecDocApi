@@ -4076,6 +4076,13 @@ else
             console.error('Ошибка при запросе регионов:', error);
         });
     });
+
+    document.getElementById("createOrderForm").addEventListener("keydown", function (event) {
+        if (event.key === "Enter") {
+            event.preventDefault(); // отменяет стандартное действие
+            return false;           // дополнительная защита
+        }
+    });
 </script>
 
 <script>

@@ -2,6 +2,7 @@
 using Newtonsoft.Json.Linq;
 using OzonDomains.Models;
 using Servcies.ApiServcies._1CApi.Models;
+using Servcies.DataServcies;
 
 namespace Servcies.ApiServcies._1CApi;
 
@@ -10,12 +11,16 @@ public class OneCDataManager : IApiDataManager<OneCDataManager>
     private OneCApiClient _apiClient;
     private OneCApiConfig _apiConfig;
     private readonly IMemoryCache _cache;
+    private readonly WarehouseMappingDataServcies _warehouseMappingDataServcies;
 
-    public OneCDataManager(OneCApiConfig config, IMemoryCache cache)
+    public OneCDataManager(OneCApiConfig config, 
+                            IMemoryCache cache, 
+                            WarehouseMappingDataServcies warehouseMappingDataServcies)
     {
         _apiConfig = config;
         _apiClient = new OneCApiClient(config.User, config.Password);
         _cache = cache;
+        _warehouseMappingDataServcies = warehouseMappingDataServcies;
     }
 
     public OneCDataManager SetClient(string user, string password)
@@ -33,7 +38,6 @@ public class OneCDataManager : IApiDataManager<OneCDataManager>
             throw new ArgumentException("Список заказов не может быть пустым.");
         }
         
-        // Проверяем, что все заказы имеют один и тот же склад отгрузки
         var distinctWarehouses = ordersToTransfer
             .Where(o => o.ShipmentWarehouse != null && !string.IsNullOrEmpty(o.ShipmentWarehouse.Name))
             .GroupBy(o => o.ShipmentWarehouse.Name)
@@ -50,9 +54,14 @@ public class OneCDataManager : IApiDataManager<OneCDataManager>
             throw new ArgumentException("Не указан склад отгрузки для заказов.");
         }
 
-        var warehouseName = distinctWarehouses[0].Key;
+        
+        var mappingWarehouse = await _warehouseMappingDataServcies.GetByOzonName(distinctWarehouses[0].Key);
+        if (mappingWarehouse == null)
+        {
+            throw new ArgumentException($"Связь складов не найдена для {distinctWarehouses[0].Key}.");
+        }
+        var warehouseName = mappingWarehouse.BitrixWarehouseName;
 
-        // Группируем заказы по клиентам
         var ordersByClient = ordersToTransfer
             .Where(o => o.OzonClient != null)
             .GroupBy(o => o.OzonClient)
@@ -65,26 +74,16 @@ public class OneCDataManager : IApiDataManager<OneCDataManager>
 
         var results = new List<MovementOfGoodsResponse>();
         var tz = TimeZoneInfo.FindSystemTimeZoneById("Russian Standard Time");
+        List<MovementOfGoodsRequest> modelsToTransfer = [];
 
         foreach (var (client, orders) in ordersByClient)
         {
-            // Пропускаем клиентов без обязательных данных
             if (string.IsNullOrEmpty(client.INNCode) || string.IsNullOrEmpty(client.WarehouseName))
             {
-                var errorResponse = new MovementOfGoodsResponse
-                {
-                    Success = false,
-                    Message = $"Клиент '{client.Name}' не имеет обязательных данных (ИНН или склад).",
-                    TransactionId = null
-                };
-                results.Add(errorResponse);
-                continue;
+                throw new ArgumentException($"Клиент '{client.Name}' не имеет обязательных данных (ИНН или склад).");
             }
-
-            try
-            {
-                // Берем все товары без группировки - каждый товар передается отдельно
-                var products = orders
+            
+            var products = orders
                     .Where(o => !string.IsNullOrEmpty(o.Article) && o.Quantity.HasValue && o.Quantity.Value > 0)
                     .Select(o => new MovementProduct
                     {
@@ -93,46 +92,41 @@ public class OneCDataManager : IApiDataManager<OneCDataManager>
                     })
                     .ToList();
 
-                if (!products.Any())
-                {
-                    var errorResponse = new MovementOfGoodsResponse
-                    {
-                        Success = false,
-                        Message = $"Для клиента '{client.Name}' не найдено товаров с валидными данными.",
-                        TransactionId = null
-                    };
-                    results.Add(errorResponse);
-                    continue;
-                }
+            if (!products.Any())
+            {
+                throw new ArgumentException($"Для клиента '{client.Name}' не найдено товаров с валидными данными.");
+            }
 
-                // Создаем модель запроса для клиентаwwe
-                var model = new MovementOfGoodsRequest()
-                {
+            var model = new MovementOfGoodsRequest()
+            {
                     Date = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz)
                             .ToString("dd.MM.yyyy HH:mm:ss", new System.Globalization.CultureInfo("ru-RU")),
                     INNorganization = client.INNCode,
                     SenderRecipient = client.WarehouseName,
                     WarehouseSender = warehouseName,
                     Comment = $"Перемещение для клиента {client.Name}. Заказы: {string.Join(", ", orders.Select(o => o.ShipmentNumber))}",
-                    Products = products // Передаем товары без группировки
-                };
-
-                // Отправляем запрос в 1С
-                var result = await CreateMovementOfGoodsAsync(model);
-                results.Add(result);
-            }
-            catch (Exception ex)
-            {
-                var errorResponse = new MovementOfGoodsResponse
-                {
-                    Success = false,
-                    Message = $"Ошибка при обработке заказов клиента '{client.Name}': {ex.Message}",
-                    TransactionId = null
-                };
-                results.Add(errorResponse);
-            }
+                    Products = products 
+            };
+            modelsToTransfer.Add(model);
         }
 
+        try
+        {
+            foreach (var model in modelsToTransfer )
+            {
+                results.Add(await CreateMovementOfGoodsAsync(model));
+            }
+        }
+        catch (Exception ex)
+        {
+            var errorResponse = new MovementOfGoodsResponse
+            {
+                Success = false,
+                Message = $"Ошибка при обработке заказов клиента {ex.Message}",
+                TransactionId = null
+            };
+            results.Add(errorResponse);
+        }
         return results;
     }
     public async Task<MovementOfGoodsResponse> CreateMovementOfGoodsAsync(MovementOfGoodsRequest request)

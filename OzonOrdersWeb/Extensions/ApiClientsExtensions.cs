@@ -11,6 +11,7 @@ using Servcies.ApiServcies.TradesoftApi;
 using Servcies.ApiServcies.TradesoftApi.Models;
 using Servcies.ApiServcies.YandexApi;
 using Servcies.ApiServcies.ZzapApi;
+using Servcies.DataServcies;
 
 namespace OzonOrdersWeb.Extensions;
 
@@ -128,7 +129,8 @@ public static class ApiClientsExtensions
         {
             var config = serviceProvider.GetRequiredService<OneCApiConfig>();
             var cache = serviceProvider.GetRequiredService<IMemoryCache>();
-            return new OneCDataManager(config, cache);
+            var warehouseMappingDataServcies = serviceProvider.GetRequiredService<WarehouseMappingDataServcies>();
+            return new OneCDataManager(config, cache, warehouseMappingDataServcies);
         });
         
         services.AddScoped<ProxyHttpClientService>();

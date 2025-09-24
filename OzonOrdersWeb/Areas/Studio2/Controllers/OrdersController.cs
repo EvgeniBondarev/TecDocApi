@@ -42,6 +42,7 @@ using OzonOrdersWeb.Areas.PartsInfo.Models;
 using OzonOrdersWeb.Areas.PartsInfo.Models.FullInfo;
 using PartsInfo.HttpUtils;
 using Servcies.ApiServcies._1CApi;
+using Servcies.ApiServcies._1CApi.Models;
 using Servcies.CacheServcies.Cache.CartCache;
 using Servcies.SignalRServcies;
 
@@ -2260,13 +2261,57 @@ namespace OzonOrdersWeb.Controllers
                     }
 
                     var appStatus = await _appStatusServcies.GetAppStatusAsync(new AppStatus() { Name = "Отгружен реализатору" });
-                    List<Order> ordersToTransaction = ordersToUpdate.Where(o => o.AppStatus.Id == appStatus.Id).ToList();
+                    var oldStatus = await _appStatusServcies.GetAppStatusAsync(new AppStatus() { Name = "Заказан поставщику" });
+                    var backStatus = await _appStatusServcies.GetAppStatusAsync(new AppStatus() { Name = "Утерян реализатором" });
+                    if (backStatus == null)
+                    {
+                        AppStatus newStatus = new AppStatus()
+                        {
+                            Name = "Утерян реализатором"
+                        };
+                        _context.AppStatuses.Add(newStatus);
+                        await _context.SaveChangesAsync();
+                        backStatus = newStatus;
+                    }
+                    List<Order> ordersToTransaction = ordersToUpdate.Where(o => o.AppStatus.Id == appStatus.Id && o.Quantity > 0).ToList();
+                    List<Order> ordersToBack = ordersToUpdate.Where(o => o.Quantity <= 0).ToList();
+                    foreach (var order in ordersToBack)
+                    {
+                        order.AppStatus = backStatus;
+                    }
+                    int ordersToBackResult = await _orderServcies.UpdateOrders(ordersToBack);
+                    
 
                     string oneCResult = "";
                     IEnumerable<string> oneCHash = [];
+                    List<MovementOfGoodsResponse> transferResult = new List<MovementOfGoodsResponse>();
                     if (processIn1C)
                     {
-                        var transferResult = await _oneCDataManager.TransferStock(ordersToTransaction);
+                        try
+                        {
+                            transferResult = await _oneCDataManager.TransferStock(ordersToTransaction);
+                        }
+                        catch (Exception e)
+                        {
+                            string msg = $"<div class='alert alert-danger'>" +
+                                         $"<strong>⚠️ Ошибка обработки в 1С</strong><br/>" +
+                                         $"{e.Message}</div>";
+                            foreach (var item in ordersToTransaction)
+                            {
+                                item.AppStatus = oldStatus;
+                            }
+                            int ordersToOldResult = await _orderServcies.UpdateOrders(ordersToTransaction);
+                            if (ordersToOldResult > 0)
+                            {
+                                msg += $"<div class='alert alert-info'>" +
+                                       $"<strong>📊 Обновление статусов</strong><br/>" +
+                                       $"Статус 'Заказан поставщику' установлен для <strong>{ordersToOldResult}</strong> заказов" +
+                                       $"</div>";
+                            }
+                            TempData["TransactionResult"] = msg;
+                            return Json(new { redirectTo = Url.Action(nameof(IndexV2), new { sortOrder = GetSortStateCookie(), page = page }) });
+                        }
+                        
                         var successfulTransfers = transferResult.Where(tr => tr.Success).ToList();
                         var failedTransfers = transferResult.Where(tr => !tr.Success).ToList();
 
@@ -2286,6 +2331,20 @@ namespace OzonOrdersWeb.Controllers
                                          (errorCount > 3 ? "..." : "") + "</small>" +
                                          "</div>";
 
+                            
+                            
+                            foreach (var item in ordersToTransaction)
+                            {
+                                item.AppStatus = oldStatus;
+                            }
+                            int ordersToOldResult = await _orderServcies.UpdateOrders(ordersToTransaction);
+                            if (ordersToOldResult > 0)
+                            {
+                                msg += $"<div class='alert alert-info'>" +
+                                              $"<strong>📊 Обновление статусов</strong><br/>" +
+                                              $"Статус 'Заказан поставщику' установлен для <strong>{ordersToOldResult}</strong> заказов" +
+                                              $"</div>";
+                            }
                             TempData["TransactionResult"] = msg;
                             return Json(new { redirectTo = Url.Action(nameof(IndexV2), new { sortOrder = GetSortStateCookie(), page = page }) });
                         }
@@ -2304,6 +2363,14 @@ namespace OzonOrdersWeb.Controllers
                     else
                     {
                         oneCResult = "<div class='alert alert-info'><strong>ℹ️ Информация</strong><br/>Создание документов в 1С не требовалось</div>";
+                    }
+
+                    if (ordersToBackResult > 0)
+                    {
+                        oneCResult += $"<div class='alert alert-info'>" +
+                                      $"<strong>📊 Обновление статусов</strong><br/>" +
+                                      $"Статус 'Утерян реализатором' установлен для <strong>{ordersToBackResult}</strong> заказов" +
+                                      $"</div>";
                     }
                     
 
