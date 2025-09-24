@@ -1,5 +1,7 @@
 ﻿using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
+using MySqlConnector;
+using OzonDomains.Models;
 using OzonDomains.Models.BitrixModels;
 using OzonOrdersWeb.Areas.Studio2.ViewModels.Bitrix;
 using OzonRepositories.Context;
@@ -179,6 +181,80 @@ public class BitrixStockRepository
             .OrderBy(t => t) 
             .ToList();
     }
+    
+    public async Task<List<Order>> SetPricesForOrdersAsyncFromBitrix(List<Order> orders)
+    {
+        if (orders == null || !orders.Any())
+            return orders ?? new List<Order>();
+
+        // Берем артикулы из ProductKey (до "=")
+        var articles = orders
+            .Where(o => !string.IsNullOrWhiteSpace(o.ProductKey))
+            .Select(o => o.ProductKey!.Split('=')[0].Trim())
+            .Where(a => !string.IsNullOrWhiteSpace(a))
+            .Distinct()
+            .ToList();
+
+        if (!articles.Any())
+            return orders;
+
+        var sql = @"
+            SELECT 
+                p.VALUE AS Article,
+                price.PRICE AS Price
+            FROM b_iblock_element e
+            LEFT JOIN b_iblock_element_property p 
+                ON e.ID = p.IBLOCK_ELEMENT_ID AND p.DESCRIPTION = 'Артикул'
+            LEFT JOIN b_catalog_price price
+                ON price.PRODUCT_ID = e.ID AND price.CATALOG_GROUP_ID = 3
+            WHERE e.IBLOCK_ID = 93
+              AND p.VALUE IN ({0})";
+
+        // Подготавливаем параметры для IN
+        var parameters = articles.Select((a, i) => new MySqlParameter($"@p{i}", a)).ToArray();
+        var inClause = string.Join(",", parameters.Select(p => p.ParameterName));
+        var formattedSql = string.Format(sql, inClause);
+
+        // Выполняем запрос
+        var results = await _context.Database
+            .SqlQueryRaw<ArticlePriceResult>(formattedSql, parameters)
+            .ToListAsync();
+
+        // Словарь "Артикул -> Цена"
+        var priceDictionary = results
+            .Where(r => !string.IsNullOrEmpty(r.Article))
+            .GroupBy(r => r.Article)
+            .ToDictionary(
+                g => g.Key,
+                g => g.First().Price.HasValue 
+                        ? (decimal?)Math.Round((decimal)g.First().Price.Value, 2) 
+                        : null
+            );
+
+        // Проставляем цены в заказы
+        foreach (var order in orders)
+        {
+            if (string.IsNullOrWhiteSpace(order.ProductKey))
+                continue;
+
+            var article = order.ProductKey.Split('=')[0].Trim();
+
+            if (priceDictionary.TryGetValue(article, out var price))
+            {
+                order.PurchasePrice = price;
+            }
+        }
+
+        return orders;
+    }
+    
+    // DTO класс для результата запроса
+    public class ArticlePriceResult
+    {
+        public string Article { get; set; }
+        public double? Price { get; set; }
+    }
+
 
     
     /// <summary>

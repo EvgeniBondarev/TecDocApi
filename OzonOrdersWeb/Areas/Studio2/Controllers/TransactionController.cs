@@ -147,8 +147,10 @@ namespace OzonOrdersWeb.Controllers
 
                 OrderFilterModel = orderFilterData,
                 UserNames = _userManager.Users.Select(u => u.UserName).ToList(),
-                TransactionTypes = [(TransactionType.OrderedToSupplier, "Заказ поставщику"),
-                                    (TransactionType.ShippedBySupplier, "Отгружен постащиком")],
+                TransactionTypes = [(TransactionType.OrderedToSupplier, "Заказ поставщику"), 
+                                    (TransactionType.ShippedBySupplier, "Отгружен поставщиком"),
+                                    (TransactionType.ShippedToSeller, "Отгружен реализатору"), 
+                                    (TransactionType.OrderedToSeller, "Заказан реализатору")],
                 User = await _userCacheService.GetCachedUserAsync(User),
             };
 
@@ -237,7 +239,9 @@ namespace OzonOrdersWeb.Controllers
 
                 UserNames = _userManager.Users.Select(u => u.UserName).ToList(),
                 TransactionTypes = [(TransactionType.OrderedToSupplier, "Заказ поставщику"), 
-                                    (TransactionType.ShippedBySupplier, "Отгружен постащиком")],
+                                    (TransactionType.ShippedBySupplier, "Отгружен поставщиком"),
+                                    (TransactionType.ShippedToSeller, "Отгружен реализатору"), 
+                                    (TransactionType.OrderedToSeller, "Заказан реализатору")],
                 User = await _userCacheService.GetCachedUserAsync(User),
             };
 

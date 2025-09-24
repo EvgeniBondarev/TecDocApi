@@ -20,5 +20,8 @@ namespace OzonDomains
         
         [Display(Name = "Отгружен реализатору")]
         ShippedToSeller = 3,
+        
+        [Display(Name = "Заказан реализатору")]
+        OrderedToSeller = 4,
     }
 }

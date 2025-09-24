@@ -40,6 +40,7 @@ using OzonDomains.TecDocModels.Substitute;
 using OzonOrdersWeb.Areas.PartsInfo.ModelBuilders;
 using OzonOrdersWeb.Areas.PartsInfo.Models;
 using OzonOrdersWeb.Areas.PartsInfo.Models.FullInfo;
+using OzonRepositories.Data.Bitrix;
 using PartsInfo.HttpUtils;
 using Servcies.ApiServcies._1CApi;
 using Servcies.ApiServcies._1CApi.Models;
@@ -93,7 +94,7 @@ namespace OzonOrdersWeb.Controllers
         private readonly DeliveryDataServcies _deliveryDataServcies;
         private readonly WarehouseMappingDataServcies _warehouseMappingDataServcies;
         private readonly OneCDataManager _oneCDataManager;
-        
+        private readonly BitrixStockRepository _bitrixStockRepository;
         public OrdersController(OzonOrderContext context,
                                 OrdersDataServcies orderRepository,
                                 AppStatusDataServcies appStatusDataServcies,
@@ -133,7 +134,8 @@ namespace OzonOrdersWeb.Controllers
                                 ProductInformationModelBuilder productInformationModelBuilder,
                                 DeliveryDataServcies deliveryDataServcies,
                                 WarehouseMappingDataServcies warehouseMappingDataServcies,
-                                OneCDataManager oneCDataManager)
+                                OneCDataManager oneCDataManager,
+                                BitrixStockRepository bitrixStockRepository)
         {
             _context = context;
             _orderServcies = orderRepository;
@@ -176,6 +178,7 @@ namespace OzonOrdersWeb.Controllers
             _warehouseDataServcies = warehouseDataServcies;
             _warehouseMappingDataServcies = warehouseMappingDataServcies;
             _oneCDataManager = oneCDataManager;
+            _bitrixStockRepository = bitrixStockRepository;
         }
 
         public async Task<IActionResult> Index(OrderSortState sortOrder = OrderSortState.StandardState, int page = 1)
@@ -2420,6 +2423,154 @@ namespace OzonOrdersWeb.Controllers
             }
         }
         
+        public async Task<IActionResult> CreateOrderedToSellerTransaction(string ids, int page)
+        {
+            var filteredStatuses = _context.AppStatuses.Where(status => status.Name == "Отменен").ToList();
+            ViewBag.AppStatuses = new SelectList(filteredStatuses, "Id", "Name");
+            ViewBag.StatusColors = filteredStatuses.ToDictionary(s => s.Id.ToString(), s => s.GetStatusColor());
+
+            int[] idArray = ids.Split(',').Select(int.Parse).ToArray();
+            List<Order> ordersToTransaction = new List<Order>();
+
+
+            var appStatus = await _appStatusServcies.GetAppStatusAsync(new AppStatus() { Name = "Заказан реализатору" });
+
+            if (appStatus == null)
+            {
+                AppStatus newStatus = new AppStatus()
+                {
+                    Name = "Заказан реализатору"
+                };
+                _context.AppStatuses.Add(newStatus);
+                await _context.SaveChangesAsync();
+            }
+
+
+            foreach (var orderId in idArray)
+            {
+                var concretOrder = await _orderServcies.GetOrder(orderId);
+                bool isTransaction = (concretOrder.Status != "Отменен покупателем");
+                bool isTransaction2 = (concretOrder.AppStatus?.Name == "Не указан" && concretOrder.Status == "Отменён");
+                bool isTransaction3 = (concretOrder.AppStatus?.Name == "Отменен" && concretOrder.Status == "Отменён");
+
+                if (isTransaction && !isTransaction2 && !isTransaction3)
+                {
+                    concretOrder.AppStatus = appStatus;
+                    ordersToTransaction.Add(concretOrder);
+                }
+
+            }
+            
+            ordersToTransaction = await _bitrixStockRepository.SetPricesForOrdersAsyncFromBitrix(ordersToTransaction);
+
+            var pageViewModel = new MultiplayEditOrderViewModel()
+            {
+                RedirectPage = page,
+                Orders = ordersToTransaction.OrderBy(ot => ot.ShipmentNumber).ToList(),
+                User = await _userCacheService.GetCachedUserAsync(User),
+                Suppliers = (await _supplierDataServcies.GetSuppliers()).OrderBy(s => s.Name).ToList(),
+                RateEUR = await _currencyRateFetcher.GetEURRateAsync(),
+                RateUSD = await _currencyRateFetcher.GetUSDRateAsync(),
+                RateBYN = await _currencyRateFetcher.GetBYNRateAsync(),
+                UniqueArticles = await _orderServcies.GetUniqueArticles(),
+                UniqueDeliveryCitys = await _orderServcies.GetUniqueDeliveryCities(),
+                UniqueNumbers = await _orderServcies.GetUniqueShipmentNumbers(),
+                AppStatus =  await _appStatusServcies.GetAppStatusAsync(new AppStatus() { Name = "Заказан реализатору" })
+            };
+
+            if (pageViewModel.User.UserAccessId != null)
+            {
+                pageViewModel.User.UserAccess = _context.UserAccess.Find(pageViewModel.User.UserAccessId);
+            }
+            RunBackgroundCacheTask(pageViewModel.Orders);
+            return View(pageViewModel);
+        }
+        
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateOrderedToSellerTransaction(
+            List<Order> orders,
+            string userName,
+            string comment,
+            int page,
+            string deletedOrders)
+        {
+            
+            if (orders == null)
+            {
+                TempData["ErorrResult"] = $"Не удалось провести выбранные заказы.<br>Было передано слишком большое количество записей.";
+                return RedirectToAction("Index");
+            }
+            else
+            {
+                if (deletedOrders != null)
+                {
+                    var deletedOrderIds = deletedOrders.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(int.Parse).ToList();
+                    orders = orders.Where(o => !deletedOrderIds.Contains(o.Id)).ToList();
+                }
+            }
+
+            try
+            {
+                if (orders.Count != 0)
+                {
+                    DateTime createAt = DateTime.Now;
+                    var changeCount = 0;
+                    var dateTime = "";
+                    List<Order> ordersToUpdate = new List<Order>();
+                    List<string> ordersNotFoundInOzone = [];
+                    foreach (var order in orders)
+                    {
+                        ordersToUpdate.Add(await _orderServcies.TransactOrder(order));
+                    }
+
+                    var appStatus = await _appStatusServcies.GetAppStatusAsync(new AppStatus() { Name = "Заказан реализатору" });
+                    List<Order> ordersToTransaction = ordersToUpdate.Where(o => o.AppStatus.Id == appStatus.Id).ToList();
+
+                    (changeCount, dateTime) = await _transaction.CreateOrderedToSellerTransaction(ordersToTransaction,
+                                                                                                  userName,
+                                                                                                  createAt,
+                                                                                                  comment);
+                    int cancelCount = ordersToUpdate.Where(o => o.AppStatus.Name == "Отменен").Count();
+
+                    if (changeCount > 0)
+                    {
+                        await _cacheUpdater.Update(_cache);
+                        string msg = $"Заказы добавлены в журнал<br/>" +
+                                     $"<b>{changeCount}</b> заказам изменен статус на '<b>Заказан реализатору</b>', <b>{cancelCount}</b> заказов были отменены." +
+                                     $"<br/>Время<b>: {dateTime}</b>" +
+                                     $"<br/>Пользователь<b>: {userName}</b>" +
+                                     $"<br/>Комментарий: {comment}" +
+                                     $"<br/>Заказы: {string.Join(" ", orders.Select(o => o.ShipmentNumber))}";
+                        await NotificationService.NotifyAllAsync(msg);
+                        TempData["TransactionResult"] = msg;
+
+                    }
+                    await _transactionCache.Update();
+
+                    if (ordersNotFoundInOzone.Count > 0)
+                    {
+                        TempData["OrdersNotFoundInOzone"] = $"Заказы не найдены в системе Ozon - {ordersNotFoundInOzone.Aggregate((x, y) => x + ", " + y)}";
+                    }
+                }
+                ClearSelectedIdsSession();
+                foreach (var order in orders)
+                {
+                    var cookieKey = $"PurchasePrice_{order.Id}";
+                    if (Request.Cookies.ContainsKey(cookieKey))
+                    {
+                        Response.Cookies.Delete(cookieKey);
+                    }
+                }
+                return Json(new { redirectTo = Url.Action(nameof(IndexV2), new { sortOrder = GetSortStateCookie(), page = page }) });
+            }
+            catch (Exception ex)
+            {
+                TempData["ErorrResult"] = $"Не удалось провести выбранные заказы ({ex.Message})";
+                return Json(new { redirectTo = Url.Action(nameof(IndexV2), new { sortOrder = GetSortStateCookie(), page = page }) });
+
+            }
+        }
         public async Task<IActionResult> OrderDetailedInformation(int orderId)
         {
             Order order = await _orderServcies.GetOrder(orderId);

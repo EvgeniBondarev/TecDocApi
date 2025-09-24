@@ -237,10 +237,9 @@ Layout = "~/Views/Shared/_Layout.cshtml";
         border: 3px solid rgba(40, 167, 69, 0.5); /* Зеленый цвет для успешного статуса */
     }
 
-    .highlight-info {
-        border: 3px solid rgba(23, 162, 184, 0.5); /* Голубой цвет для информационного статуса */
-    }
-    
+
+
+
     .show-card {
         display: block !important;
     }
@@ -647,7 +646,7 @@ Layout = "~/Views/Shared/_Layout.cshtml";
     </div>
 </div>
 
-<form asp-area="Studio2" asp-controller="Orders" asp-action="CreateShippedBySupplierTransaction" id="createOrderForm">
+<form asp-area="Studio2" asp-controller="Orders" asp-action="CreateOrderedToSellerTransaction" id="createOrderForm">
     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
     <input type="hidden" asp-for="RedirectPage" />
 
@@ -993,6 +992,7 @@ Layout = "~/Views/Shared/_Layout.cshtml";
             {
                 rowClass = "table-secondary";
             }
+            
         <tr id="orderRow_@Model.Orders[i].Id" class=@rowClass>
             <div class="form-group" style="display: none">
                 <label asp-for="Orders[i].Id" class="control-label"></label><span style="margin-left: 10px; color: gray;">/ </span>
@@ -1395,11 +1395,11 @@ Layout = "~/Views/Shared/_Layout.cshtml";
                             const selectedText = select.options[select.selectedIndex].text.trim();
 
                             // Снимаем все возможные классы
-                            select.classList.remove('highlight-null', 'highlight-info');
+                            select.classList.remove('highlight-null', 'highlight-success');
 
                             // Добавляем соответствующий класс на основе выбранного статуса
-                            if (selectedText === "Отгружен поставщиком") {
-                                select.classList.add('highlight-info');
+                            if (selectedText === "Заказан поставщику") {
+                                select.classList.add('highlight-success');
                             } else if (selectedText === "Отменен") {
                                 select.classList.add('highlight-null');
                             }
@@ -1574,7 +1574,6 @@ Layout = "~/Views/Shared/_Layout.cshtml";
                                       : string.Format("{0:N0}", Model.Orders[i].PurchasePrice).Replace(",", "")
                                   )"
                            style="width: 70px; max-width: 70px;" />
-
                     <div class="form-group" style="font-size: 13px;">
                         <span class="purchase-price-rub" id="PurchasePriceRub_@Model.Orders[i].Id" style="text-align: left; display: none;"></span>
                     </div>
@@ -1587,7 +1586,8 @@ Layout = "~/Views/Shared/_Layout.cshtml";
 
                         priceFields.forEach(field => {
                             field.addEventListener('input', function () {
-                                if (this.value.trim() === "") {            this.classList.add('highlight-error');
+                                if (this.value.trim() === "") {
+                                    this.classList.add('highlight-error');
                                 } else {
                                     this.classList.remove('highlight-error');
                                 }
@@ -1617,7 +1617,6 @@ Layout = "~/Views/Shared/_Layout.cshtml";
                         });
                     });
                 </script>
-                        
 
                 <div style="margin-top: 10px;"></div>
 
@@ -1821,15 +1820,7 @@ Layout = "~/Views/Shared/_Layout.cshtml";
 }
 else
 {
-    <p>
-        Нет выбранных заказов для проведения документа.<br/>
-        Причина: <b>@ViewData["ErrorReason"]</b>
-    </p>
-    <ul>
-        <li>Статус выбранного заказа должен быть <b>'Заказан поставщику'</b>.</li>
-        <li>Все выбранные заказы должны принадлежать <b>одному поставщику</b>.</li>
-        <li>Все выбранные заказы должны принадлежать <b>одному складу</b>.</li>
-    </ul>
+<p>Нет выбранных заказов для проведения документа (Статус выбранного заказа должен быть отличным от <b>'Заказан поставщику'</b>)</p>
 }
 
 
@@ -2243,7 +2234,7 @@ else
                 formData += '&userName=' + '@User.Identity.Name' + '&comment=' + $('#commentField').val() + '&page=' + '@Model.RedirectPage';
 
                 $.ajax({
-                    url: '@Url.Action("CreateShippedBySupplierTransaction", "Orders")',
+                    url: '@Url.Action("CreateOrderedToSellerTransaction", "Orders")',
                     type: 'POST',
                     data: formData,
                     success: function (result) {
@@ -4080,7 +4071,6 @@ else
             console.error('Ошибка при запросе регионов:', error);
         });
     });
-
     document.getElementById("createOrderForm").addEventListener("keydown", function (event) {
         if (event.key === "Enter") {
             event.preventDefault(); // отменяет стандартное действие

@@ -988,6 +988,11 @@ Layout = "~/Views/Shared/_Layout.cshtml";
                 rowClass = "table-warning";
             }
             
+            if (Model.Orders[i].AppStatus.Name  == "Заказан реализатору")
+            {
+                rowClass = "table-secondary";
+            }
+            
         <tr id="orderRow_@Model.Orders[i].Id" class=@rowClass>
             <div class="form-group" style="display: none">
                 <label asp-for="Orders[i].Id" class="control-label"></label><span style="margin-left: 10px; color: gray;">/ </span>

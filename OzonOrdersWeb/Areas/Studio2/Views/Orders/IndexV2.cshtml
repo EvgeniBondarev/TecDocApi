@@ -293,20 +293,25 @@
 
                     var listItem2 = document.createElement('li');
                     listItem2.className = 'dropdown-item';
-                    listItem2.innerHTML = '<a href="#" onclick="createShippedBySupplierTransaction()" class="btn btn-link link-info">Отгружен поставщиком</a>';
+                    listItem2.innerHTML = '<a href="#" onclick="createOrderedToSellerTransaction()" class="btn btn-link link-secondary">Заказан реализатору</a>';
 
                     var listItem3 = document.createElement('li');
                     listItem3.className = 'dropdown-item';
-                    listItem3.innerHTML = '<a href="#" onclick="createShippedToSellerTransaction()" class="btn btn-link link-warning">Отгружен реализатором</a>';
+                    listItem3.innerHTML = '<a href="#" onclick="createShippedBySupplierTransaction()" class="btn btn-link link-info">Отгружен поставщиком</a>';
 
                     var listItem4 = document.createElement('li');
                     listItem4.className = 'dropdown-item';
-                    listItem4.innerHTML = '<a href="#" onclick="cancellationOrders()" class="btn btn-link link-danger">Отменить заказы</a><br/>';
+                    listItem4.innerHTML = '<a href="#" onclick="createShippedToSellerTransaction()" class="btn btn-link link-warning">Отгружен реализатором</a>';
+
+                    var listItem5 = document.createElement('li');
+                    listItem5.className = 'dropdown-item';
+                    listItem5.innerHTML = '<a href="#" onclick="cancellationOrders()" class="btn btn-link link-danger">Отменить заказы</a><br/>';
                     
                     dropdownMenu.appendChild(listItem1);
                     dropdownMenu.appendChild(listItem2);
                     dropdownMenu.appendChild(listItem3);
                     dropdownMenu.appendChild(listItem4);
+                    dropdownMenu.appendChild(listItem5);
                 } else {
                     var listItem1 = document.createElement('li');
                     listItem1.className = 'dropdown-item';
@@ -341,6 +346,13 @@
     function createShippedToSellerTransaction() {
         getSelectedIdsFromSession(function (selectedIds) {
             var url = '/Studio2/Orders/CreateShippedToSellerTransaction?ids=' + selectedIds.join(',') + '&page=' + @Model.PageNumber;
+            window.location.href = url;
+        });
+    }
+
+    function createOrderedToSellerTransaction() {
+        getSelectedIdsFromSession(function (selectedIds) {
+            var url = '/Studio2/Orders/CreateOrderedToSellerTransaction?ids=' + selectedIds.join(',') + '&page=' + @Model.PageNumber;
             window.location.href = url;
         });
     }
@@ -962,6 +974,11 @@
             if (item.AppStatus.Name  == "Отгружен реализатору")
             {
                 rowClass = "table-warning";
+            }
+            
+            if (item.AppStatus.Name  == "Заказан реализатору")
+            {
+                rowClass = "table-secondary";
             }
             
             <tr class=@rowClass oncontextmenu="showInfoAtCursor('@item.Id', '@item.CartItemId', event); return false;">
