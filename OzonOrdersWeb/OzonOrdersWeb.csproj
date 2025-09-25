@@ -151,9 +151,6 @@
     <AdditionalFiles Include="Areas\Studio2\Views\MatchFileData\Index.cshtml" />
     <AdditionalFiles Include="Areas\Studio2\Views\MatchFileData\MatchResults.cshtml" />
     <AdditionalFiles Include="Areas\Studio2\Views\Orders\CheckFile.cshtml" />
-    <AdditionalFiles Include="Areas\Studio2\Views\Orders\Create.cshtml" />
-    <AdditionalFiles Include="Areas\Studio2\Views\Orders\CreateOrderToSupplierTransaction.cshtml" />
-    <AdditionalFiles Include="Areas\Studio2\Views\Orders\CreateOrderToSupplierTransactionV2.cshtml" />
     <AdditionalFiles Include="Areas\Studio2\Views\Orders\Delete.cshtml" />
     <AdditionalFiles Include="Areas\Studio2\Views\Orders\DeleteOrderPage.cshtml" />
     <AdditionalFiles Include="Areas\Studio2\Views\Orders\Details.cshtml" />

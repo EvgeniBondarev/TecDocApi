@@ -2234,7 +2234,7 @@ else
                 formData += '&userName=' + '@User.Identity.Name' + '&comment=' + $('#commentField').val() + '&page=' + '@Model.RedirectPage';
 
                 $.ajax({
-                    url: '@Url.Action("CreateOrderToSupplierTransactionV2", "Orders")',
+                    url: '@Url.Action("CreateOrderToSupplierTransactionV2", "OrderToSupplierTransaction")',
                     type: 'POST',
                     data: formData,
                     success: function (result) {

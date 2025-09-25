@@ -36,6 +36,10 @@ namespace OzonRepositories.Data
         {
             return await _context.Suppliers.SingleOrDefaultAsync(a => a.Name == value.Name);
         }
+        public async Task<Supplier> GetByNameAsync(string name)
+        {
+            return await _context.Suppliers.SingleOrDefaultAsync(a => a.Name == name);
+        }
         public async Task<Supplier> GetBySiteAsync(Supplier value)
         {
             return await _context.Suppliers.SingleOrDefaultAsync(a => a.Site == value.Site);

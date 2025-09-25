@@ -2243,7 +2243,7 @@ else
                 formData += '&userName=' + '@User.Identity.Name' + '&comment=' + $('#commentField').val() + '&page=' + '@Model.RedirectPage';
 
                 $.ajax({
-                    url: '@Url.Action("CreateShippedBySupplierTransaction", "Orders")',
+                    url: '@Url.Action("CreateShippedBySupplierTransaction", "ShippedBySupplierTransaction")',
                     type: 'POST',
                     data: formData,
                     success: function (result) {

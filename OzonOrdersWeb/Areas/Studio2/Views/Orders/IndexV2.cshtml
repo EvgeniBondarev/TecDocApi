@@ -331,28 +331,28 @@
 
     function createOrderToSupplierTransaction() {
         getSelectedIdsFromSession(function (selectedIds) {
-            var url = '/Studio2/Orders/CreateOrderToSupplierTransactionV2?ids=' + selectedIds.join(',') + '&page=' + @Model.PageNumber;
+            var url = '/Studio2/OrderToSupplierTransaction/CreateOrderToSupplierTransactionV2?ids=' + selectedIds.join(',') + '&page=' + @Model.PageNumber;
             window.location.href = url;
         });
     }
 
     function createShippedBySupplierTransaction() {
         getSelectedIdsFromSession(function (selectedIds) {
-            var url = '/Studio2/Orders/CreateShippedBySupplierTransaction?ids=' + selectedIds.join(',') + '&page=' + @Model.PageNumber;
+            var url = '/Studio2/ShippedBySupplierTransaction/CreateShippedBySupplierTransaction?ids=' + selectedIds.join(',') + '&page=' + @Model.PageNumber;
             window.location.href = url;
         });
     }
 
     function createShippedToSellerTransaction() {
         getSelectedIdsFromSession(function (selectedIds) {
-            var url = '/Studio2/Orders/CreateShippedToSellerTransaction?ids=' + selectedIds.join(',') + '&page=' + @Model.PageNumber;
+            var url = '/Studio2/ShippedToSellerTransaction/CreateShippedToSellerTransaction?ids=' + selectedIds.join(',') + '&page=' + @Model.PageNumber;
             window.location.href = url;
         });
     }
 
     function createOrderedToSellerTransaction() {
         getSelectedIdsFromSession(function (selectedIds) {
-            var url = '/Studio2/Orders/CreateOrderedToSellerTransaction?ids=' + selectedIds.join(',') + '&page=' + @Model.PageNumber;
+            var url = '/Studio2/OrderedToSellerTransaction/CreateOrderedToSellerTransaction?ids=' + selectedIds.join(',') + '&page=' + @Model.PageNumber;
             window.location.href = url;
         });
     }

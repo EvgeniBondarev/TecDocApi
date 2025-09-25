@@ -1,6 +1,7 @@
 ﻿using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using MySqlConnector;
+using Newtonsoft.Json;
 using OzonDomains.Models;
 using OzonDomains.Models.BitrixModels;
 using OzonOrdersWeb.Areas.Studio2.ViewModels.Bitrix;
@@ -11,10 +12,13 @@ namespace OzonRepositories.Data.Bitrix;
 public class BitrixStockRepository
 {
     private readonly BitrixContext _context;
+    private readonly SupplierRepository _supplierRepository;
 
-    public BitrixStockRepository(BitrixContext context)
+    public BitrixStockRepository(BitrixContext context,
+                                 SupplierRepository supplierRepository)
     {
         _context = context;
+        _supplierRepository = supplierRepository;
     }
     
     public async Task<PagedResult<RemainingStockBitrix>> GetRemainingStockAsync(RemainingStockFilter filter)
@@ -182,11 +186,8 @@ public class BitrixStockRepository
             .ToList();
     }
     
-    public async Task<List<Order>> SetPricesForOrdersAsyncFromBitrix(List<Order> orders)
+    public async Task SetPricesForOrdersAsyncFromBitrix(List<Order> orders)
     {
-        if (orders == null || !orders.Any())
-            return orders ?? new List<Order>();
-
         // Берем артикулы из ProductKey (до "=")
         var articles = orders
             .Where(o => !string.IsNullOrWhiteSpace(o.ProductKey))
@@ -194,10 +195,7 @@ public class BitrixStockRepository
             .Where(a => !string.IsNullOrWhiteSpace(a))
             .Distinct()
             .ToList();
-
-        if (!articles.Any())
-            return orders;
-
+        
         var sql = @"
             SELECT 
                 p.VALUE AS Article,
@@ -244,19 +242,109 @@ public class BitrixStockRepository
                 order.PurchasePrice = price;
             }
         }
-
-        return orders;
     }
     
-    // DTO класс для результата запроса
-    public class ArticlePriceResult
+    public async Task<Dictionary<int, List<StockInfo>>> SetStocksForOrdersAsyncFromBitrix(List<Order> orders)
     {
-        public string Article { get; set; }
-        public double? Price { get; set; }
+        // Берем артикулы из ProductKey (до "=")
+        var articles = orders
+            .Where(o => !string.IsNullOrWhiteSpace(o.ProductKey))
+            .Select(o => o.ProductKey!.Split('=')[0].Trim())
+            .Where(a => !string.IsNullOrWhiteSpace(a))
+            .Distinct()
+            .ToList();
+
+        var sql = @"
+            SELECT 
+                CAST(e.ID AS SIGNED) AS ProductId,
+                p.VALUE AS Article,
+                e.PREVIEW_TEXT AS PreviewText,
+                e.ACTIVE AS Active,
+                e.TIMESTAMP_X AS TimestampX,
+                c.QUANTITY AS Quantity,
+                CAST(c.AVAILABLE AS CHAR) AS Available,
+                supplier_enum.VALUE AS Supplier,
+                price.PRICE AS Price,
+                sp.STORE_ID AS StoreId,
+                s.TITLE AS StoreTitle,
+                sp.AMOUNT AS Amount
+            FROM b_iblock_element e
+            LEFT JOIN b_iblock_element_property p 
+                ON e.ID = p.IBLOCK_ELEMENT_ID AND p.DESCRIPTION = 'Артикул'
+            LEFT JOIN b_catalog_product c 
+                ON c.ID = e.ID
+            LEFT JOIN b_iblock_element_property prop_supplier 
+                ON e.ID = prop_supplier.IBLOCK_ELEMENT_ID AND prop_supplier.IBLOCK_PROPERTY_ID = 2458
+            LEFT JOIN b_iblock_property_enum supplier_enum 
+                ON prop_supplier.VALUE = supplier_enum.ID AND supplier_enum.PROPERTY_ID = 2458
+            LEFT JOIN b_catalog_price price
+                ON price.PRODUCT_ID = e.ID AND price.CATALOG_GROUP_ID = 3
+            LEFT JOIN b_catalog_store_product sp
+                ON sp.PRODUCT_ID = e.ID
+            LEFT JOIN b_catalog_store s
+                ON sp.STORE_ID = s.ID
+            WHERE e.IBLOCK_ID = 93
+              AND p.VALUE IN ({0})
+              AND sp.AMOUNT > 0
+            GROUP BY e.ID, e.PREVIEW_TEXT, e.ACTIVE, e.TIMESTAMP_X, 
+                     c.QUANTITY, c.AVAILABLE, supplier_enum.VALUE, price.PRICE, 
+                     sp.STORE_ID, s.TITLE, sp.AMOUNT";
+
+        // Подготавливаем параметры для IN
+        var parameters = articles.Select((a, i) => new MySqlParameter($"@p{i}", a)).ToArray();
+        var inClause = string.Join(",", parameters.Select(p => p.ParameterName));
+        var formattedSql = string.Format(sql, inClause);
+
+        // Выполняем запрос
+        var results = await _context.Set<RemainingStockFlat>()
+            .FromSqlRaw(formattedSql, parameters)
+            .ToListAsync();
+
+        // Группируем по артикулу и преобразуем в удобную структуру
+        var stocksDictionary = results
+            .Where(r => !string.IsNullOrEmpty(r.Article))
+            .GroupBy(r => r.Article)
+            .ToDictionary(
+                g => g.Key,
+                g => new
+                {
+                    TotalAmount = g.Sum(x => x.Amount), // Общий остаток по всем складам
+                    Stores = g.Select(x => new StockInfo
+                    {
+                        StoreId = x.StoreId,
+                        StoreTitle = x.StoreTitle,
+                        Amount = x.Amount
+                    }).ToList()
+                }
+            );
+        
+        Dictionary<int, List<StockInfo>> result = new Dictionary<int, List<StockInfo>>();
+        // Проставляем остатки в заказы
+        foreach (var order in orders)
+        {
+            if (string.IsNullOrWhiteSpace(order.ProductKey))
+                continue;
+
+            var article = order.ProductKey.Split('=')[0].Trim();
+
+            if (stocksDictionary.TryGetValue(article, out var stockInfo))
+            {
+                if (stockInfo.Stores.Count() > 1)
+                {
+                    continue;
+                }
+                var targetSupplier = await _supplierRepository.GetAsync(new Supplier(){Name = stockInfo.Stores.FirstOrDefault()?.StoreTitle});
+                if (targetSupplier != null)
+                {
+                    order.Supplier = targetSupplier;
+                    order.SupplierId = targetSupplier.Id;
+                }
+                result.Add(order.Id, stockInfo.Stores);
+            }
+        }
+        return result;
     }
 
-
-    
     /// <summary>
     /// Обновляет поле ACTIVE в таблице b_iblock_element по ID элемента
     /// </summary>
