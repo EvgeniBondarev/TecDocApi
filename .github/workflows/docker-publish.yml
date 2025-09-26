@@ -34,3 +34,4 @@ jobs:
       # 4. Опционально: вывести список образов
       - name: List pushed images
         run: docker images
+        
