@@ -160,7 +160,6 @@
     <AdditionalFiles Include="Areas\Studio2\Views\Orders\Details.cshtml" />
     <AdditionalFiles Include="Areas\Studio2\Views\Orders\Edit.cshtml" />
     <AdditionalFiles Include="Areas\Studio2\Views\Orders\Index.cshtml" />
-    <AdditionalFiles Include="Areas\Studio2\Views\Orders\IndexV2.cshtml" />
     <AdditionalFiles Include="Areas\Studio2\Views\Orders\MultiplayEdit.cshtml" />
     <AdditionalFiles Include="Areas\Studio2\Views\Orders\MultiplayEditV2.cshtml" />
     <AdditionalFiles Include="Areas\Studio2\Views\Orders\PrepaExcelTable.cshtml" />

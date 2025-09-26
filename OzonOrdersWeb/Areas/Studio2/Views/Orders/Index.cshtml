@@ -1117,21 +1117,48 @@
                                     <div id="thArticle" title="@item.ProductKey" class="col-md-4 d-flex align-items-center mb-1 @(item.UpdatedColumns != null && item.UpdatedColumns.Contains("ProductKey") ? "bg-warning" : "")" style="white-space: nowrap;">
                                         @{
                                             string productKey = item.ProductKey;
-                                            if (productKey != null && productKey.Length > 17)
+                                            string displayText = productKey;
+                                            
+                                            if (!string.IsNullOrEmpty(productKey))
                                             {
-                                                productKey = productKey.Substring(0, 17) + "...";
+                                                // Регулярное выражение для поиска [число] в конце строки
+                                                var match = System.Text.RegularExpressions.Regex.Match(productKey, @"\[(\d+)\]$");
+                                                
+                                                if (match.Success)
+                                                {
+                                                    // Разделяем строку на основную часть и числовую часть в скобках
+                                                    string mainPart = productKey.Substring(0, match.Index);
+                                                    string numberPart = match.Value; // [число]
+                                                    
+                                                    // Обрезаем основную часть если нужно
+                                                    if (mainPart.Length > 17)
+                                                    {
+                                                        mainPart = mainPart.Substring(0, 17) + "...";
+                                                    }
+                                                    
+                                                    // Формируем текст с подсветкой
+                                                    displayText = $"{mainPart}<span class='text-primary fw-bold'>{numberPart}</span>";
+                                                }
+                                                else
+                                                {
+                                                    // Старая логика обрезки если нет [числа] в конце
+                                                    if (productKey.Length > 17)
+                                                    {
+                                                        displayText = productKey.Substring(0, 17) + "...";
+                                                    }
+                                                }
                                             }
                                         }
+                                        
                                         <a href="@Url.Action("Info", "FullData", new { area = "PartsInfo", code = item.Article, supplier = item.EtProducer?.Name })" target="_blank" class="custom-product-link">
-                                            @productKey
+                                            @Html.Raw(displayText)
                                         </a>
+                                        
                                         @if (item.ProductKey != null && item.ProductKey != "" && @Model.UniqueArticles.ContainsKey(item.ProductKey) && @Model.UniqueArticles[item.ProductKey] != 1)
                                         {
                                             <a href="javascript:void(0);" onclick="setArticleFilter('@item.ProductKey')" style="margin-left: 5px;">(@Model.UniqueArticles[item.ProductKey])</a>
                                         }
                                     </div>
-                                
-
                             }
                             @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Производитель"))
                             {
