@@ -1,0 +1,33 @@
+@{
+    Layout = "_Layout"; // или null, если нет layout
+    var errorMessage = ViewBag.ErrorMessage as string;
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+
+            <div class="card border-danger mb-3">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">Произошла ошибка</h4>
+                </div>
+                <div class="card-body">
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <p class="card-text">@errorMessage</p>
+                    }
+                    else
+                    {
+                        <p class="card-text text-warning">Сообщение об ошибке не было передано.</p>
+                    }
+                </div>
+            </div>
+
+            <div class="text-center">
+                <a href="/" class="btn btn-primary">Вернуться на главную</a>
+                <a href="javascript:history.back()" class="btn btn-secondary">Попробовать снова</a>
+            </div>
+
+        </div>
+    </div>
+</div>

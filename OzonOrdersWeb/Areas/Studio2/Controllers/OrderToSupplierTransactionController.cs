@@ -227,12 +227,12 @@ public class OrderToSupplierTransactionController : Controller
                 }
             }
 
-            return Json(new { redirectTo = Url.Action("IndexV2", "Orders", new { sortOrder = GetSortStateCookie(), page = page }) });
+            return Json(new { redirectTo = Url.Action("Index", "Orders", new { sortOrder = GetSortStateCookie(), page = page }) });
         }
         catch (Exception ex)
         {
             TempData["ErorrResult"] = $"Не удалось провести выбранные заказы ({ex.Message})";
-            return Json(new { redirectTo = Url.Action("IndexV2", "Orders", new { sortOrder = GetSortStateCookie(), page = page }) });
+            return Json(new { redirectTo = Url.Action("Index", "Orders", new { sortOrder = GetSortStateCookie(), page = page }) });
         }
     }
 

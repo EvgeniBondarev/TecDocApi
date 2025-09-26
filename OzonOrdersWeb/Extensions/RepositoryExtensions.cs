@@ -172,5 +172,7 @@ public static class RepositoryExtensions
         
         services.AddTransient<ImportProductPricesManager>();
 
+        services.AddScoped<PdfService>();
+
     }
 }

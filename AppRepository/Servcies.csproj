@@ -14,11 +14,14 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CsvHelper" />
+    <PackageReference Include="DocumentFormat.OpenXml" />
     <PackageReference Include="Dropbox.Api" />
     <PackageReference Include="EPPlus" />
     <PackageReference Include="FluentFTP" />
     <PackageReference Include="Hangfire.Core" />
     <PackageReference Include="HtmlAgilityPack" />
+    <PackageReference Include="itext" />
+    <PackageReference Include="itext7.bouncy-castle-adapter" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" />

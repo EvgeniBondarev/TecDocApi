@@ -7,6 +7,7 @@ using OzonOrdersWeb.Services.HangfireAuthorization;
 using Servcies.DataServcies;
 using Servcies.ReleasServcies.ReleaseManager;
 using Servcies.SignalRServcies;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -42,6 +43,14 @@ builder.WebHost.ConfigureKestrel(serverOptions =>
     serverOptions.Limits.MaxRequestBodySize = 52428800; 
 });
 
+Log.Logger = new LoggerConfiguration()
+    .Enrich.FromLogContext()
+    .WriteTo.Console()           // для docker logs
+    .WriteTo.Seq("http://seq:5341") // подключение к Seq
+    .CreateLogger();
+
+builder.Host.UseSerilog();
+
 var app = builder.Build();
 
 app.UseForwardedHeaders(new ForwardedHeadersOptions
@@ -76,11 +85,13 @@ app.MapRazorPages();
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Orders}/{action=IndexV2}/{id?}",
+    pattern: "{controller=Orders}/{action=Index}/{id?}",
     defaults: new { area = "Studio2" });
 
 app.MapControllerRoute(
     name: "areas",
     pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
+
+app.UseExceptionHandler("/Home/Error");
 
 app.Run();

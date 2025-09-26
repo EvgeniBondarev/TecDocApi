@@ -180,7 +180,7 @@ namespace OzonOrdersWeb.Controllers
             _oneCDataManager = oneCDataManager;
             _bitrixStockRepository = bitrixStockRepository;
         }
-
+        
         public async Task<IActionResult> Index(OrderSortState sortOrder = OrderSortState.StandardState, int page = 1)
         {
             SaveSortStateCookie(sortOrder);
@@ -198,11 +198,6 @@ namespace OzonOrdersWeb.Controllers
                 ordersFromCache = await _dataFilterManager.FilterByFilterData(ordersFromCache, filterData);
             }
 
-
-            string buttonState = Request.Cookies["ButtonState"];
-            ViewData["ButtonState"] = buttonState;
-            ordersFromCache = await _dataFilterManager.FilterByRadioButton(ordersFromCache, buttonState);
-
             if (sortOrder == OrderSortState.StandardState && GetSortStateCookie() != null)
             {
                 sortOrder = GetSortStateCookie();
@@ -211,25 +206,26 @@ namespace OzonOrdersWeb.Controllers
             SetSortOrderViewData(sortOrder);
             ordersFromCache = (await ApplySortOrder(ordersFromCache, sortOrder)).ToList();
 
-
-
             int pageSize = Int32.TryParse(Request.Cookies["PageSize"], out var size)
                 ? size
                 : 15;
 
             var returnableCount = await _orderServcies.GetReturnableCount();
 
-
-
             var pageViewModel = new OrderPageViewModel<Order, OrderFilterModel>(ordersFromCache, page, pageSize, filterData, returnableCount)
             {
                 UniqueArticles = await _uniqueValuesCache.GetUniqueArticles(),
                 UniqueDeliveryCitys = await _uniqueValuesCache.GetUniqueDeliveryCitys(),
                 UniqueNumbers = await _uniqueValuesCache.GetUniqueShipmentNumbers(),
-                User = await _userManager.GetUserAsync(User),
+                User = await _userCacheService.GetCachedUserAsync(User),
             };
 
-            if (pageViewModel.User != null && pageViewModel.User.UserAccessId != null)
+            if (pageViewModel.User == null)
+            {
+                return Redirect("/Identity/Account/Login");
+            }
+
+            if (pageViewModel.User.UserAccessId != null)
             {
                 pageViewModel.User.UserAccess = _context.UserAccess.Find(pageViewModel.User.UserAccessId);
             }
@@ -238,9 +234,7 @@ namespace OzonOrdersWeb.Controllers
 
             return View(pageViewModel);
         }
-
-
-
+        
         [HttpPost]
         public async Task<IActionResult> Index(OrderFilterModel filterData, int page = 1, string buttonState = "")
         {
@@ -255,107 +249,6 @@ namespace OzonOrdersWeb.Controllers
             var serializedFilterData = JsonConvert.SerializeObject(filterData);
             HttpContext.Response.Cookies.Append("FilterData", serializedFilterData);
 
-            Response.Cookies.Append("ButtonState", buttonState);
-            ordersFromCache = await _dataFilterManager.FilterByRadioButton(ordersFromCache, buttonState);
-
-            int pageSize = Int32.TryParse(Request.Cookies["PageSize"], out var size)
-                ? size
-                : 15;
-
-            var returnableCount = await _orderServcies.GetReturnableCount();
-
-            var pageViewModel = new OrderPageViewModel<Order, OrderFilterModel>(ordersFromCache, page, pageSize, filterData, returnableCount)
-            {
-                UniqueArticles = await _orderServcies.GetUniqueArticles(),
-                UniqueDeliveryCitys = await _orderServcies.GetUniqueDeliveryCities(),
-                UniqueNumbers = await _orderServcies.GetUniqueShipmentNumbers(),
-
-                User = await _userManager.GetUserAsync(User),
-            };
-
-            if (pageViewModel.User.UserAccessId != null)
-            {
-                pageViewModel.User.UserAccess = _context.UserAccess.Find(pageViewModel.User.UserAccessId);
-            }
-            return View(pageViewModel);
-        }
-
-        public async Task<IActionResult> IndexV2(OrderSortState sortOrder = OrderSortState.StandardState, int page = 1)
-        {
-            SaveSortStateCookie(sortOrder);
-
-            List<Order> ordersFromCache = await _cache.Get(page);
-
-            await SetFilterLists(ordersFromCache);
-            SetInfoMessage();
-
-            string? filterDataString = HttpContext.Request.Cookies["FilterData"];
-            var filterData = new OrderFilterModel();
-            if (!string.IsNullOrEmpty(filterDataString))
-            {
-                filterData = JsonConvert.DeserializeObject<OrderFilterModel>(filterDataString);
-                ordersFromCache = await _dataFilterManager.FilterByFilterData(ordersFromCache, filterData);
-            }
-
-
-            string buttonState = Request.Cookies["ButtonState"];
-            ViewData["ButtonState"] = buttonState;
-            ordersFromCache = await _dataFilterManager.FilterByRadioButton(ordersFromCache, buttonState);
-
-            if (sortOrder == OrderSortState.StandardState && GetSortStateCookie() != null)
-            {
-                sortOrder = GetSortStateCookie();
-            }
-
-            SetSortOrderViewData(sortOrder);
-            ordersFromCache = (await ApplySortOrder(ordersFromCache, sortOrder)).ToList();
-
-
-
-            int pageSize = Int32.TryParse(Request.Cookies["PageSize"], out var size)
-                ? size
-                : 15;
-
-            var returnableCount = await _orderServcies.GetReturnableCount();
-
-            var pageViewModel = new OrderPageViewModel<Order, OrderFilterModel>(ordersFromCache, page, pageSize, filterData, returnableCount)
-            {
-                UniqueArticles = await _uniqueValuesCache.GetUniqueArticles(),
-                UniqueDeliveryCitys = await _uniqueValuesCache.GetUniqueDeliveryCitys(),
-                UniqueNumbers = await _uniqueValuesCache.GetUniqueShipmentNumbers(),
-                User = await _userCacheService.GetCachedUserAsync(User),
-            };
-
-            if (pageViewModel.User != null && pageViewModel.User.UserAccessId != null)
-            {
-                pageViewModel.User.UserAccess = _context.UserAccess.Find(pageViewModel.User.UserAccessId);
-            }
-
-            var i = ordersFromCache.ToList().Where(o => o.FromFile == true).ToList();
-
-            return View(pageViewModel);
-        }
-        
-
-
-
-        [HttpPost]
-        public async Task<IActionResult> Indexv2(OrderFilterModel filterData, int page = 1, string buttonState = "")
-        {
-            List<Order> ordersFromCache = await _cache.Get(page);
-
-            await SetFilterLists(ordersFromCache);
-
-            ViewData["ButtonState"] = buttonState;
-
-            ordersFromCache = await _dataFilterManager.FilterByFilterData(ordersFromCache, filterData);
-
-            var serializedFilterData = JsonConvert.SerializeObject(filterData);
-            HttpContext.Response.Cookies.Append("FilterData", serializedFilterData);
-
-            Response.Cookies.Append("ButtonState", buttonState);
-            ordersFromCache = await _dataFilterManager.FilterByRadioButton(ordersFromCache, buttonState);
-
             int pageSize = Int32.TryParse(Request.Cookies["PageSize"], out var size)
                 ? size
                 : 15;
@@ -369,11 +262,16 @@ namespace OzonOrdersWeb.Controllers
                 UniqueNumbers = await _orderServcies.GetUniqueShipmentNumbers(),
                 User = await _userCacheService.GetCachedUserAsync(User),
             };
+            if (pageViewModel.User == null)
+            {
+                return Redirect("/Identity/Account/Login");
+            }
 
             if (pageViewModel.User.UserAccessId != null)
             {
                 pageViewModel.User.UserAccess = _context.UserAccess.Find(pageViewModel.User.UserAccessId);
             }
+
             return View(pageViewModel);
         }
         
@@ -407,7 +305,7 @@ namespace OzonOrdersWeb.Controllers
             }
 
             await SetFilterLists(ordereToView);
-            return View("~/Areas/Studio2/Views/Orders/IndexV2.cshtml", pageViewModel);
+            return View("~/Areas/Studio2/Views/Orders/Index.cshtml", pageViewModel);
         }
 
         [HttpPost]
@@ -416,7 +314,7 @@ namespace OzonOrdersWeb.Controllers
             Response.Cookies.Delete("SortState");
             Response.Cookies.Delete("HighlightedColumn");
             Response.Cookies.Append("SortState", OrderSortState.StandardState.ToString());
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(System.Index));
         }
 
         public async Task<IActionResult> DelSortStateCookieForV2()
@@ -424,7 +322,7 @@ namespace OzonOrdersWeb.Controllers
             Response.Cookies.Delete("SortState");
             Response.Cookies.Delete("HighlightedColumn");
             Response.Cookies.Append("SortState", OrderSortState.StandardState.ToString());
-            return RedirectToAction(nameof(IndexV2));
+            return RedirectToAction(nameof(Index));
         }
 
         [HttpPost]
@@ -435,7 +333,7 @@ namespace OzonOrdersWeb.Controllers
                 size = 100;
             }
             Response.Cookies.Append("PageSize", size.ToString());
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(System.Index));
         }
 
         [HttpPost]
@@ -446,7 +344,7 @@ namespace OzonOrdersWeb.Controllers
                 size = 100;
             }
             Response.Cookies.Append("PageSize", size.ToString());
-            return RedirectToAction(nameof(IndexV2));
+            return RedirectToAction(nameof(Index));
         }
 
 
@@ -454,13 +352,13 @@ namespace OzonOrdersWeb.Controllers
         public async Task<IActionResult> Update()
         {
             await _cacheUpdater.Update(_cache);
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(System.Index));
         }
 
         public async Task<IActionResult> UpdateV2()
         {
             await _cacheUpdater.Update(_cache);
-            return RedirectToAction(nameof(IndexV2));
+            return RedirectToAction(nameof(Index));
         }
 
         public async Task<IActionResult> Upload()
@@ -483,7 +381,7 @@ namespace OzonOrdersWeb.Controllers
             );
             TempData["TransactionResult"] = "Загрузка обрабатывается в фоне.";
             ClearSelectedIdsSession();
-            return RedirectToAction(nameof(IndexV2));
+            return RedirectToAction(nameof(Index));
         }
 
         public async Task UploadInBackground(int period, ClientType clientType)
@@ -903,7 +801,7 @@ namespace OzonOrdersWeb.Controllers
             {
                 throw new Exception($"Произошла ошибка при загрузке данных: {ex.Message}");
             }
-            return RedirectToAction(nameof(IndexV2));
+            return RedirectToAction(nameof(Index));
         }
 
         public async Task<IActionResult> SetNotFullOrdersData()
@@ -1029,13 +927,13 @@ namespace OzonOrdersWeb.Controllers
                     );
                     
                     TempData["TransactionResult"] = "Обработка заказов запущена в фоне";
-                    return RedirectToAction("IndexV2");
+                    return RedirectToAction("Index");
                 }
             }
             catch (Exception ex)
             {
                 await NotificationService.NotifyAllAsync($"Ошибка при отгрузке: {ex.Message}");
-                return RedirectToAction("IndexV2");
+                return RedirectToAction("Index");
             }
         }
 
@@ -1172,7 +1070,7 @@ namespace OzonOrdersWeb.Controllers
                 await _cache.Update();
 
                 ClearSelectedIdsSession();
-                return RedirectToAction(nameof(Index), new { sortOrder = GetSortStateCookie(), page = redirectPage });
+                return RedirectToAction(nameof(System.Index), new { sortOrder = GetSortStateCookie(), page = redirectPage });
             }
             catch (Exception ex)
             {
@@ -1231,19 +1129,19 @@ namespace OzonOrdersWeb.Controllers
             if (orders == null)
             {
                 TempData["ErorrResult"] = $"Не удалось изменить выбранные заказы.<br>Было передано слишком большое количество записей.";
-                return RedirectToAction("IndexV2");
+                return RedirectToAction("Index");
             }
             try
             {
                 await _orderServcies.MultiplayEditOrder(orders);
                 await _cache.Update();
                 ClearSelectedIdsSession();
-                return RedirectToAction(nameof(IndexV2), new { sortOrder = GetSortStateCookie(), page = redirectPage });
+                return RedirectToAction(nameof(Index), new { sortOrder = GetSortStateCookie(), page = redirectPage });
             }
             catch (Exception ex)
             {
                 await NotificationService.NotifyAllAsync($"Ошибка при изменении заказов: {ex.Message}");
-                return RedirectToAction(nameof(IndexV2), new { sortOrder = GetSortStateCookie(), page = redirectPage });
+                return RedirectToAction(nameof(Index), new { sortOrder = GetSortStateCookie(), page = redirectPage });
             }
         }
 
@@ -1278,7 +1176,7 @@ namespace OzonOrdersWeb.Controllers
             {
                 TempData["ErorrResult"] = $"Ошибка при удалении заказа.";
             }
-            return RedirectToAction(nameof(Index), new { sortOrder = GetSortStateCookie(), page = page });
+            return RedirectToAction(nameof(System.Index), new { sortOrder = GetSortStateCookie(), page = page });
         }
 
         public async Task<IActionResult> DeleteV2(int id, int page)
@@ -1312,7 +1210,7 @@ namespace OzonOrdersWeb.Controllers
             {
                 TempData["ErorrResult"] = $"Ошибка при удалении заказа.";
             }
-            return RedirectToAction(nameof(IndexV2), new { sortOrder = GetSortStateCookie(), page = page });
+            return RedirectToAction(nameof(Index), new { sortOrder = GetSortStateCookie(), page = page });
         }
 
         public async Task<IActionResult> SplitOrder(string ids, int page, string splitOption)
@@ -1326,7 +1224,7 @@ namespace OzonOrdersWeb.Controllers
             }
     
             await _cache.Update();
-            return RedirectToAction(nameof(IndexV2), new { sortOrder = GetSortStateCookie(), page = page });
+            return RedirectToAction(nameof(Index), new { sortOrder = GetSortStateCookie(), page = page });
         }
 
         public async Task<IActionResult> MultiplayDeleteOrders(string ids, int page)
@@ -1364,7 +1262,7 @@ namespace OzonOrdersWeb.Controllers
                 TempData["ErorrResult"] = $"Ошибка при удалении заказа.";
             }
 
-            return RedirectToAction(nameof(Index), new { sortOrder = GetSortStateCookie(), page = page });
+            return RedirectToAction(nameof(System.Index), new { sortOrder = GetSortStateCookie(), page = page });
         }
 
 
@@ -1412,7 +1310,7 @@ namespace OzonOrdersWeb.Controllers
                 TempData["ErorrResult"] = $"Ошибка при удалении заказа.";
             }
 
-            return RedirectToAction(nameof(IndexV2), new { sortOrder = GetSortStateCookie(), page = page });
+            return RedirectToAction(nameof(Index), new { sortOrder = GetSortStateCookie(), page = page });
         }
         
         public async Task<IActionResult> MultiplayUpdateOrdersStatusV2(string ids, int page)
@@ -1420,7 +1318,7 @@ namespace OzonOrdersWeb.Controllers
             if (string.IsNullOrEmpty(ids))
             {
                 TempData["ErorrResult"] = "Не переданы ID заказов для обновления";
-                return RedirectToAction(nameof(IndexV2), new { page });
+                return RedirectToAction(nameof(Index), new { page });
             }
 
             int[] idArray = ids.Split(',').Select(int.Parse).ToArray();
@@ -1435,7 +1333,7 @@ namespace OzonOrdersWeb.Controllers
                 
                 TempData["TransactionResult"] = "Обновление статусов обрабатывается в фоне (много заказов).";
                 ClearSelectedIdsSession();
-                return RedirectToAction(nameof(IndexV2), new { page });
+                return RedirectToAction(nameof(Index), new { page });
             }
 
             var result = await ProcessOrdersStatusUpdate(idArray);
@@ -1448,7 +1346,7 @@ namespace OzonOrdersWeb.Controllers
                 await NotificationService.NotifyAllAsync(result.Message);
             }
             ClearSelectedIdsSession();
-            return RedirectToAction(nameof(IndexV2), new { page });
+            return RedirectToAction(nameof(Index), new { page });
         }
 
         public async Task<string> UpdateOrdersStatusInBackground(string ids, int page)
@@ -1545,7 +1443,7 @@ namespace OzonOrdersWeb.Controllers
                 TempData["ErorrResult"] = $"Ошибка при изменении заказа.";
             }
 
-            return RedirectToAction(nameof(IndexV2), new { sortOrder = GetSortStateCookie(), page = page });
+            return RedirectToAction(nameof(Index), new { sortOrder = GetSortStateCookie(), page = page });
         }
 
         [HttpPost]
@@ -1575,7 +1473,7 @@ namespace OzonOrdersWeb.Controllers
                     Response.Cookies.Delete("selectedIds");
                 }
             }
-            return RedirectToAction(nameof(Index), new { sortOrder = GetSortStateCookie(), page = page });
+            return RedirectToAction(nameof(System.Index), new { sortOrder = GetSortStateCookie(), page = page });
         }
 
         public async Task<IActionResult> ConfirmAcceptedV2(int id, string ids, int page)
@@ -1598,7 +1496,7 @@ namespace OzonOrdersWeb.Controllers
                     Response.Cookies.Delete("selectedIds");
                 }
             }
-            return RedirectToAction(nameof(IndexV2), new { sortOrder = GetSortStateCookie(), page = page });
+            return RedirectToAction(nameof(Index), new { sortOrder = GetSortStateCookie(), page = page });
         }
         
         [HttpPost]
@@ -1886,7 +1784,7 @@ namespace OzonOrdersWeb.Controllers
             catch (Exception ex)
             {
                 TempData["ErorrResult"] = $"Не удалось распечатать выделенные заказы<br/>";
-                return RedirectToAction(nameof(Index), new { sortOrder = GetSortStateCookie(), page = page });
+                return RedirectToAction(nameof(System.Index), new { sortOrder = GetSortStateCookie(), page = page });
             }
         }
 
@@ -1914,7 +1812,7 @@ namespace OzonOrdersWeb.Controllers
             catch (Exception ex)
             {
                 TempData["ErorrResult"] = $"Не удалось распечатать выделенные заказы<br/>";
-                return RedirectToAction(nameof(Index), new { sortOrder = GetSortStateCookie(), page = page });
+                return RedirectToAction(nameof(System.Index), new { sortOrder = GetSortStateCookie(), page = page });
             }
         }
 
@@ -1955,7 +1853,7 @@ namespace OzonOrdersWeb.Controllers
                 }
                 TempData["ErorrResult"] = $"Не удалось распечатать этикетку для заказов: {string.Join(", ", ordersLables.Select(o => o.ShipmentNumber))}<br/>" +
                                           $"Печать этикетки возможна только для заказов со статусом <b>'Ожидает отгрузки'</b>";
-                return RedirectToAction(nameof(Index), new { sortOrder = GetSortStateCookie(), page = page });
+                return RedirectToAction(nameof(System.Index), new { sortOrder = GetSortStateCookie(), page = page });
             }
             ClearSelectedIdsSession();
             return result;
@@ -1998,7 +1896,7 @@ namespace OzonOrdersWeb.Controllers
                 }
                 TempData["ErorrResult"] = $"Не удалось распечатать этикетку для заказов: {string.Join(", ", ordersLables.Select(o => o.ShipmentNumber))}<br/>" +
                                           $"Печать этикетки возможна только для заказов со статусом <b>'Ожидает отгрузки'</b>";
-                return RedirectToAction(nameof(IndexV2), new { sortOrder = GetSortStateCookie(), page = page });
+                return RedirectToAction(nameof(Index), new { sortOrder = GetSortStateCookie(), page = page });
             }
             ClearSelectedIdsSession();
             return result;
@@ -2051,7 +1949,7 @@ namespace OzonOrdersWeb.Controllers
 
             (duplicateCount, deletedRowsCount) = _duplicateOrdersServcies.DeleteDuplicateOrders();
             ClearSelectedIdsSession();
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(System.Index));
         }
 
         private async Task<bool> OrderExists(int id)

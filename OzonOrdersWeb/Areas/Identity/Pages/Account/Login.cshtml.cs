@@ -103,7 +103,7 @@ namespace OzonOrdersWeb.Areas.Identity.Pages.Account
 
         public async Task<IActionResult> OnPostAsync(string returnUrl = null)
         {
-            returnUrl ??= "/Studio2/Orders/IndexV2"; 
+            returnUrl ??= "/Studio2/Orders/Index"; 
 
             ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
 

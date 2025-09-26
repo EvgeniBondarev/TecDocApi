@@ -204,7 +204,7 @@ public class OrderedToSellerTransactionController : Controller
                 }
                 return Json(new
                 {
-                    redirectTo = Url.Action("IndexV2", "Orders", new { sortOrder = GetSortStateCookie(), page = page })
+                    redirectTo = Url.Action("Index", "Orders", new { sortOrder = GetSortStateCookie(), page = page })
                 });
             }
             catch (Exception ex)
@@ -212,7 +212,7 @@ public class OrderedToSellerTransactionController : Controller
                 TempData["ErorrResult"] = $"Не удалось провести выбранные заказы ({ex.Message})";
                 return Json(new
                 {
-                    redirectTo = Url.Action("IndexV2", "Orders", new { sortOrder = GetSortStateCookie(), page = page })
+                    redirectTo = Url.Action("Index", "Orders", new { sortOrder = GetSortStateCookie(), page = page })
                 });
 
             }

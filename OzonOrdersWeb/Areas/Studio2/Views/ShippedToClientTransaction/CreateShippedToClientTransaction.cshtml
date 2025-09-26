@@ -102,8 +102,7 @@ Layout = "~/Views/Shared/_Layout.cshtml";
     #costPriceFilter,
     #ozonCommissionFilter,
     #profitFilter,
-    #discountFilter,
-    #quantityInput{
+    #discountFilter {
         width: 70px;
         max-width: 70px;
     }
@@ -241,12 +240,7 @@ Layout = "~/Views/Shared/_Layout.cshtml";
     .highlight-info {
         border: 3px solid rgba(23, 162, 184, 0.5); /* Голубой цвет для информационного статуса */
     }
-
-    .highlight-warning {
-        border: 3px solid rgba(255, 193, 7, 0.6); /* Жёлтый цвет для предупреждений */
-    }
-
-
+    
     .show-card {
         display: block !important;
     }
@@ -371,15 +365,6 @@ Layout = "~/Views/Shared/_Layout.cshtml";
         display: inline-block;
         margin-left: 5px;
     }
-
-    /* Если бы использовался type="number", это убирает стрелки */
-    input[type=number]::-webkit-outer-spin-button,
-    input[type=number]::-webkit-inner-spin-button {
-        -webkit-appearance: none;
-        margin: 0;
-    }
-    input[type=number] {
-        -moz-appearance: textfield; /* для Firefox */
 </style>
 
 <script src="~/js/Studio2/Orders/CreateOrderToSupplierTransactionV2/generateInfoRow.js"></script>
@@ -662,7 +647,7 @@ Layout = "~/Views/Shared/_Layout.cshtml";
     </div>
 </div>
 
-<form asp-area="Studio2" asp-controller="ShippedToSellerTransaction" asp-action="CreateShippedToSellerTransaction" id="createOrderForm">
+<form asp-area="Studio2" asp-controller="ShippedToClientTransaction" asp-action="CreateShippedToClientTransaction" id="createOrderForm">
     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
     <input type="hidden" asp-for="RedirectPage" />
 
@@ -1008,7 +993,6 @@ Layout = "~/Views/Shared/_Layout.cshtml";
             {
                 rowClass = "table-secondary";
             }
-            
         <tr id="orderRow_@Model.Orders[i].Id" class=@rowClass>
             <div class="form-group" style="display: none">
                 <label asp-for="Orders[i].Id" class="control-label"></label><span style="margin-left: 10px; color: gray;">/ </span>
@@ -1055,7 +1039,11 @@ Layout = "~/Views/Shared/_Layout.cshtml";
                 <input asp-for="Orders[i].ProductKey" class="form-control" />
                 <span asp-validation-for="Orders[i].ProductKey" class="text-danger"></span>
             </div>
-            
+            <div class="form-group" style="display: none">
+                <label asp-for="Orders[i].Quantity" class="control-label"></label><span style="margin-left: 10px; color: gray;">/ </span>
+                <input asp-for="Orders[i].Quantity" class="form-control" />
+                <span asp-validation-for="Orders[i].Quantity" class="text-danger"></span>
+            </div>
             <div class="form-group" style="display: none">
                 <label asp-for="Orders[i].ShipmentAmount" class="control-label"></label><span style="margin-left: 10px; color: gray;">/ </span>
                 <input asp-for="Orders[i].ShipmentAmount" class="form-control" />
@@ -1407,11 +1395,11 @@ Layout = "~/Views/Shared/_Layout.cshtml";
                             const selectedText = select.options[select.selectedIndex].text.trim();
 
                             // Снимаем все возможные классы
-                            select.classList.remove('highlight-null', 'highlight-warning');
+                            select.classList.remove('highlight-null', 'highlight-info');
 
                             // Добавляем соответствующий класс на основе выбранного статуса
-                            if (selectedText === "Отгружен реализатору") {
-                                select.classList.add('highlight-warning');
+                            if (selectedText === "Отгружен поставщиком") {
+                                select.classList.add('highlight-info');
                             } else if (selectedText === "Отменен") {
                                 select.classList.add('highlight-null');
                             }
@@ -1517,7 +1505,7 @@ Layout = "~/Views/Shared/_Layout.cshtml";
                 <div style="text-align: left" class="text-muted">
                     <div class="form-group d-flex align-items-center justify-content-end">
                         <div class="form-group">
-                            <input asp-for="Orders[i].ProductInfo.Weight" class="form-control form-control-sm product-weight-field" readonly="" id="ProductWeight_@Model.Orders[i].Id" value="@string.Format("{0:N0}", Model.Orders[i].ProductInfo.Weight).Replace(",", " ")" style="width: 70px; max-width: 70px;" />
+                            <input asp-for="Orders[i].ProductInfo.Weight" class="form-control form-control-sm product-weight-field" id="ProductWeight_@Model.Orders[i].Id" value="@string.Format("{0:N0}", Model.Orders[i].ProductInfo.Weight).Replace(",", " ")" style="width: 70px; max-width: 70px;" />
                             <span asp-validation-for="Orders[i].ProductInfo.Weight" class="text-danger"></span>
                         </div>
                         <div style="margin-left: auto; white-space: nowrap;">
@@ -1535,14 +1523,23 @@ Layout = "~/Views/Shared/_Layout.cshtml";
                     @Html.Raw(string.Format("{0:N0}", Model.Orders[i].ProductInfo.CurrentPriceWithDiscount).Replace(",", ""))
                 </div>
                 }
-                <div style="margin-top: 18px;"></div>
+                <br />
                 @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Количество"))
                 {
-                    <input asp-for="Orders[i].Quantity" 
-                           value="@Model.Orders[i].Quantity" 
-                           id="quantityInput" 
-                           class="form-control form-control-sm text-end" 
-                           autocomplete="off" />
+                <div class="@(Model.Orders[i].Quantity > 1 ? "bg-green-300" : "") text-muted" style="text-align: right;" id="Quantity_@Model.Orders[i].Id">
+                    @{
+                    if (Model.Orders[i].Quantity > 1)
+                    {
+                    <b>
+                        @Html.DisplayFor(modelItem => Model.Orders[i].Quantity)
+                    </b>
+                    }
+                    else
+                    {
+                    @Html.DisplayFor(modelItem => Model.Orders[i].Quantity)
+                    }
+                    }
+                </div>
                 }
             </td>
 
@@ -1571,7 +1568,6 @@ Layout = "~/Views/Shared/_Layout.cshtml";
                            class="form-control form-control-sm purchase-price-field"
                            id="PurchasePrice_@Model.Orders[i].Id"
                            data-order-id="@Model.Orders[i].Id"
-                           readonly
                            value="@(
                                   (Model.Orders[i].OriginalPurchasePrice.HasValue && Model.Orders[i].OriginalPurchasePrice.Value != 0) 
                                       ? string.Format("{0:N0}", Model.Orders[i].OriginalPurchasePrice).Replace(",", "") 
@@ -1642,7 +1638,7 @@ Layout = "~/Views/Shared/_Layout.cshtml";
             <td style="text-align: right;">
                 <div class="form-group d-flex align-items-center justify-content-end mb-2">
                     <div class="flex-grow-1">
-                        <input asp-for="Orders[i].MinOzonCommission" class="form-control form-control-sm ozon-commission-field" readonly id="MinOzonCommission_@Model.Orders[i].Id" style="text-align: right;" />
+                        <input asp-for="Orders[i].MinOzonCommission" class="form-control form-control-sm ozon-commission-field" id="MinOzonCommission_@Model.Orders[i].Id" style="text-align: right;" />
                         <span asp-validation-for="Orders[i].MinOzonCommission" class="text-danger" id="MinOzonCommissionValidation_@Model.Orders[i].Id"></span>
                     </div>
                     <div style="margin-left: auto;">
@@ -1652,7 +1648,7 @@ Layout = "~/Views/Shared/_Layout.cshtml";
 
                 <div class="form-group d-flex align-items-center justify-content-end">
                     <div class="flex-grow-1">
-                        <input asp-for="Orders[i].MaxOzonCommission" class="form-control form-control-sm ozon-commission-field" readonly id="MaxOzonCommission_@Model.Orders[i].Id" style="text-align: right;" />
+                        <input asp-for="Orders[i].MaxOzonCommission" class="form-control form-control-sm ozon-commission-field" id="MaxOzonCommission_@Model.Orders[i].Id" style="text-align: right;" />
                         <span asp-validation-for="Orders[i].MaxOzonCommission" class="text-danger" id="MaxOzonCommissionValidation_@Model.Orders[i].Id"></span>
                     </div>
                     <div style="margin-left: auto;">
@@ -1813,13 +1809,13 @@ Layout = "~/Views/Shared/_Layout.cshtml";
 
 
     <input type="hidden" name="stockItemsJson" id="stockItemsJson" />
-            
     <div class="form-check ms-3">
         <input class="form-check-input" type="checkbox" id="processIn1C" name="processIn1C" value="true" checked>
         <label class="form-check-label" for="processIn1C">
             Провести в 1С
         </label>
     </div>
+
     <div class="form-group mt-3 d-flex justify-content-end">
         <div class="input-group">
                 <span class="input-group-btn">
@@ -2253,7 +2249,7 @@ else
                 formData += '&userName=' + '@User.Identity.Name' + '&comment=' + $('#commentField').val() + '&page=' + '@Model.RedirectPage';
 
                 $.ajax({
-                    url: '@Url.Action("CreateShippedToSellerTransaction", "ShippedToSellerTransaction")',
+                    url: '@Url.Action("CreateShippedToClientTransaction", "ShippedToClientTransaction")',
                     type: 'POST',
                     data: formData,
                     success: function (result) {
@@ -4089,37 +4085,6 @@ else
         }).fail(function (error) {
             console.error('Ошибка при запросе регионов:', error);
         });
-    });
-    
-    document.addEventListener('DOMContentLoaded', function () {
-        const quantityInput = document.getElementById('quantityInput');
-        const maxQuantity = parseFloat(quantityInput.value); // Максимальное значение изначальное
-
-        function updateHighlight() {
-            let value = parseFloat(quantityInput.value);
-
-            // Ограничение минимального и максимального значения
-            if (isNaN(value) || value < 0) {
-                quantityInput.value = 0;
-                value = 0;
-            } else if (value > maxQuantity) {
-                quantityInput.value = maxQuantity;
-                value = maxQuantity;
-            }
-
-            // Подсветка зеленым, если значение > 1
-            if (value > 1) {
-                quantityInput.classList.add('highlight-success');
-            } else {
-                quantityInput.classList.remove('highlight-success');
-            }
-        }
-
-        // Проверка при загрузке страницы
-        updateHighlight();
-
-        // Проверка при вводе значения
-        quantityInput.addEventListener('input', updateHighlight);
     });
 
     document.getElementById("createOrderForm").addEventListener("keydown", function (event) {

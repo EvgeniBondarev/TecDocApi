@@ -649,7 +649,7 @@ var stockData = ViewData["StockData"] as Dictionary<int, List<StockInfo>>;
     </div>
 </div>
 
-<form asp-area="Studio2" asp-controller="Orders" asp-action="CreateOrderedToSellerTransaction" id="createOrderForm">
+<form asp-area="Studio2" asp-controller="OrderedToSellerTransaction" asp-action="CreateOrderedToSellerTransaction" id="createOrderForm">
     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
     <input type="hidden" asp-for="RedirectPage" />
 

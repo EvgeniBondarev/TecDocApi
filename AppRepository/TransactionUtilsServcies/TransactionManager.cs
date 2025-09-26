@@ -105,6 +105,29 @@ namespace Servcies.TransactionUtilsServcies
             }
             return (await _transactionDataServcies.SaveChanges(), $"{transaction.FormattedCreatedDate}\t{transaction.FormattedCreatedTime}");
         }
+        
+        public async Task<(int, string)> CreateShippedToClientTransaction(List<Order> orders, 
+            string userName, 
+            DateTime createDateTime,
+            string comment)
+        {
+            Transaction transaction = new Transaction()
+            {
+                Type = TransactionType.ShippedToSeller,
+                Orders = orders,
+                CreateBy = userName,
+                CreatedDateTime = createDateTime,
+                Comment = comment
+            };
+            await _transactionDataServcies.AddTransaction(transaction);
+
+            foreach(var order in orders)
+            {
+                ConfirmAccepted(order);
+                    
+            }
+            return (await _transactionDataServcies.SaveChanges(), $"{transaction.FormattedCreatedDate}\t{transaction.FormattedCreatedTime}");
+        }
 
         public void ConfirmAccepted(Order order)
         {

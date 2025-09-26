@@ -144,5 +144,6 @@
         
         public string? Delivery   { get; set; }
         public string? Provider {get; set; }
+        public int? LastMonths { get; set; } = 3;
     }
 }

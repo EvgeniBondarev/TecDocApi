@@ -73,6 +73,32 @@ namespace OzonRepositories.Data
 
             return orderList.AsQueryable();
         }
+        
+        public async Task<IQueryable<Order>> GetByLastMonthsAsync(int months)
+        {
+            var fromDate = DateTime.UtcNow.AddMonths(-months);
+
+            var orders = _context.Orders
+                .Include(c => c.Сurrency)
+                .Include(w => w.ShipmentWarehouse)
+                .Include(p => p.ProductInfo)
+                .Include(a => a.AppStatus)
+                .ThenInclude(s => s.StatusColor)
+                .Include(s => s.Supplier)
+                .Include(o => o.OzonClient)
+                .Include(m => m.Manufacturer)
+                .Include(f => f.ExcelFileData)
+                .Include(d => d.Delivery)
+                .ThenInclude(dp => dp.Provider)
+                .Where(o => o.ProcessingDate >= fromDate) // фильтр по дате
+                .OrderByDescending(o => o.ProcessingDate);
+
+            var orderList = await orders.ToListAsync();
+            LoadAdditionalData(orderList);
+
+            return orderList.AsQueryable();
+        }
+
 
         public async Task<Order> GetAsync(int id)
         {
@@ -110,10 +136,9 @@ namespace OzonRepositories.Data
                 order.EtProducer = await _jcEtalonContext.EtProducers
                     .FirstOrDefaultAsync(e => e.Id == order.EtProducerId.Value);
             }
-            
-
             return order;
         }
+        
         
         public async Task<Order> GetAsyncForCart(int id)
         {

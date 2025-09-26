@@ -285,7 +285,7 @@ public class ShippedToSellerTransactionController : Controller
                                        $"</div>";
                             }
                             TempData["TransactionResult"] = msg;
-                            return Json(new { redirectTo = Url.Action("IndexV2", "Orders", new { sortOrder = GetSortStateCookie(), page }) });
+                            return Json(new { redirectTo = Url.Action("Index", "Orders", new { sortOrder = GetSortStateCookie(), page }) });
                         }
                         
                         var successfulTransfers = transferResult.Where(tr => tr.Success).ToList();
@@ -322,7 +322,7 @@ public class ShippedToSellerTransactionController : Controller
                                               $"</div>";
                             }
                             TempData["TransactionResult"] = msg;
-                            return Json(new { redirectTo = Url.Action("IndexV2", "Orders", new { sortOrder = GetSortStateCookie(), page }) });
+                            return Json(new { redirectTo = Url.Action("Index", "Orders", new { sortOrder = GetSortStateCookie(), page }) });
                         }
                         else
                         {
@@ -386,12 +386,12 @@ public class ShippedToSellerTransactionController : Controller
                     }
                 }
                 
-                return Json(new { redirectTo = Url.Action("IndexV2", "Orders", new { sortOrder = GetSortStateCookie(), page }) });
+                return Json(new { redirectTo = Url.Action("Index", "Orders", new { sortOrder = GetSortStateCookie(), page }) });
             }
             catch (Exception ex)
             {
                 TempData["ErorrResult"] = $"Не удалось провести выбранные заказы ({ex.Message})";
-                return Json(new { redirectTo = Url.Action("IndexV2", "Orders", new { sortOrder = GetSortStateCookie(), page }) });
+                return Json(new { redirectTo = Url.Action("Index", "Orders", new { sortOrder = GetSortStateCookie(), page }) });
 
             }
         }

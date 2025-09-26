@@ -513,7 +513,7 @@ public class TradesoftController : Controller
         { 
             area = "Studio2",
             controller = "Orders",
-            action = "IndexV2",
+            action = "Index",
             sortOrder = GetSortStateCookie(),
             page = page
         });

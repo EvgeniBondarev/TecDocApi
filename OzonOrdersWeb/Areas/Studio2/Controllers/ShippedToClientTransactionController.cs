@@ -18,11 +18,10 @@ using Servcies.SignalRServcies;
 using Servcies.TransactionUtilsServcies;
 using Services.CacheServcies.Cache;
 
-namespace OzonOrdersWeb.Areas.Studio2.Controllers.Transactions;
 
 [Authorize(Roles = "User,Admin")]
 [Area("Studio2")]
-public class ShippedBySupplierTransactionController : Controller
+public class ShippedToClientTransactionController : Controller
 {
     private readonly OzonOrderContext _context;
     private readonly AppStatusDataServcies _appStatusServcies;
@@ -39,7 +38,7 @@ public class ShippedBySupplierTransactionController : Controller
     private readonly ProxyHttpClientService _proxyHttpClientService;
     private readonly OneCDataManager _oneCDataManager;
 
-    public ShippedBySupplierTransactionController(
+    public ShippedToClientTransactionController(
         OzonOrderContext context,
         AppStatusDataServcies appStatusServcies,
         OrdersDataServcies orderServcies,
@@ -70,9 +69,9 @@ public class ShippedBySupplierTransactionController : Controller
     }
 
     // ==============================
-    // GET: CreateShippedBySupplierTransaction
+    // GET: CreateShippedToClientTransaction
     // ==============================
-    public async Task<IActionResult> CreateShippedBySupplierTransaction(string ids, int page)
+    public async Task<IActionResult> CreateShippedToClientTransaction(string ids, int page)
     {
         var filteredStatuses = _context.AppStatuses.Where(s => s.Name == "Отменен").ToList();
         ViewBag.AppStatuses = new SelectList(filteredStatuses, "Id", "Name");
@@ -82,10 +81,10 @@ public class ShippedBySupplierTransactionController : Controller
         List<Order> ordersToTransaction = new();
         string errorReason = null;
 
-        var appStatus = await _appStatusServcies.GetAppStatusAsync(new AppStatus { Name = "Отгружен поставщиком" });
+        var appStatus = await _appStatusServcies.GetAppStatusAsync(new AppStatus { Name = "Отгружен клиенту" });
         if (appStatus == null)
         {
-            appStatus = new AppStatus { Name = "Отгружен поставщиком" };
+            appStatus = new AppStatus { Name = "Отгружен клиенту" };
             _context.AppStatuses.Add(appStatus);
             await _context.SaveChangesAsync();
         }
@@ -106,7 +105,7 @@ public class ShippedBySupplierTransactionController : Controller
 
         if (!ordersToTransaction.Any())
         {
-            errorReason ??= "Нет заказов со статусом 'Заказан поставщику'.";
+            errorReason ??= "Нет заказов со статусом 'Заказан клиенту'.";
         }
         else
         {
@@ -176,11 +175,11 @@ public class ShippedBySupplierTransactionController : Controller
     }
 
     // ==============================
-    // POST: CreateShippedBySupplierTransaction
+    // POST: CreateShippedToClientTransaction
     // ==============================
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> CreateShippedBySupplierTransaction(
+    public async Task<IActionResult> CreateShippedToClientTransaction(
             List<Order> orders,
             string userName,
             string comment,
@@ -217,7 +216,7 @@ public class ShippedBySupplierTransactionController : Controller
                         ordersToUpdate.Add(await _orderServcies.TransactOrder(order));
                     }
 
-                    var appStatus = await _appStatusServcies.GetAppStatusAsync(new AppStatus() { Name = "Отгружен поставщиком" });
+                    var appStatus = await _appStatusServcies.GetAppStatusAsync(new AppStatus() { Name = "Отгружен клиенту" });
                     var oldStatus = await _appStatusServcies.GetAppStatusAsync(new AppStatus() { Name = "Заказан поставщику" });
                     var backStatus = await _appStatusServcies.GetAppStatusAsync(new AppStatus() { Name = "Утерян поставщиком" });
                     if (backStatus == null)
@@ -330,7 +329,7 @@ public class ShippedBySupplierTransactionController : Controller
                                       $"</div>";
                     }
                     await NotificationService.NotifyAllAsync(oneCResult);
-                    (changeCount, dateTime) = await _transaction.CreateShippedBySupplierTransaction(ordersToTransaction,
+                    (changeCount, dateTime) = await _transaction.CreateShippedToClientTransaction(ordersToTransaction,
                                                                                                   userName,
                                                                                                   createAt,
                                                                                                   comment + string.Join(", ", oneCHash));
@@ -340,7 +339,7 @@ public class ShippedBySupplierTransactionController : Controller
                     {   
                         await _cacheUpdater.Update(_cache);
                         string msg = $"Заказы добавлены в журнал<br/>" +
-                                     $"<b>{changeCount}</b> заказам изменен статус на '<b>Отгружен поставщиком</b>', <b>{cancelCount}</b> заказов были отменены." +
+                                     $"<b>{changeCount}</b> заказам изменен статус на '<b>Отгружен клиенту</b>', <b>{cancelCount}</b> заказов были отменены." +
                                      $"<br/>Время<b>: {dateTime}</b>" +
                                      $"<br/>Пользователь<b>: {userName}</b>" +
                                      $"<br/>Комментарий: {comment}" +

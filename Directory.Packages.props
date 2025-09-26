@@ -8,6 +8,7 @@
     <PackageVersion Include="ClosedXML" Version="0.105.0" />
     <PackageVersion Include="CsvHelper" Version="33.0.1" />
     <PackageVersion Include="Dapper" Version="2.1.66" />
+    <PackageVersion Include="DocumentFormat.OpenXml" Version="3.1.1" />
     <PackageVersion Include="Dropbox.Api" Version="7.0.0" />
     <PackageVersion Include="EntityFrameworkProfiler.Appender" Version="6.0.6047" />
     <PackageVersion Include="EPPlus" Version="7.5.0" />
@@ -18,6 +19,8 @@
     <PackageVersion Include="Hangfire.MySql.Core" Version="2.2.5" />
     <PackageVersion Include="Hangfire.MySqlStorage" Version="2.0.3" />
     <PackageVersion Include="HtmlAgilityPack" Version="1.11.71" />
+    <PackageVersion Include="itext" Version="9.3.0" />
+    <PackageVersion Include="itext7.bouncy-castle-adapter" Version="9.3.0" />
     <PackageVersion Include="Microsoft.AspNet.Identity.Core" Version="2.2.4" />
     <PackageVersion Include="Microsoft.AspNetCore.Components.QuickGrid.EntityFrameworkAdapter" Version="8.0.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Identity" Version="2.2.0" />
@@ -47,6 +50,10 @@
     <PackageVersion Include="Selenium.Support" Version="4.26.1" />
     <PackageVersion Include="Selenium.WebDriver" Version="4.26.1" />
     <PackageVersion Include="Selenium.WebDriver.ChromeDriver" Version="131.0.6778.6900" />
+    <PackageVersion Include="Serilog" Version="4.3.1-dev-02385" />
+    <PackageVersion Include="Serilog.AspNetCore" Version="9.0.0" />
+    <PackageVersion Include="Serilog.Sinks.Console" Version="6.0.1-dev-00953" />
+    <PackageVersion Include="Serilog.Sinks.Seq" Version="9.0.0" />
     <PackageVersion Include="StackExchange.Redis" Version="2.8.24" />
     <PackageVersion Include="System.Data.SqlClient" Version="4.9.0" />
     <PackageVersion Include="System.Security.Cryptography.Xml" Version="8.0.0" />

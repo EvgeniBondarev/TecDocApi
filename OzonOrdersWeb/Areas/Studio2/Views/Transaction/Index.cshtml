@@ -838,16 +838,17 @@
                         @transaction.FormattedCreatedDate / @transaction.FormattedCreatedTime
                     </td>
                     <td colspan="11">
-                        <a href="PrintTransactionToExcel?transactionId=@transaction.Id">Распечатать</a>
+                        <a href="PrintTransactionToExcel?transactionId=@transaction.Id">Распечатать Excel</a>
+                        <a href="PrintTransactionToPdf?transactionId=@transaction.Id">Распечатать PDF</a>
                     </td>
                 </tr>
                 @foreach (var item in transaction.Orders)
                 {
                     string rowClass;
-                    rowClass = item.AppStatus.Name == "Заказан поставщику" ? "table-success" : "custom-white";
-                    rowClass = item.AppStatus.Name == "Отгружен поставщиком" ? "table-info" : rowClass;
-                    rowClass = item.AppStatus.Name == "Отгружен реализатору" ? "table-warning" : rowClass;
-                    rowClass = item.AppStatus.Name == "Заказан реализатору" ? "table-secondary" : rowClass;
+                    rowClass = item.AppStatus?.Name == "Заказан поставщику" ? "table-success" : "custom-white";
+                    rowClass = item.AppStatus?.Name == "Отгружен поставщиком" ? "table-info" : rowClass;
+                    rowClass = item.AppStatus?.Name == "Отгружен реализатору" ? "table-warning" : rowClass;
+                    rowClass = item.AppStatus?.Name == "Заказан реализатору" ? "table-secondary" : rowClass;
                     rowClass = item.Status == "Отменен" ? "custom-gray" : rowClass;
                     if (item.IsReturnable.Value != null && item.IsReturnable.Value == true)
                     {
@@ -1042,8 +1043,8 @@
                             {
                                 <div class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("AppStatusId") ? "bg-warning" : "") text-muted nowrap">
                                     @{
-                                        string appStatus = item.AppStatus.Name;
-                                        if (appStatus.Length > 14)
+                                        string appStatus = item.AppStatus?.Name;
+                                        if (appStatus != null && appStatus.Length > 14)
                                         {
                                             appStatus = appStatus.Substring(0, 14) + "...";
                                         }
@@ -1194,25 +1195,39 @@
 
                         @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Прибыль"))
                         {
-                                <td class="@(item.UpdatedColumns != null && (item.UpdatedColumns.Contains("MinProfit") || item.UpdatedColumns.Contains("MaxProfit")) ? "bg-warning" : "")" style="text-align: right;">
-                                @if (item.MaxProfit < 0)
+                            <td class="@(item.UpdatedColumns != null && (item.UpdatedColumns.Contains("MinProfit") || item.UpdatedColumns.Contains("MaxProfit")) ? "bg-warning" : "")" style="text-align: right;">
+                                @if (item.MaxProfit.HasValue)
                                 {
-                                        <span style="color:red">@Html.Raw(string.Format("{0:N0}", item.MaxProfit).Replace(",", " "))</span>
+                                    if (item.MaxProfit < 0)
+                                    {
+                                        <span style="color:red">@Html.Raw(string.Format("{0:N0}", item.MaxProfit.Value).Replace(",", " "))</span>
+                                    }
+                                    else
+                                    {
+                                        @Html.Raw(string.Format("{0:N0}", item.MaxProfit.Value).Replace(",", " "))
+                                    }
                                 }
                                 else
                                 {
-                                    @Html.Raw(string.Format("{0:N0}", item.MaxProfit).Replace(",", " "))
+                                    <text>0</text>
                                 }
-                                    <br>
-                                @if (item.MinProfit < 0)
+                                <br>
+                                @if (item.MinProfit.HasValue)
                                 {
-                                        <span style="color:red">@Html.Raw(string.Format("{0:N0}", item.MinProfit).Replace(",", " "))</span>
+                                    if (item.MinProfit < 0)
+                                    {
+                                        <span style="color:red">@Html.Raw(string.Format("{0:N0}", item.MinProfit.Value).Replace(",", " "))</span>
+                                    }
+                                    else
+                                    {
+                                        @Html.Raw(string.Format("{0:N0}", item.MinProfit.Value).Replace(",", " "))
+                                    }
                                 }
                                 else
                                 {
-                                    @Html.Raw(string.Format("{0:N0}", item.MinProfit).Replace(",", " "))
+                                    <text>0</text>
                                 }
-                                </td>
+                            </td>
                         }
 
                         @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Наценка %"))

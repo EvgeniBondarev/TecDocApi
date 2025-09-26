@@ -101,7 +101,15 @@ namespace Servcies.FiltersServcies.DataFilterManagers
                 return standartOrders.OrderBy(pr => pr.ProcessingDate).ToList();
             }
 
-            IQueryable<Order> orders = await _ordersDataServcies.GetOrders();
+            IQueryable<Order> orders;
+            if (filterData.LastMonths.HasValue && filterData.LastMonths.Value > 0)
+            {
+                orders = await _ordersDataServcies.GetByLastMonthsForFilterAsync(filterData.LastMonths.Value);
+            }
+            else
+            {
+                orders = await _ordersDataServcies.GetOrders();
+            }
             bool exactMatch = true;
 
             orders = _filter.FilterByString(orders, pr => pr.Key, filterData.Key);
@@ -164,9 +172,6 @@ namespace Servcies.FiltersServcies.DataFilterManagers
                                 o.DeliveryPeriod.Value.Hours == StringToIntHours(filterData.DeliveryPeriod))
                     .ToList();
             }
-
-
-
             return result.OrderBy(o => o.ProcessingDate).ToList();
         }
 

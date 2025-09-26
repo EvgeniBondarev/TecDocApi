@@ -43,6 +43,7 @@ namespace OzonOrdersWeb.Controllers
         private readonly ExcelExporter _excelExporter;
         private readonly IUniqueValuesCache _uniqueValuesCache;
         private readonly IUserCacheService _userCacheService;
+        private readonly PdfService _pdfService;
 
         public TransactionController(TransactionDataServcies transactionDataServcies,
                                     OrdersDataServcies ordersDataServcies,
@@ -59,7 +60,8 @@ namespace OzonOrdersWeb.Controllers
                                     OzonOrderContext ozonOrderContext,
                                     ExcelExporter excelExporter,
                                     IUniqueValuesCache uniqueValuesCache,
-                                    IUserCacheService userCacheService
+                                    IUserCacheService userCacheService,
+                                    PdfService pdfService
                                     )
         {
             _transactionDataServcies = transactionDataServcies;
@@ -78,6 +80,7 @@ namespace OzonOrdersWeb.Controllers
             _excelExporter = excelExporter;
             _uniqueValuesCache = uniqueValuesCache;
             _userCacheService = userCacheService;
+            _pdfService = pdfService;
         }
 
         public async Task<IActionResult> Index(OrderSortState sortOrder = OrderSortState.StandardState, int page = 1)
@@ -272,6 +275,22 @@ namespace OzonOrdersWeb.Controllers
             }
             return NotFound("Transaction not found");
         }
+        
+        public async Task<IActionResult> PrintTransactionToPdf(int transactionId)
+        {
+            Transaction transaction = await _transactionDataServcies.GetTransaction(transactionId);
+            if (transaction != null && transaction.Orders != null)
+            {
+                byte[] pdfFile = _pdfService.GenerateTransactionPdf(transaction);
+
+                string transactionTypeName = transaction.Type?.GetDisplayName() ?? "Unknown";
+
+                return File(pdfFile, "application/pdf",
+                    $"{transactionTypeName}_{transaction.CreateBy}_{transaction.CreatedDateTime:dd.MM.yyyy}.pdf");
+            }
+            return NotFound("Transaction not found");
+        }
+        
         public void SetSortOrderViewData(OrderSortState sortOrder)
         {
             ViewData["ShipmentNumberSort"] = sortOrder == OrderSortState.ShipmentNumberAsc ? OrderSortState.ShipmentNumberDesc : OrderSortState.ShipmentNumberAsc;

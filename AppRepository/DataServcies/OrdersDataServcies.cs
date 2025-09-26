@@ -50,6 +50,11 @@ namespace Servcies.DataServcies
             return result;
         }
 
+        public async Task<IQueryable<Order>> GetByLastMonthsForFilterAsync(int months)
+        {
+            return await repository.GetByLastMonthsAsync(months);
+        }
+
         public async Task<Order> GetOrder(int id)
         {
             var result = await repository.GetAsync(id);
