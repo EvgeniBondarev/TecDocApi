@@ -812,7 +812,7 @@
                         <b>Тип:</b> @GetTransactionTypeDisplayName(transaction.Type)<br />
                         @if (@transaction.Comment != null)
                         {
-                            <b>Комментарий:</b><span title="@transaction.Comment">transaction.Comment?.Substring(0, 30)...</span>
+                            <b>Комментарий:</b><span title="@transaction.Comment">@transaction.Comment?.Substring(0, 30)...</span>
                         }
                     </td>
 
