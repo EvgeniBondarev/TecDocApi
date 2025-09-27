@@ -8,6 +8,7 @@ using Servcies.DataServcies;
 using Servcies.ReleasServcies.ReleaseManager;
 using Servcies.SignalRServcies;
 using Serilog;
+using Prometheus;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -64,6 +65,9 @@ app.AddCustomMiddleware();
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+
+app.UseMetricServer();          // по умолчанию /metrics
+app.UseHttpMetrics();           // собирает метрики по HTTP-запросам
 
 app.UseRouting();
 
