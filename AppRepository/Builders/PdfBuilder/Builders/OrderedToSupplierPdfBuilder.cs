@@ -35,32 +35,45 @@ public class ShippedToSellerPdfBuilder : IPdfBuilder
         // Убедимся, что используем правильную кодировку
         try
         {
-            string fontsFolder = Path.Combine(Directory.GetCurrentDirectory(), "Fonts");
-            string arialPath = Path.Combine(fontsFolder, "arial.ttf");
-            
-            if (File.Exists(arialPath))
+            // Путь к папке Fonts в корне проекта
+            string projectRoot = Directory.GetCurrentDirectory();
+            string fontsFolder = Path.Combine(projectRoot, "Fonts");
+    
+            // Создаем папку Fonts если ее нет
+            if (!Directory.Exists(fontsFolder))
             {
+                Directory.CreateDirectory(fontsFolder);
+            }
+    
+            string arialPath = Path.Combine(fontsFolder, "arial.ttf");
+            string arialBoldPath = Path.Combine(fontsFolder, "arialbd.ttf");
+    
+            // Используем только шрифты из локальной папки проекта
+            if (File.Exists(arialPath) && File.Exists(arialBoldPath))
+            {
+                _font = PdfFontFactory.CreateFont(arialPath, PdfEncodings.IDENTITY_H);
+                _boldFont = PdfFontFactory.CreateFont(arialBoldPath, PdfEncodings.IDENTITY_H);
+            }
+            else if (File.Exists(arialPath))
+            {
+                // Если есть только обычный Arial, используем его для обоих вариантов
                 _font = PdfFontFactory.CreateFont(arialPath, PdfEncodings.IDENTITY_H);
                 _boldFont = PdfFontFactory.CreateFont(arialPath, PdfEncodings.IDENTITY_H);
             }
             else
             {
-                _font = PdfFontFactory.CreateFont("c:/windows/fonts/arial.ttf", PdfEncodings.IDENTITY_H);
-                _boldFont = PdfFontFactory.CreateFont("c:/windows/fonts/arialbd.ttf", PdfEncodings.IDENTITY_H);
-            }
-        }
-        catch
-        {
-            try
-            {
-                _font = PdfFontFactory.CreateFont("Times New Roman", PdfEncodings.IDENTITY_H);
-                _boldFont = PdfFontFactory.CreateFont("Times New Roman", PdfEncodings.IDENTITY_H);
-            }
-            catch
-            {
+                // Если в папке проекта нет шрифтов, используем стандартные шрифты iText
                 _font = PdfFontFactory.CreateFont(StandardFonts.HELVETICA);
                 _boldFont = PdfFontFactory.CreateFont(StandardFonts.HELVETICA_BOLD);
             }
+        }
+        catch (Exception ex)
+        {
+            // Если возникла ошибка, используем стандартные шрифты
+            _font = PdfFontFactory.CreateFont(StandardFonts.HELVETICA);
+            _boldFont = PdfFontFactory.CreateFont(StandardFonts.HELVETICA_BOLD);
+    
+            Console.WriteLine($"Ошибка загрузки шрифтов: {ex.Message}");
         }
     }
 
