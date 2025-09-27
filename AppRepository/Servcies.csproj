@@ -14,6 +14,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CsvHelper" />
+    <PackageReference Include="DinkToPdf" />
     <PackageReference Include="DocumentFormat.OpenXml" />
     <PackageReference Include="Dropbox.Api" />
     <PackageReference Include="EPPlus" />
@@ -26,6 +27,7 @@
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" />
     <PackageReference Include="Microsoft.Playwright" />
+    <PackageReference Include="QuestPDF" />
     <PackageReference Include="RestEase" />
     <PackageReference Include="Selenium.Support" />
     <PackageReference Include="Selenium.WebDriver" />

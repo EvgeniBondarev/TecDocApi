@@ -20,6 +20,7 @@ using Servcies.ParserServcies.FielParsers;
 using Services.CacheServcies.Cache;
 using Services.CacheServcies.Cache.OzonOrdersCache;
 using System;
+using OzonRepositories.Data.Bitrix;
 
 namespace OzonOrdersWeb.Controllers
 {
@@ -44,7 +45,7 @@ namespace OzonOrdersWeb.Controllers
         private readonly IUniqueValuesCache _uniqueValuesCache;
         private readonly IUserCacheService _userCacheService;
         private readonly PdfService _pdfService;
-
+        private readonly BitrixStockRepository _stockRepository;
         public TransactionController(TransactionDataServcies transactionDataServcies,
                                     OrdersDataServcies ordersDataServcies,
                                     TransactionCache cache,
@@ -61,7 +62,8 @@ namespace OzonOrdersWeb.Controllers
                                     ExcelExporter excelExporter,
                                     IUniqueValuesCache uniqueValuesCache,
                                     IUserCacheService userCacheService,
-                                    PdfService pdfService
+                                    PdfService pdfService,
+                                    BitrixStockRepository stockRepository
                                     )
         {
             _transactionDataServcies = transactionDataServcies;
@@ -81,6 +83,7 @@ namespace OzonOrdersWeb.Controllers
             _uniqueValuesCache = uniqueValuesCache;
             _userCacheService = userCacheService;
             _pdfService = pdfService;
+            _stockRepository = stockRepository;
         }
 
         public async Task<IActionResult> Index(OrderSortState sortOrder = OrderSortState.StandardState, int page = 1)
@@ -281,6 +284,8 @@ namespace OzonOrdersWeb.Controllers
             Transaction transaction = await _transactionDataServcies.GetTransaction(transactionId);
             if (transaction != null && transaction.Orders != null)
             {
+                var stock = await _stockRepository.SetStocksForOrdersAsyncFromBitrix(transaction.Orders.ToList());
+                _pdfService.stocks = stock;
                 byte[] pdfFile = _pdfService.GenerateTransactionPdf(transaction);
 
                 string transactionTypeName = transaction.Type?.GetDisplayName() ?? "Unknown";

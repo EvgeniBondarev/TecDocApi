@@ -1,68 +1,225 @@
-﻿using iText.IO.Font.Constants;
+﻿using iText.IO.Font;
 using iText.Kernel.Font;
 using iText.Kernel.Pdf;
 using iText.Layout;
 using iText.Layout.Element;
+using iText.IO.Image;
+using System.IO;
+using iText.IO.Font.Constants;
+using iText.Layout.Properties;
+using iText.Kernel.Colors;
 using OzonDomains;
 using OzonDomains.Models;
+using OzonDomains.Models.BitrixModels;
 
-public class OrderedToSupplierPdfBuilder : IPdfBuilder
+public class ShippedToSellerPdfBuilder : IPdfBuilder
 {
     private MemoryStream _memoryStream;
     private PdfWriter _writer;
     private PdfDocument _pdf;
     private Document _document;
     private PdfFont _font;
+    private PdfFont _boldFont;
+    private Transaction _transaction;
+    private ICollection<Order> _orders;
+    private Dictionary<int, List<StockInfo>> _stocks;
 
-    public OrderedToSupplierPdfBuilder()
+    public ShippedToSellerPdfBuilder()
     {
         _memoryStream = new MemoryStream();
         _writer = new PdfWriter(_memoryStream);
         _pdf = new PdfDocument(_writer);
         _document = new Document(_pdf);
+        _document.SetMargins(40, 40, 40, 40);
 
-        // Подключаем шрифт с поддержкой кириллицы
-        _font = PdfFontFactory.CreateFont(StandardFonts.HELVETICA); // можно заменить на шрифт с кириллицей
+        // Убедимся, что используем правильную кодировку
+        try
+        {
+            string fontsFolder = Path.Combine(Directory.GetCurrentDirectory(), "Fonts");
+            string arialPath = Path.Combine(fontsFolder, "arial.ttf");
+            
+            if (File.Exists(arialPath))
+            {
+                _font = PdfFontFactory.CreateFont(arialPath, PdfEncodings.IDENTITY_H);
+                _boldFont = PdfFontFactory.CreateFont(arialPath, PdfEncodings.IDENTITY_H);
+            }
+            else
+            {
+                _font = PdfFontFactory.CreateFont("c:/windows/fonts/arial.ttf", PdfEncodings.IDENTITY_H);
+                _boldFont = PdfFontFactory.CreateFont("c:/windows/fonts/arialbd.ttf", PdfEncodings.IDENTITY_H);
+            }
+        }
+        catch
+        {
+            try
+            {
+                _font = PdfFontFactory.CreateFont("Times New Roman", PdfEncodings.IDENTITY_H);
+                _boldFont = PdfFontFactory.CreateFont("Times New Roman", PdfEncodings.IDENTITY_H);
+            }
+            catch
+            {
+                _font = PdfFontFactory.CreateFont(StandardFonts.HELVETICA);
+                _boldFont = PdfFontFactory.CreateFont(StandardFonts.HELVETICA_BOLD);
+            }
+        }
     }
 
     public void BuildHeader(Transaction transaction)
     {
-        _document.Add(new Paragraph($"Транзакция: {transaction.Id}")
-            .SetFont(_font)
-            .SetFontSize(16));
-        _document.Add(new Paragraph($"Тип: {transaction.Type?.GetDisplayName()}")
-            .SetFont(_font));
-        _document.Add(new Paragraph($"Создано: {transaction.FormattedCreatedTimeDateTime}")
-            .SetFont(_font));
-        _document.Add(new Paragraph($"Пользователь: {transaction.CreateBy}")
-            .SetFont(_font));
-        if (!string.IsNullOrEmpty(transaction.Comment))
-            _document.Add(new Paragraph($"Комментарий: {transaction.Comment}")
-                .SetFont(_font));
+        _transaction = transaction;
     }
 
     public void BuildOrdersTable(ICollection<Order> orders)
     {
-        if (orders == null || !orders.Any()) return;
+        _orders = orders;
+    }
 
-        Table table = new Table(3);
-        table.AddHeaderCell(new Cell().Add(new Paragraph("Id").SetFont(_font)));
-        table.AddHeaderCell(new Cell().Add(new Paragraph("Название").SetFont(_font)));
-        table.AddHeaderCell(new Cell().Add(new Paragraph("Количество").SetFont(_font)));
-
-        foreach (var order in orders)
-        {
-            table.AddCell(new Cell().Add(new Paragraph(order.Id.ToString()).SetFont(_font)));
-            table.AddCell(new Cell().Add(new Paragraph(order.ShipmentNumber ?? "").SetFont(_font)));
-            table.AddCell(new Cell().Add(new Paragraph(order.Quantity.ToString()).SetFont(_font)));
-        }
-
-        _document.Add(table);
+    public void SetOrdersStock(Dictionary<int, List<StockInfo>> stocks)
+    {
+        _stocks = stocks;
     }
 
     public byte[] GetPdf()
     {
-        _document.Close();
-        return _memoryStream.ToArray();
+        try
+        {
+            // Заголовок документа
+            _document.Add(new Paragraph($"{_transaction.Type?.GetDisplayName()} № {_transaction.Id} от {_transaction.FormattedCreatedTimeDateTime}")
+                .SetFont(_boldFont)
+                .SetFontSize(14)
+                .SetTextAlignment(TextAlignment.LEFT));
+
+            // Информация об отправителе и получателе в одной строке
+            var sender = _orders?.FirstOrDefault()?.ShipmentWarehouse?.Name ?? "Не указан";
+            var receiver = _orders?.FirstOrDefault()?.OzonClient?.WarehouseName ?? "Не указан";
+
+            _document.Add(new Paragraph($"Отправитель: {sender}")
+                .SetFont(_font)
+                .SetFontSize(11));
+
+            _document.Add(new Paragraph($"Получатель: {receiver}")
+                .SetFont(_font)
+                .SetFontSize(11)
+                .SetMarginBottom(10));
+
+            // Таблица с товарами
+            if (_orders != null && _orders.Any())
+            {
+                // Создаем таблицу с 5 колонками (добавили Остаток на складе)
+                Table table = new Table(UnitValue.CreatePercentArray(new float[] { 8, 15, 40, 12, 25 }))
+                    .UseAllAvailableWidth()
+                    .SetWidth(UnitValue.CreatePercentValue(100));
+
+                // Стиль для заголовков таблицы
+                var headerStyle = new Style()
+                    .SetBackgroundColor(ColorConstants.LIGHT_GRAY)
+                    .SetPadding(8)
+                    .SetTextAlignment(TextAlignment.CENTER)
+                    .SetFont(_boldFont)
+                    .SetFontSize(10);
+
+                // Стиль для ячеек с данными
+                var cellStyle = new Style()
+                    .SetPadding(8)
+                    .SetTextAlignment(TextAlignment.LEFT)
+                    .SetFont(_font)
+                    .SetFontSize(9);
+
+                // Заголовки таблицы
+                table.AddHeaderCell(new Cell().Add(new Paragraph("№").SetTextAlignment(TextAlignment.CENTER)).AddStyle(headerStyle));
+                table.AddHeaderCell(new Cell().Add(new Paragraph("Код").SetTextAlignment(TextAlignment.CENTER)).AddStyle(headerStyle));
+                table.AddHeaderCell(new Cell().Add(new Paragraph("Товары").SetTextAlignment(TextAlignment.CENTER)).AddStyle(headerStyle));
+                table.AddHeaderCell(new Cell().Add(new Paragraph("Количество").SetTextAlignment(TextAlignment.CENTER)).AddStyle(headerStyle));
+                table.AddHeaderCell(new Cell().Add(new Paragraph("Остаток на складе").SetTextAlignment(TextAlignment.CENTER)).AddStyle(headerStyle));
+
+                // Данные таблицы
+                int rowNumber = 1;
+                foreach (var order in _orders)
+                {
+                    // №
+                    table.AddCell(new Cell()
+                        .Add(new Paragraph(rowNumber.ToString()).SetTextAlignment(TextAlignment.CENTER))
+                        .AddStyle(cellStyle));
+
+                    // Код товара
+                    table.AddCell(new Cell()
+                        .Add(new Paragraph(order.ProductKey ?? ""))
+                        .AddStyle(cellStyle));
+
+                    // Название товара
+                    var productName = string.IsNullOrEmpty(order.ProductName) ? "" : order.ProductName;
+                    table.AddCell(new Cell()
+                        .Add(new Paragraph(productName))
+                        .AddStyle(cellStyle));
+
+                    // Количество
+                    table.AddCell(new Cell()
+                        .Add(new Paragraph($"{order.Quantity} шт").SetTextAlignment(TextAlignment.CENTER))
+                        .AddStyle(cellStyle));
+
+                    // Остаток на складе
+                    var stockCell = new Cell().AddStyle(cellStyle);
+                    
+                    if (_stocks != null && _stocks.TryGetValue(order.Id, out var stockInfos) && stockInfos != null && stockInfos.Any())
+                    {
+                        // Создаем список остатков для этого заказа
+                        foreach (var stock in stockInfos)
+                        {
+                            stockCell.Add(new Paragraph($"{stock.StoreTitle}: {stock.Amount} шт")
+                                .SetFontSize(8)
+                                .SetMargin(0)
+                                .SetPadding(0));
+                        }
+                    }
+                    else
+                    {
+                        stockCell.Add(new Paragraph("Нет данных").SetFontSize(8));
+                    }
+                    
+                    table.AddCell(stockCell);
+
+                    rowNumber++;
+                }
+
+                _document.Add(table);
+            }
+
+            // Добавляем комментарий если есть
+            if (!string.IsNullOrEmpty(_transaction.Comment))
+            {
+                _document.Add(new Paragraph($"Примечание: {_transaction.Comment}")
+                    .SetFont(_font)
+                    .SetFontSize(10)
+                    .SetMarginTop(10));
+            }
+
+            _document.Close();
+            return _memoryStream.ToArray();
+        }
+        catch (Exception ex)
+        {
+            return CreateFallbackPdf(ex.Message);
+        }
+    }
+
+    private byte[] CreateFallbackPdf(string errorMessage = null)
+    {
+        var fallbackStream = new MemoryStream();
+        var fallbackWriter = new PdfWriter(fallbackStream);
+        var fallbackPdf = new PdfDocument(fallbackWriter);
+        var fallbackDoc = new Document(fallbackPdf);
+
+        fallbackDoc.Add(new Paragraph("Перемещение запасов").SetFontSize(16));
+        
+        if (!string.IsNullOrEmpty(errorMessage))
+        {
+            fallbackDoc.Add(new Paragraph($"Ошибка: {errorMessage}").SetFontColor(ColorConstants.RED));
+        }
+
+        fallbackDoc.Add(new Paragraph($"№ {_transaction.Id}"));
+        fallbackDoc.Add(new Paragraph($"Дата: {_transaction.FormattedCreatedTimeDateTime}"));
+
+        fallbackDoc.Close();
+        return fallbackStream.ToArray();
     }
 }

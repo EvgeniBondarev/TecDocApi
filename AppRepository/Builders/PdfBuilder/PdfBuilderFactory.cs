@@ -6,8 +6,8 @@ public static class PdfBuilderFactory
     {
         return type switch
         {
-            TransactionType.OrderedToSupplier => new OrderedToSupplierPdfBuilder(),
-            _ => new OrderedToSupplierPdfBuilder() 
+            TransactionType.ShippedToSeller => new ShippedToSellerPdfBuilder(),
+            _ => new ShippedToSellerPdfBuilder() 
         };
     }
 }
