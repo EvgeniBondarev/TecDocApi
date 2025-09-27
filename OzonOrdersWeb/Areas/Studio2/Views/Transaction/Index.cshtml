@@ -810,7 +810,10 @@
                 <tr>
                     <td colspan="2">
                         <b>Тип:</b> @GetTransactionTypeDisplayName(transaction.Type)<br />
-                        <b>Комментарий:</b><span title="@transaction.Comment">@transaction.Comment.Substring(0, 30)...</span>
+                        @if (@transaction.Comment != null)
+                        {
+                            <b>Комментарий:</b><span title="@transaction.Comment">transaction.Comment?.Substring(0, 30)...</span>
+                        }
                     </td>
 
                     @{
