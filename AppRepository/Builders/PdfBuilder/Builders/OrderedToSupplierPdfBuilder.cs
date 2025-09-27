@@ -32,115 +32,110 @@ public class ShippedToSellerPdfBuilder : IPdfBuilder
         _document = new Document(_pdf);
         _document.SetMargins(40, 40, 40, 40);
 
-        // Убедимся, что используем правильную кодировку
         try
         {
-            // Получаем корневую директорию проекта
-            string projectRoot = Directory.GetCurrentDirectory();
-            
-            // Пробуем разные варианты названия папки с шрифтами
+            // Попробуем использовать шрифты, которые точно поддерживают кириллицу
+            string[] knownCyrillicFonts = {
+                "times.ttf", "timesbd.ttf",               // Times New Roman
+                "dejavu-sans.ttf", "dejavu-sans-bold.ttf", // DejaVu Sans
+                "liberation-sans.ttf", "liberation-sans-bold.ttf", // Liberation Sans
+                "freesans.ttf", "freesansbold.ttf",       // FreeSans
+                "arial.ttf", "arialbd.ttf"                // Arial
+            };
+
+            string fontsFolder = null;
+            string regularFontPath = null;
+            string boldFontPath = null;
+
+            // Ищем папку со шрифтами
             string[] possibleFontFolders = {
-                Path.Combine(projectRoot, "Fonts"),
-                Path.Combine(projectRoot, "fonts"),
-                Path.Combine(projectRoot, "Resources", "Fonts"),
-                Path.Combine(projectRoot, "resources", "fonts"),
-                Path.Combine(projectRoot, "wwwroot", "fonts"),
+                Path.Combine(Directory.GetCurrentDirectory(), "Fonts"),
+                Path.Combine(Directory.GetCurrentDirectory(), "fonts"),
+                Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "fonts"),
                 Path.Combine(AppContext.BaseDirectory, "Fonts"),
                 Path.Combine(AppContext.BaseDirectory, "fonts")
             };
 
-            string fontsFolder = null;
-            string arialPath = null;
-            string arialBoldPath = null;
-
-            // Ищем существующую папку со шрифтами
             foreach (var folder in possibleFontFolders)
             {
                 if (Directory.Exists(folder))
                 {
-                    fontsFolder = folder;
-                    
-                    // Проверяем разные варианты написания файлов
-                    string[] arialVariants = { "arial.ttf", "Arial.ttf", "ARIAL.ttf" };
-                    string[] arialBoldVariants = { "arialbd.ttf", "arialbold.ttf", "Arialbd.ttf", "ArialBold.ttf" };
-                    
-                    foreach (var variant in arialVariants)
+                    foreach (var fontFile in knownCyrillicFonts)
                     {
-                        string path = Path.Combine(folder, variant);
+                        string path = Path.Combine(folder, fontFile);
                         if (File.Exists(path))
                         {
-                            arialPath = path;
-                            break;
+                            if (fontFile.Contains("bold") || fontFile.Contains("bd"))
+                            {
+                                boldFontPath = path;
+                            }
+                            else if (!fontFile.Contains("bold") && !fontFile.Contains("bd"))
+                            {
+                                regularFontPath = path;
+                            }
                         }
                     }
                     
-                    foreach (var variant in arialBoldVariants)
-                    {
-                        string path = Path.Combine(folder, variant);
-                        if (File.Exists(path))
-                        {
-                            arialBoldPath = path;
-                            break;
-                        }
-                    }
-                    
-                    if (arialPath != null) break;
+                    if (regularFontPath != null) break;
                 }
             }
 
-            // Если нашли шрифты, используем их
-            if (arialPath != null)
+            if (regularFontPath != null)
             {
-                _font = PdfFontFactory.CreateFont(arialPath, PdfEncodings.IDENTITY_H);
+                _font = PdfFontFactory.CreateFont(regularFontPath, PdfEncodings.IDENTITY_H);
+                _boldFont = boldFontPath != null 
+                    ? PdfFontFactory.CreateFont(boldFontPath, PdfEncodings.IDENTITY_H)
+                    : PdfFontFactory.CreateFont(regularFontPath, PdfEncodings.IDENTITY_H);
                 
-                if (arialBoldPath != null)
-                {
-                    _boldFont = PdfFontFactory.CreateFont(arialBoldPath, PdfEncodings.IDENTITY_H);
-                }
-                else
-                {
-                    // Если нет жирного шрифта, используем обычный
-                    _boldFont = PdfFontFactory.CreateFont(arialPath, PdfEncodings.IDENTITY_H);
-                }
-                
-                Console.WriteLine($"Успешно загружены шрифты: {arialPath}");
+                Console.WriteLine($"Успешно загружены шрифты: {regularFontPath}");
             }
             else
             {
-                // Если шрифты не найдены, используем встроенные
-                _font = PdfFontFactory.CreateFont(StandardFonts.HELVETICA);
-                _boldFont = PdfFontFactory.CreateFont(StandardFonts.HELVETICA_BOLD);
-                Console.WriteLine("Шрифты не найдены, используются стандартные Helvetica");
+                // Используем Times New Roman через системные пути для Linux
+                TryLoadSystemFonts();
             }
         }
         catch (Exception ex)
         {
-            _font = PdfFontFactory.CreateFont(StandardFonts.HELVETICA);
-            _boldFont = PdfFontFactory.CreateFont(StandardFonts.HELVETICA_BOLD);
+            TryLoadSystemFonts();
             Console.WriteLine($"Ошибка загрузки шрифтов: {ex.Message}");
-            
-            // Логируем дополнительную информацию для отладки
-            Console.WriteLine($"Current Directory: {Directory.GetCurrentDirectory()}");
-            Console.WriteLine($"Base Directory: {AppContext.BaseDirectory}");
-            
-            // Покажем какие папки существуют
-            try
-            {
-                var currentDir = Directory.GetCurrentDirectory();
-                var directories = Directory.GetDirectories(currentDir);
-                Console.WriteLine("Доступные папки:");
-                foreach (var dir in directories)
-                {
-                    Console.WriteLine($"- {Path.GetFileName(dir)}");
-                }
-            }
-            catch (Exception dirEx)
-            {
-                Console.WriteLine($"Ошибка при чтении директорий: {dirEx.Message}");
-            }
         }
     }
+    
+    private void TryLoadSystemFonts()
+    {
+        try
+        {
+            // Пути к шрифтам в Linux
+            string[] linuxFontPaths = {
+                "/usr/share/fonts/truetype/freefont/FreeSans.ttf",
+                "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+                "/usr/share/fonts/truetype/msttcorefonts/Arial.ttf"
+            };
 
+            foreach (var path in linuxFontPaths)
+            {
+                if (File.Exists(path))
+                {
+                    _font = PdfFontFactory.CreateFont(path, PdfEncodings.IDENTITY_H);
+                    _boldFont = PdfFontFactory.CreateFont(path, PdfEncodings.IDENTITY_H);
+                    Console.WriteLine($"Используем системный шрифт: {path}");
+                    return;
+                }
+            }
+
+            // Если ничего не найдено, используем стандартные шрифты
+            _font = PdfFontFactory.CreateFont(StandardFonts.HELVETICA);
+            _boldFont = PdfFontFactory.CreateFont(StandardFonts.HELVETICA_BOLD);
+            Console.WriteLine("Используются стандартные шрифты Helvetica (кириллица не поддерживается)");
+        }
+        catch
+        {
+            _font = PdfFontFactory.CreateFont(StandardFonts.HELVETICA);
+            _boldFont = PdfFontFactory.CreateFont(StandardFonts.HELVETICA_BOLD);
+        }
+    }
     public void BuildHeader(Transaction transaction)
     {
         _transaction = transaction;
