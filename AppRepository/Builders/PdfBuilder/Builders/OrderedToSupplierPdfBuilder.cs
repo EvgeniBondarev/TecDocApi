@@ -91,7 +91,6 @@ public class ShippedToSellerPdfBuilder : IPdfBuilder
             }
             else
             {
-                // Используем Times New Roman через системные пути для Linux
                 TryLoadSystemFonts();
             }
         }
@@ -161,99 +160,126 @@ public class ShippedToSellerPdfBuilder : IPdfBuilder
                 .SetFontSize(14)
                 .SetTextAlignment(TextAlignment.LEFT));
 
-            // Информация об отправителе и получателе в одной строке
+           // Информация об отправителе (остается одна для всех заказов)
             var sender = _orders?.FirstOrDefault()?.ShipmentWarehouse?.Name ?? "Не указан";
-            var receiver = _orders?.FirstOrDefault()?.OzonClient?.WarehouseName ?? "Не указан";
-
             _document.Add(new Paragraph($"Отправитель: {sender}")
                 .SetFont(_font)
                 .SetFontSize(11));
 
-            _document.Add(new Paragraph($"Получатель: {receiver}")
-                .SetFont(_font)
-                .SetFontSize(11)
-                .SetMarginBottom(10));
+            // Группируем заказы по клиентам
+            var ordersByClient = _orders?
+                .Where(o => o.OzonClient != null)
+                .GroupBy(o => o.OzonClient)
+                .ToList();
 
-            // Таблица с товарами
-            if (_orders != null && _orders.Any())
+            if (ordersByClient != null && ordersByClient.Any())
             {
-                // Создаем таблицу с 5 колонками (добавили Остаток на складе)
-                Table table = new Table(UnitValue.CreatePercentArray(new float[] { 8, 15, 40, 12, 25 }))
-                    .UseAllAvailableWidth()
-                    .SetWidth(UnitValue.CreatePercentValue(100));
-
-                // Стиль для заголовков таблицы
-                var headerStyle = new Style()
-                    .SetBackgroundColor(ColorConstants.LIGHT_GRAY)
-                    .SetPadding(8)
-                    .SetTextAlignment(TextAlignment.CENTER)
-                    .SetFont(_boldFont)
-                    .SetFontSize(10);
-
-                // Стиль для ячеек с данными
-                var cellStyle = new Style()
-                    .SetPadding(8)
-                    .SetTextAlignment(TextAlignment.LEFT)
-                    .SetFont(_font)
-                    .SetFontSize(9);
-
-                // Заголовки таблицы
-                table.AddHeaderCell(new Cell().Add(new Paragraph("№").SetTextAlignment(TextAlignment.CENTER)).AddStyle(headerStyle));
-                table.AddHeaderCell(new Cell().Add(new Paragraph("Код").SetTextAlignment(TextAlignment.CENTER)).AddStyle(headerStyle));
-                table.AddHeaderCell(new Cell().Add(new Paragraph("Товары").SetTextAlignment(TextAlignment.CENTER)).AddStyle(headerStyle));
-                table.AddHeaderCell(new Cell().Add(new Paragraph("Количество").SetTextAlignment(TextAlignment.CENTER)).AddStyle(headerStyle));
-                table.AddHeaderCell(new Cell().Add(new Paragraph("Остаток на складе").SetTextAlignment(TextAlignment.CENTER)).AddStyle(headerStyle));
-
-                // Данные таблицы
-                int rowNumber = 1;
-                foreach (var order in _orders)
+                foreach (var clientGroup in ordersByClient)
                 {
-                    // №
-                    table.AddCell(new Cell()
-                        .Add(new Paragraph(rowNumber.ToString()).SetTextAlignment(TextAlignment.CENTER))
-                        .AddStyle(cellStyle));
+                    var client = clientGroup.Key;
+                    var clientOrders = clientGroup.ToList();
+                    var receiver = client.WarehouseName ?? "Не указан";
 
-                    // Код товара
-                    table.AddCell(new Cell()
-                        .Add(new Paragraph(order.ProductKey ?? ""))
-                        .AddStyle(cellStyle));
+                    // Добавляем заголовок для клиента
+                    _document.Add(new Paragraph($"Получатель: {receiver} ({client.Name})")
+                        .SetFont(_font)
+                        .SetFontSize(11)
+                        .SetMarginTop(15)
+                        .SetMarginBottom(5));
 
-                    // Название товара
-                    var productName = string.IsNullOrEmpty(order.ProductName) ? "" : order.ProductName;
-                    table.AddCell(new Cell()
-                        .Add(new Paragraph(productName))
-                        .AddStyle(cellStyle));
+                    // Таблица с товарами для текущего клиента
+                    Table table = new Table(UnitValue.CreatePercentArray(new float[] { 8, 15, 40, 12, 25 }))
+                        .UseAllAvailableWidth()
+                        .SetWidth(UnitValue.CreatePercentValue(100));
 
-                    // Количество
-                    table.AddCell(new Cell()
-                        .Add(new Paragraph($"{order.Quantity} шт").SetTextAlignment(TextAlignment.CENTER))
-                        .AddStyle(cellStyle));
+                    // Стиль для заголовков таблицы
+                    var headerStyle = new Style()
+                        .SetBackgroundColor(ColorConstants.LIGHT_GRAY)
+                        .SetPadding(8)
+                        .SetTextAlignment(TextAlignment.CENTER)
+                        .SetFont(_boldFont)
+                        .SetFontSize(10);
 
-                    // Остаток на складе
-                    var stockCell = new Cell().AddStyle(cellStyle);
-                    
-                    if (_stocks != null && _stocks.TryGetValue(order.Id, out var stockInfos) && stockInfos != null && stockInfos.Any())
+                    // Стиль для ячеек с данными
+                    var cellStyle = new Style()
+                        .SetPadding(8)
+                        .SetTextAlignment(TextAlignment.LEFT)
+                        .SetFont(_font)
+                        .SetFontSize(9);
+
+                    // Заголовки таблицы
+                    table.AddHeaderCell(new Cell().Add(new Paragraph("№").SetTextAlignment(TextAlignment.CENTER)).AddStyle(headerStyle));
+                    table.AddHeaderCell(new Cell().Add(new Paragraph("Код").SetTextAlignment(TextAlignment.CENTER)).AddStyle(headerStyle));
+                    table.AddHeaderCell(new Cell().Add(new Paragraph("Товары").SetTextAlignment(TextAlignment.CENTER)).AddStyle(headerStyle));
+                    table.AddHeaderCell(new Cell().Add(new Paragraph("Количество").SetTextAlignment(TextAlignment.CENTER)).AddStyle(headerStyle));
+                    table.AddHeaderCell(new Cell().Add(new Paragraph("Остаток на складе").SetTextAlignment(TextAlignment.CENTER)).AddStyle(headerStyle));
+
+                    // Данные таблицы для текущего клиента
+                    int rowNumber = 1;
+                    foreach (var order in clientOrders)
                     {
-                        // Создаем список остатков для этого заказа
-                        foreach (var stock in stockInfos)
+                        // №
+                        table.AddCell(new Cell()
+                            .Add(new Paragraph(rowNumber.ToString()).SetTextAlignment(TextAlignment.CENTER))
+                            .AddStyle(cellStyle));
+
+                        // Код товара
+                        table.AddCell(new Cell()
+                            .Add(new Paragraph(order.ProductKey ?? ""))
+                            .AddStyle(cellStyle));
+
+                        // Название товара
+                        var productName = string.IsNullOrEmpty(order.ProductName) ? "" : order.ProductName;
+                        table.AddCell(new Cell()
+                            .Add(new Paragraph(productName))
+                            .AddStyle(cellStyle));
+
+                        // Количество
+                        table.AddCell(new Cell()
+                            .Add(new Paragraph($"{order.Quantity} шт").SetTextAlignment(TextAlignment.CENTER))
+                            .AddStyle(cellStyle));
+
+                        // Остаток на складе
+                        var stockCell = new Cell().AddStyle(cellStyle);
+                        
+                        if (_stocks != null && _stocks.TryGetValue(order.Id, out var stockInfos) && stockInfos != null && stockInfos.Any())
                         {
-                            stockCell.Add(new Paragraph($"{stock.StoreTitle}: {stock.Amount} шт")
-                                .SetFontSize(8)
-                                .SetMargin(0)
-                                .SetPadding(0));
+                            // Создаем список остатков для этого заказа
+                            foreach (var stock in stockInfos)
+                            {
+                                stockCell.Add(new Paragraph($"{stock.StoreTitle}: {stock.Amount} шт")
+                                    .SetFontSize(8)
+                                    .SetMargin(0)
+                                    .SetPadding(0));
+                            }
                         }
-                    }
-                    else
-                    {
-                        stockCell.Add(new Paragraph("Нет данных").SetFontSize(8));
-                    }
-                    
-                    table.AddCell(stockCell);
+                        else
+                        {
+                            stockCell.Add(new Paragraph("Нет данных").SetFontSize(8));
+                        }
+                        
+                        table.AddCell(stockCell);
 
-                    rowNumber++;
+                        rowNumber++;
+                    }
+
+                    _document.Add(table);
+
+                    // Добавляем отступ между таблицами клиентов
+                    _document.Add(new Paragraph(" ").SetMarginBottom(10));
                 }
-
-                _document.Add(table);
+            }
+            else
+            {
+                _document.Add(new Paragraph("Получатель: Не указан")
+                    .SetFont(_font)
+                    .SetFontSize(11)
+                    .SetMarginBottom(10));
+                
+                _document.Add(new Paragraph("Нет данных о заказах")
+                    .SetFont(_font)
+                    .SetFontSize(10)
+                    .SetFontColor(ColorConstants.RED));
             }
 
             // Добавляем комментарий если есть
