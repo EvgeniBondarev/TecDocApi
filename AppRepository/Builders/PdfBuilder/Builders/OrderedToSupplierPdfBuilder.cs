@@ -35,45 +35,109 @@ public class ShippedToSellerPdfBuilder : IPdfBuilder
         // Убедимся, что используем правильную кодировку
         try
         {
-            // Путь к папке Fonts в корне проекта
+            // Получаем корневую директорию проекта
             string projectRoot = Directory.GetCurrentDirectory();
-            string fontsFolder = Path.Combine(projectRoot, "Fonts");
-    
-            // Создаем папку Fonts если ее нет
-            if (!Directory.Exists(fontsFolder))
+            
+            // Пробуем разные варианты названия папки с шрифтами
+            string[] possibleFontFolders = {
+                Path.Combine(projectRoot, "Fonts"),
+                Path.Combine(projectRoot, "fonts"),
+                Path.Combine(projectRoot, "Resources", "Fonts"),
+                Path.Combine(projectRoot, "resources", "fonts"),
+                Path.Combine(projectRoot, "wwwroot", "fonts"),
+                Path.Combine(AppContext.BaseDirectory, "Fonts"),
+                Path.Combine(AppContext.BaseDirectory, "fonts")
+            };
+
+            string fontsFolder = null;
+            string arialPath = null;
+            string arialBoldPath = null;
+
+            // Ищем существующую папку со шрифтами
+            foreach (var folder in possibleFontFolders)
             {
-                Directory.CreateDirectory(fontsFolder);
+                if (Directory.Exists(folder))
+                {
+                    fontsFolder = folder;
+                    
+                    // Проверяем разные варианты написания файлов
+                    string[] arialVariants = { "arial.ttf", "Arial.ttf", "ARIAL.ttf" };
+                    string[] arialBoldVariants = { "arialbd.ttf", "arialbold.ttf", "Arialbd.ttf", "ArialBold.ttf" };
+                    
+                    foreach (var variant in arialVariants)
+                    {
+                        string path = Path.Combine(folder, variant);
+                        if (File.Exists(path))
+                        {
+                            arialPath = path;
+                            break;
+                        }
+                    }
+                    
+                    foreach (var variant in arialBoldVariants)
+                    {
+                        string path = Path.Combine(folder, variant);
+                        if (File.Exists(path))
+                        {
+                            arialBoldPath = path;
+                            break;
+                        }
+                    }
+                    
+                    if (arialPath != null) break;
+                }
             }
-    
-            string arialPath = Path.Combine(fontsFolder, "arial.ttf");
-            string arialBoldPath = Path.Combine(fontsFolder, "arialbd.ttf");
-    
-            // Используем только шрифты из локальной папки проекта
-            if (File.Exists(arialPath) && File.Exists(arialBoldPath))
+
+            // Если нашли шрифты, используем их
+            if (arialPath != null)
             {
                 _font = PdfFontFactory.CreateFont(arialPath, PdfEncodings.IDENTITY_H);
-                _boldFont = PdfFontFactory.CreateFont(arialBoldPath, PdfEncodings.IDENTITY_H);
-            }
-            else if (File.Exists(arialPath))
-            {
-                // Если есть только обычный Arial, используем его для обоих вариантов
-                _font = PdfFontFactory.CreateFont(arialPath, PdfEncodings.IDENTITY_H);
-                _boldFont = PdfFontFactory.CreateFont(arialPath, PdfEncodings.IDENTITY_H);
+                
+                if (arialBoldPath != null)
+                {
+                    _boldFont = PdfFontFactory.CreateFont(arialBoldPath, PdfEncodings.IDENTITY_H);
+                }
+                else
+                {
+                    // Если нет жирного шрифта, используем обычный
+                    _boldFont = PdfFontFactory.CreateFont(arialPath, PdfEncodings.IDENTITY_H);
+                }
+                
+                Console.WriteLine($"Успешно загружены шрифты: {arialPath}");
             }
             else
             {
-                // Если в папке проекта нет шрифтов, используем стандартные шрифты iText
+                // Если шрифты не найдены, используем встроенные
                 _font = PdfFontFactory.CreateFont(StandardFonts.HELVETICA);
                 _boldFont = PdfFontFactory.CreateFont(StandardFonts.HELVETICA_BOLD);
+                Console.WriteLine("Шрифты не найдены, используются стандартные Helvetica");
             }
         }
         catch (Exception ex)
         {
-            // Если возникла ошибка, используем стандартные шрифты
             _font = PdfFontFactory.CreateFont(StandardFonts.HELVETICA);
             _boldFont = PdfFontFactory.CreateFont(StandardFonts.HELVETICA_BOLD);
-    
             Console.WriteLine($"Ошибка загрузки шрифтов: {ex.Message}");
+            
+            // Логируем дополнительную информацию для отладки
+            Console.WriteLine($"Current Directory: {Directory.GetCurrentDirectory()}");
+            Console.WriteLine($"Base Directory: {AppContext.BaseDirectory}");
+            
+            // Покажем какие папки существуют
+            try
+            {
+                var currentDir = Directory.GetCurrentDirectory();
+                var directories = Directory.GetDirectories(currentDir);
+                Console.WriteLine("Доступные папки:");
+                foreach (var dir in directories)
+                {
+                    Console.WriteLine($"- {Path.GetFileName(dir)}");
+                }
+            }
+            catch (Exception dirEx)
+            {
+                Console.WriteLine($"Ошибка при чтении директорий: {dirEx.Message}");
+            }
         }
     }
 
