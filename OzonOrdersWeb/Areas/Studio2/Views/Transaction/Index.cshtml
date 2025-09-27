@@ -810,7 +810,7 @@
                 <tr>
                     <td colspan="2">
                         <b>Тип:</b> @GetTransactionTypeDisplayName(transaction.Type)<br />
-                        <b>Комментарий:</b> @transaction.Comment
+                        <b>Комментарий:</b><span title="@transaction.Comment">@transaction.Comment.Substring(0, 30)...</span>
                     </td>
 
                     @{
@@ -838,7 +838,7 @@
                         @transaction.FormattedCreatedDate / @transaction.FormattedCreatedTime
                     </td>
                     <td colspan="11">
-                        <a href="Studio2/Transaction/PrintTransactionToExcel?transactionId=@transaction.Id">Распечатать Excel</a>
+                        <a href="Studio2/Transaction/PrintTransactionToExcel?transactionId=@transaction.Id" style="margin-right: 20px;">Распечатать Excel</a>
                         <a href="Studio2/Transaction/PrintTransactionToPdf?transactionId=@transaction.Id">Распечатать PDF</a>
                     </td>
                 </tr>
