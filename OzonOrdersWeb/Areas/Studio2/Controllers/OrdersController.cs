@@ -181,6 +181,7 @@ namespace OzonOrdersWeb.Controllers
             _bitrixStockRepository = bitrixStockRepository;
         }
         
+        [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Any, NoStore = false)]
         public async Task<IActionResult> Index(OrderSortState sortOrder = OrderSortState.StandardState, int page = 1)
         {
             SaveSortStateCookie(sortOrder);
@@ -235,6 +236,7 @@ namespace OzonOrdersWeb.Controllers
             return View(pageViewModel);
         }
         
+        [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Any, NoStore = false)]
         [HttpPost]
         public async Task<IActionResult> Index(OrderFilterModel filterData, int page = 1, string buttonState = "")
         {

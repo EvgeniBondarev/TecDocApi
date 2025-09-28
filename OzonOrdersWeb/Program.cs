@@ -1,6 +1,7 @@
 ﻿using System.Globalization;
 using Hangfire;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.SignalR;
 using OzonOrdersWeb.Extensions;
 using OzonOrdersWeb.Services.HangfireAuthorization;
@@ -46,18 +47,47 @@ builder.WebHost.ConfigureKestrel(serverOptions =>
 
 Log.Logger = new LoggerConfiguration()
     .Enrich.FromLogContext()
-    .WriteTo.Console()           // для docker logs
-    .WriteTo.Seq("http://seq:5341") // подключение к Seq
+    .WriteTo.Console()           
+    .WriteTo.Seq("http://seq:5341") 
     .CreateLogger();
 
+builder.Services.AddResponseCaching();
 builder.Host.UseSerilog();
 
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true; 
+    options.Providers.Add<BrotliCompressionProvider>();
+    options.Providers.Add<GzipCompressionProvider>();
+});
+
+builder.Services.Configure<BrotliCompressionProviderOptions>(options =>
+{
+    options.Level = System.IO.Compression.CompressionLevel.Fastest;
+});
+
+builder.Services.Configure<GzipCompressionProviderOptions>(options =>
+{
+    options.Level = System.IO.Compression.CompressionLevel.Optimal;
+});
+
 var app = builder.Build();
+
+app.UseResponseCaching(); 
+app.UseResponseCompression();
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        ctx.Context.Response.Headers.Append("Cache-Control", "public,max-age=604800");
+    }
+});
 
 app.UseForwardedHeaders(new ForwardedHeadersOptions
 {
     ForwardedHeaders = ForwardedHeaders.All
 });
+app.UseDeveloperExceptionPage();
 
 app.UseSession();
 
@@ -66,8 +96,8 @@ app.AddCustomMiddleware();
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
-app.UseMetricServer();          // по умолчанию /metrics
-app.UseHttpMetrics();           // собирает метрики по HTTP-запросам
+app.UseMetricServer(); 
+app.UseHttpMetrics();           
 
 app.UseRouting();
 
@@ -96,6 +126,6 @@ app.MapControllerRoute(
     name: "areas",
     pattern: "{area:exists}/{controller=Home}/{action=Index}/{id?}");
 
-app.UseExceptionHandler("/Home/Error");
+//app.UseExceptionHandler("/Home/Error");
 
 app.Run();

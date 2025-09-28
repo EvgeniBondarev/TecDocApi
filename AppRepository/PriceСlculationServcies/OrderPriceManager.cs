@@ -27,7 +27,7 @@ namespace Servcies.PriceСlculationServcies
         }
 
        public async Task<Order> SetPurchasePriceToRUB(Order order)
-        {
+       {
             if (order?.Supplier == null)
             {
                 _logger.LogWarning("Order or Supplier is null in SetPurchasePriceToRUB");
@@ -36,9 +36,9 @@ namespace Servcies.PriceСlculationServcies
 
             try
             {
-                if (order.PurchasePrice <= 0)
+                if (order.PurchasePrice <= 0 && order.OriginalPurchasePrice <= 0)
                 {
-                    _logger.LogWarning($"Invalid PurchasePrice: {order.PurchasePrice} for order {order?.Id}");
+                    _logger.LogWarning($"Invalid PurchasePrice: {order.PurchasePrice}, OriginalPurchasePrice: {order.OriginalPurchasePrice} for order {order?.Id}");
                     return order;
                 }
 
@@ -56,13 +56,21 @@ namespace Servcies.PriceСlculationServcies
                     case OzonDomains.CurrencyCode.USD:
                     case OzonDomains.CurrencyCode.EUR:
                     case OzonDomains.CurrencyCode.BYN:
-                        order.OriginalPurchasePrice = order.PurchasePrice;
+                        // ✅ Если OriginalPurchasePrice ещё не задан — сохраняем его один раз
+                        if (!order.OriginalPurchasePrice.HasValue || order.OriginalPurchasePrice == 0)
+                        {
+                            order.OriginalPurchasePrice = order.PurchasePrice;
+                        }
+
                         rate = await GetValidatedCurrencyRateAsync(order.Supplier.CurrencyCode);
                         shouldConvert = true;
                         break;
+
                     case OzonDomains.CurrencyCode.RUB:
+                        // ✅ В рублях не нужно хранить OriginalPurchasePrice
                         order.OriginalPurchasePrice = null;
                         break;
+
                     default:
                         _logger.LogWarning($"Unsupported currency code: {order.Supplier.CurrencyCode} for order {order?.Id}");
                         return order;
@@ -77,11 +85,12 @@ namespace Servcies.PriceСlculationServcies
                     }
 
                     ValidateCostFactor(order.Supplier.CostFactor);
-                    
+
+                    // ✅ Считаем всегда из OriginalPurchasePrice, а не из уже пересчитанного PurchasePrice
                     order.PurchasePrice = SafeCalculate(
                         () => (order.OriginalPurchasePrice ?? 0) * (order.Supplier.CostFactor ?? 1) * rate,
                         $"PurchasePrice calculation for order {order?.Id}");
-                    
+
                     await LogIfAbnormal(order.PurchasePrice, nameof(SetPurchasePriceToRUB), order);
                 }
 
@@ -93,6 +102,7 @@ namespace Servcies.PriceСlculationServcies
                 throw new OrderPriceCalculationException("Failed to convert purchase price to RUB", ex);
             }
         }
+
 
         public async Task<Order> CalculateProfit(Order order)
         {

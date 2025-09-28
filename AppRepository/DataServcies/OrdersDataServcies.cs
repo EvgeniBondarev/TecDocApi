@@ -40,9 +40,22 @@ namespace Servcies.DataServcies
         [
             "OrderNumberToSupplier", "Supplier",  "SupplierId"
         ];
-
-
-
+        
+        private readonly string[] _priceProperties =
+        [
+            "ShipmentAmount",
+            "Price",
+            "PurchasePrice",
+            "OriginalPurchasePrice",
+            "MinOzonCommission",
+            "MaxOzonCommission",
+            "MinProfit",
+            "MaxProfit",
+            "MinDiscount",
+            "MaxDiscount",
+            "CostPrice"
+        ];
+        
         public async Task<IQueryable<Order>> GetOrders()
         {
             var result = await repository.GetAsync();
@@ -325,8 +338,7 @@ namespace Servcies.DataServcies
 
             existingOrder.IsVerified = isVerified;
         }
-
-
+        
         private async Task UpdateOrder(Order existingOrder, Order jsonOrder)
         {
             var isVerified = existingOrder.IsVerified;
@@ -365,6 +377,16 @@ namespace Servcies.DataServcies
 
                             if (o != null && prop.Name != "Id" && existingOrder.UpdatedColumns.Contains(prop.Name))
                             {
+                                // 🔒 проверка: не даём обновлять ценовые поля, если они уже заданы
+                                if (_priceProperties.Contains(prop.Name))
+                                {
+                                    var currentValue = prop.GetValue(existingOrder);
+                                    if (currentValue != null) 
+                                    {
+                                        continue; // пропускаем обновление этого свойства
+                                    }
+                                }
+
                                 var existingOrderProp = existingOrder.GetType().GetProperty(prop.Name);
                                 if (existingOrderProp != null && existingOrderProp.CanWrite)
                                 {
@@ -378,8 +400,8 @@ namespace Servcies.DataServcies
                         Console.WriteLine($"Error setting property {prop.Name}: {ex.Message}");
                     }
                 }
-
             }
+
             if (existingOrder.UpdatedColumns != null && existingOrder.UpdatedColumns.Contains("AppStatusId"))
             {
                 existingOrder.LastStatusChangeDate = TimeZoneInfo.ConvertTime(DateTime.UtcNow, TimeZoneInfo.FindSystemTimeZoneById("Russian Standard Time"));
@@ -398,6 +420,7 @@ namespace Servcies.DataServcies
 
             await CastToModel(existingOrder);
         }
+
 
         private List<string> GetOrderChangeList(Order existingOrder, Order jsonOrder, string[] ignoredProperties)
         {
