@@ -27,6 +27,9 @@ namespace OzonDomains
         
         [Display(Name = "Отгружен клиенту")]
         ShippedToClient = 6,
+        
+        [Display(Name = "Проценён")]
+        Percentage = 6,
     }
     
     public static class EnumExtensions

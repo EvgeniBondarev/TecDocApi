@@ -933,9 +933,9 @@ namespace Servcies.DataServcies
             return trimmed;
         }
 
-        public async Task<Order> GetOrderByNumberAndArticle(string orderNumber, string article)
+        public async Task<List<int>> GetOrderIdsByNumbersAndArticles(List<(string OrderNumber, string Article)> orders)
         {
-            return await repository.GetOrderByNumberAndArticle(orderNumber, article);
+            return await repository.GetOrderIdsByNumbersAndArticles(orders);
         }
    
         

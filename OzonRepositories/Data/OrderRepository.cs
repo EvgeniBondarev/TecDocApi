@@ -139,12 +139,29 @@ namespace OzonRepositories.Data
             return order;
         }
         
-        public async Task<Order> GetOrderByNumberAndArticle(string orderNumber, string article)
+        public async Task<List<int>> GetOrderIdsByNumbersAndArticles(List<(string OrderNumber, string Article)> orders)
         {
-            return await _context.Orders
-                .Include(o => o.AppStatus)
-                .FirstOrDefaultAsync(o => o.ShipmentNumber == orderNumber && o.ProductKey == article);
+            if (orders == null || orders.Count == 0)
+                return new List<int>();
+
+            // Переводим в список для удобства поиска на клиенте
+            var orderKeys = orders.ToList();
+
+            // Сначала выбираем все заказы, которые могут соответствовать (ShipmentNumber и ProductKey)
+            var allOrders = await _context.Orders
+                .Where(o => orderKeys.Select(k => k.OrderNumber).Contains(o.ShipmentNumber))
+                .AsNoTracking()
+                .ToListAsync();
+
+            // Фильтруем на клиенте точно по кортежу (OrderNumber + Article)
+            var matchingIds = allOrders
+                .Where(o => orderKeys.Any(k => k.OrderNumber == o.ShipmentNumber && k.Article == o.ProductKey))
+                .Select(o => o.Id)
+                .ToList();
+
+            return matchingIds;
         }
+
 
         
         public async Task<Order> GetAsyncForCart(int id)

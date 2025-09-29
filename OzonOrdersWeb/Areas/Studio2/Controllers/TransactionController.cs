@@ -156,7 +156,8 @@ namespace OzonOrdersWeb.Controllers
                 TransactionTypes = [(TransactionType.OrderedToSupplier, "Заказ поставщику"), 
                                     (TransactionType.ShippedBySupplier, "Отгружен поставщиком"),
                                     (TransactionType.ShippedToSeller, "Отгружен реализатору"), 
-                                    (TransactionType.OrderedToSeller, "Заказан реализатору")],
+                                    (TransactionType.OrderedToSeller, "Заказан реализатору"),
+                                    (TransactionType.Percentage, "Проценён")],
                 User = await _userCacheService.GetCachedUserAsync(User),
             };
 
@@ -247,7 +248,8 @@ namespace OzonOrdersWeb.Controllers
                 TransactionTypes = [(TransactionType.OrderedToSupplier, "Заказ поставщику"), 
                                     (TransactionType.ShippedBySupplier, "Отгружен поставщиком"),
                                     (TransactionType.ShippedToSeller, "Отгружен реализатору"), 
-                                    (TransactionType.OrderedToSeller, "Заказан реализатору")],
+                                    (TransactionType.OrderedToSeller, "Заказан реализатору"),
+                                    (TransactionType.Percentage, "Проценён")],
                 User = await _userCacheService.GetCachedUserAsync(User),
             };
 

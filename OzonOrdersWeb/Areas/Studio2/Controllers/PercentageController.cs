@@ -115,16 +115,7 @@ public class PercentageController : Controller
                 });
             }
 
-            foreach (var (orderNumber, article) in processedOrders)
-            {
-                // Ищем заказ по номеру и артикулу
-                var concretOrder = await _orderServcies.GetOrderByNumberAndArticle(orderNumber, article);
-                
-                if (concretOrder != null)
-                {
-                    ordersToTransaction.Add(concretOrder);
-                }
-            }
+           
 
             TempData["Success"] = $"Обработано {processedOrders.Count} записей, найдено {ordersToTransaction.Count} заказов";
         }
@@ -137,7 +128,8 @@ public class PercentageController : Controller
             });
         }
         
-        var orderIds = string.Join(",", ordersToTransaction.Select(o => o.Id));
+        var ids =await _orderServcies.GetOrderIdsByNumbersAndArticles(processedOrders);
+        var orderIds = string.Join(",", ids);
         
         TempData["Success"] = $"Обработано {processedOrders.Count} записей, найдено {ordersToTransaction.Count} заказов";
         return RedirectToAction("Percentage", new { ids = orderIds});
@@ -427,32 +419,11 @@ public class PercentageController : Controller
                 {
                     ordersToUpdate.Add(await _orderServcies.TransactOrder(order));
                 }
-
-                var appStatus = await _appStatusServcies.GetAppStatusAsync(new AppStatus() { Name = "Заказан поставщику" });
-                List<Order> ordersToTransaction = ordersToUpdate.Where(o => o.AppStatus.Id == appStatus.Id).ToList();
-
-                (changeCount, dateTime) = await _transaction.CreateOrderToSupplierTransaction(ordersToTransaction,
+                (changeCount, dateTime) = await _transaction.CreatePercentageTransaction(ordersToUpdate,
                                                                                               userName,
                                                                                               createAt,
                                                                                               comment);
-
-                int cancelCount = ordersToUpdate.Where(o => o.AppStatus.Name == "Отменен").Count();
-
-                if (changeCount > 0)
-                {
-                    await _cacheUpdater.Update(_cache);
-                    string msg = $"Заказы добавлены в журнал<br/>" +
-                                 $"<b>{changeCount}</b> заказам изменен статус на '<b>Заказан поставщику</b>', <b>{cancelCount}</b> заказов были отменены." +
-                                 $"<br/>Время<b>: {dateTime}</b>" +
-                                 $"<br/>Пользователь<b>: {userName}</b>" +
-                                 $"<br/>Комментарий: {comment}" +
-                                 $"<br/>Заказы: {string.Join(" ", orders.Select(o => o.ShipmentNumber))}";
-                    await NotificationService.NotifyAllAsync(msg);
-                    TempData["TransactionResult"] = msg;
-                }
-
                 await _transactionCache.Update();
-
                 if (ordersNotFoundInOzone.Count > 0)
                 {
                     TempData["OrdersNotFoundInOzone"] = $"Заказы не найдены в системе Ozon - {ordersNotFoundInOzone.Aggregate((x, y) => x + ", " + y)}";
