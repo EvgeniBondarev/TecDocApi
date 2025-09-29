@@ -264,6 +264,10 @@
                     var listItem6 = document.createElement('li');
                     listItem6.className = 'dropdown-item';
                     listItem6.innerHTML = '<a href="#" onclick="cancellationOrders()" class="btn btn-link link-danger">Отменить заказы</a><br/>';
+
+                    var listItem7 = document.createElement('li');
+                    listItem7.className = 'dropdown-item';
+                    listItem7.innerHTML = '<a href="/Studio2/Percentage/UploadFile"  class="btn btn-link">Проценить из файла</a><br/>';
                     
                     dropdownMenu.appendChild(listItem1);
                     dropdownMenu.appendChild(listItem2);
@@ -271,11 +275,18 @@
                     dropdownMenu.appendChild(listItem4);
                     dropdownMenu.appendChild(listItem5);
                     dropdownMenu.appendChild(listItem6);
+                    dropdownMenu.appendChild(listItem7);
                 } else {
                     var listItem1 = document.createElement('li');
                     listItem1.className = 'dropdown-item';
                     listItem1.innerHTML = 'Нет выбранных заказов';
+
+                    var listItem2 = document.createElement('li');
+                    listItem2.className = 'dropdown-item';
+                    listItem2.innerHTML = '<a href="/Studio2/Percentage/UploadFile"  class="btn btn-link">Проценить из файла</a><br/>';
+
                     dropdownMenu.appendChild(listItem1);
+                    dropdownMenu.appendChild(listItem2);
                 }
             });
         });

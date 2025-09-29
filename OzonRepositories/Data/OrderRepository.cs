@@ -139,6 +139,13 @@ namespace OzonRepositories.Data
             return order;
         }
         
+        public async Task<Order> GetOrderByNumberAndArticle(string orderNumber, string article)
+        {
+            return await _context.Orders
+                .Include(o => o.AppStatus)
+                .FirstOrDefaultAsync(o => o.ShipmentNumber == orderNumber && o.ProductKey == article);
+        }
+
         
         public async Task<Order> GetAsyncForCart(int id)
         {

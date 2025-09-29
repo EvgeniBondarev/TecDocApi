@@ -933,6 +933,10 @@ namespace Servcies.DataServcies
             return trimmed;
         }
 
+        public async Task<Order> GetOrderByNumberAndArticle(string orderNumber, string article)
+        {
+            return await repository.GetOrderByNumberAndArticle(orderNumber, article);
+        }
    
         
         public async Task<int> GetTotalCount()

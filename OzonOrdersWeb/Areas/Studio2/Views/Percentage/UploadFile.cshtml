@@ -1,0 +1,149 @@
+﻿<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Загрузка заказов из файла</h4>
+                </div>
+                <div class="card-body">
+                    @if (TempData["Error"] != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            @TempData["Error"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+                    
+                    @if (TempData["Success"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            @TempData["Success"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+
+                    <form asp-action="UploadFile" method="post" enctype="multipart/form-data" id="uploadForm">
+                        <div class="mb-3">
+                            <label for="excelFile" class="form-label">Выберите файл</label>
+                            <input type="file" class="form-control" id="excelFile" name="excelFile" accept=".xlsx,.xls,.csv" required>
+                            <div class="form-text">
+                                Файл должен содержать столбцы "Номер заказа" и "Артикул". Поддерживаются форматы: Excel (.xlsx, .xls) и CSV (.csv)
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="validateFile" checked>
+                                <label class="form-check-label" for="validateFile">
+                                    Проверить структуру файла перед загрузкой
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <button type="submit" class="btn btn-primary" id="submitBtn">
+                                <i class="bi bi-upload"></i> Загрузить файл
+                            </button>
+                        </div>
+                    </form>
+
+                    <div class="mt-4">
+                        <h6>Требования к файлу:</h6>
+                        <ul class="small">
+                            <li>Формат: .xlsx, .xls или .csv</li>
+                            <li>Кодировка CSV: UTF-8</li>
+                            <li>Разделитель в CSV: запятая</li>
+                            <li>Обязательные столбцы: <strong>Номер заказа</strong> и <strong>Артикул</strong></li>
+                            <li>Первая строка должна содержать заголовки столбцов</li>
+                            <li>Данные начинаются со второй строки</li>
+                        </ul>
+                        
+                        <div class="mt-3">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse" data-bs-target="#templateInfo">
+                                <i class="bi bi-info-circle"></i> Пример структуры файла
+                            </button>
+                            
+                            <div class="collapse mt-2" id="templateInfo">
+                                <div class="card card-body">
+                                    <h6>Excel/CSV структура:</h6>
+                                    <table class="table table-sm table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th>Номер заказа</th>
+                                                <th>Артикул</th>
+                                                <th>Другие столбцы...</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>12345</td>
+                                                <td>ART-001</td>
+                                                <td>...</td>
+                                            </tr>
+                                            <tr>
+                                                <td>12346</td>
+                                                <td>ART-002</td>
+                                                <td>...</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                    <h6 class="mt-3">Пример CSV:</h6>
+                                    <pre class="bg-light p-2 small">Номер заказа,Артикул,Поставщик
+12345,ART-001,Поставщик 1
+12346,ART-002,Поставщик 2</pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', function(e) {
+            const fileInput = document.getElementById('excelFile');
+            const submitBtn = document.getElementById('submitBtn');
+            
+            if (fileInput.files.length === 0) {
+                e.preventDefault();
+                alert('Пожалуйста, выберите файл');
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const fileExtension = file.name.split('.').pop().toLowerCase();
+            const allowedExtensions = ['xlsx', 'xls', 'csv'];
+            
+            if (!allowedExtensions.includes(fileExtension)) {
+                e.preventDefault();
+                alert('Пожалуйста, выберите файл в формате Excel (.xlsx, .xls) или CSV (.csv)');
+                return;
+            }
+
+            // Блокируем кнопку во время загрузки
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Обработка...';
+        });
+
+        // Валидация файла при выборе
+        document.getElementById('excelFile').addEventListener('change', function(e) {
+            const validateCheckbox = document.getElementById('validateFile');
+            
+            if (validateCheckbox.checked && e.target.files.length > 0) {
+                const file = e.target.files[0];
+                const fileExtension = file.name.split('.').pop().toLowerCase();
+                console.log('Выбран файл:', file.name, 'Тип:', fileExtension);
+                
+                // Дополнительная валидация размера файла
+                const maxSize = 10 * 1024 * 1024; // 10MB
+                if (file.size > maxSize) {
+                    alert('Файл слишком большой. Максимальный размер: 10MB');
+                    e.target.value = '';
+                }
+            }
+        });
+    </script>
+}

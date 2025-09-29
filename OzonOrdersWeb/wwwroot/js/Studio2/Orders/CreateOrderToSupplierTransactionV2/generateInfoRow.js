@@ -1,12 +1,17 @@
 ﻿function generateInfoRow(orderId, rates) {
-    const { response } = orderDataCache[orderId].orderDetails;
-    const tradesoftItems = orderDataCache[orderId].tradesoftData?.tradesofData || [];
-    const zzapItems = orderDataCache[orderId].zzapData?.zzapData || [];
-    const abcpItems = orderDataCache[orderId].abcpData?.items || [];
-    const avdItems = orderDataCache[orderId].avdData?.items || [];
-    const { stocks } = orderDataCache[orderId].stockData;
-    const abcpOneItem = orderDataCache[orderId].abcpOneData;
-    const bitrixData = orderDataCache[orderId].bitrixData?.data;
+    // Безопасное получение данных с значениями по умолчанию
+    const orderDetails = orderDataCache[orderId]?.orderDetails || {};
+    const { response = {} } = orderDetails;
+
+    const tradesoftItems = orderDataCache[orderId]?.tradesoftData?.tradesofData || [];
+    const zzapItems = orderDataCache[orderId]?.zzapData?.zzapData || [];
+    const abcpItems = orderDataCache[orderId]?.abcpData?.items || [];
+    const avdItems = orderDataCache[orderId]?.avdData?.items || [];
+    const stockData = orderDataCache[orderId]?.stockData || {};
+    const { stocks = [] } = stockData;
+    const abcpOneItem = orderDataCache[orderId]?.abcpOneData || {};
+    const bitrixData = orderDataCache[orderId]?.bitrixData?.data || [];
+
     const colorMap = {
         'https://www.maxi.parts/': 'text-success',
         'https://www.zzap.ru/': 'text-danger',
@@ -25,30 +30,43 @@
     }
 
     // Определяем главное изображение (первое в списке)
-    const mainImage = allImages[0];
+    const mainImage = allImages[0] || "https://s3.timeweb.cloud/25f554fc-6f66254e-9650-4d17-8e13-77b5b7d3242e/AppData/Studio2/IMG/300x200no-image.svg";
 
     // Миниатюры (все изображения кроме первого, ограничиваем до 4 штук)
     const limitedMiniatures = allImages.slice(1, 5);
 
     // Добавляем поле priceInRub каждому элементу
     tradesofData.forEach(item => {
-        const rate = rates[item.currencyCode] || 1;
-        item.priceInRub = parseFloat(item.priceDecimal) * rate;
+        if (item && item.priceDecimal && item.currencyCode) {
+            const rate = rates[item.currencyCode] || 1;
+            item.priceInRub = parseFloat(item.priceDecimal) * rate;
+        } else {
+            item.priceInRub = 0;
+        }
     });
 
-    // Сортировка по цене в рублях по умолчанию
-    tradesofData.sort((a, b) => a.priceInRub - b.priceInRub);
+    // Сортировка по цене в рублях по умолчанию (только валидные элементы)
+    tradesofData.sort((a, b) => (a.priceInRub || 0) - (b.priceInRub || 0));
+
+    // Безопасное получение текстовых данных
+    const detailInfo = response.detailInfo || {};
+    const productInfo = response.productInfo || {};
+    const description = detailInfo.description || productInfo.description || '';
+    const article = detailInfo.articleSchema?.dataSupplierArticleNumber || productInfo.articlE_NUMBER || '';
+    const normalizedArticle = detailInfo.normalizedArticle || '';
+    const supplier = detailInfo.supplier || {};
+    const detailAttributes = detailInfo.detailAttributes || [];
 
     return `
         <tr class="info-row table-light always-light" data-order-id="${orderId}">
             <td colspan="5">
                 <div class="d-flex">
                     <div class="main-content me-4" style="flex: 1;">
-                        ${response.detailInfo?.description || response.productInfo?.description ? `
+                        ${description ? `
                             <p style="font-size: 20px;">
-                                ${(response.detailInfo?.description || response.productInfo?.description).length > 100
-        ? (response.detailInfo?.description || response.productInfo?.description).slice(0, 100) + '...'
-        : (response.detailInfo?.description || response.productInfo?.description)}
+                                ${description.length > 100
+        ? description.slice(0, 100) + '...'
+        : description}
                             </p>
                         ` : ''}
 
@@ -70,45 +88,46 @@
                             </div>
 
                             <div class="mb-3" style="font-size: 20px;">
-                                ${response.detailInfo?.articleSchema?.dataSupplierArticleNumber || response.productInfo?.articlE_NUMBER ? `
+                                ${article ? `
                                     <strong>Артикул: </strong>
-                                    ${response.detailInfo?.articleSchema?.dataSupplierArticleNumber || response.productInfo?.articlE_NUMBER}
-                                    ${response.detailInfo?.normalizedArticle && response.detailInfo.normalizedArticle !== (response.detailInfo?.articleSchema?.dataSupplierArticleNumber || response.productInfo?.articlE_NUMBER)
-        ? `(${response.detailInfo.normalizedArticle})`
+                                    ${article}
+                                    ${normalizedArticle && normalizedArticle !== article
+        ? `(${normalizedArticle})`
         : ''}
                                     <br/>
                                 ` : ''}
 
-                                ${response.detailInfo?.supplier || response.productInfo?.manufacturer ? `
+                                ${supplier.code || supplier.name || productInfo.manufacturer ? `
                                     <strong>Производитель:</strong><br>
                                     <ul style="font-size: 16px; padding-left: 20px;">
-                                        ${response.detailInfo?.supplier?.code || response.productInfo?.manufacturer
-        ? `<li><strong>Префикс:</strong> ${response.detailInfo?.supplier?.code || response.productInfo?.manufacturer}</li>`
+                                        ${supplier.code || productInfo.manufacturer
+        ? `<li><strong>Префикс:</strong> ${supplier.code || productInfo.manufacturer}</li>`
         : ''}
-                                        ${response.detailInfo?.supplier?.name
-        ? `<li><strong>Название:</strong> ${response.detailInfo.supplier.name}</li>`
+                                        ${supplier.name
+        ? `<li><strong>Название:</strong> ${supplier.name}</li>`
         : ''}
-                                        ${response.detailInfo?.supplier?.description
-        ? `<li><strong>Описание:</strong> ${response.detailInfo.supplier.description}</li>`
+                                        ${supplier.description
+        ? `<li><strong>Описание:</strong> ${supplier.description}</li>`
         : ''}
-                                        ${response.detailInfo?.supplier?.rating !== undefined
-        ? `<li><strong>Рейтинг:</strong> ${response.detailInfo.supplier.rating}</li>`
+                                        ${supplier.rating !== undefined && supplier.rating !== null
+        ? `<li><strong>Рейтинг:</strong> ${supplier.rating}</li>`
         : ''}
-                                        ${response.detailInfo?.supplier?.tecdocSupplierId || response.productInfo?.teC_DOC_PROD
-        ? `<li><strong>Tecdoc ID:</strong> ${response.detailInfo?.supplier?.tecdocSupplierId || response.productInfo.teC_DOC_PROD}</li>`
+                                        ${supplier.tecdocSupplierId || productInfo.teC_DOC_PROD
+        ? `<li><strong>Tecdoc ID:</strong> ${supplier.tecdocSupplierId || productInfo.teC_DOC_PROD}</li>`
         : ''}
                                     </ul>
                                 ` : ''}
 
-                                ${response.detailInfo?.description || response.productInfo?.description ? `
+                                ${description ? `
                                     <strong>Описание: </strong>
-                                    <span title="${response.detailInfo?.description || response.productInfo?.description}">
-                                        ${(response.detailInfo?.description || response.productInfo?.description).length > 30
-        ? (response.detailInfo?.description || response.productInfo?.description).slice(0, 30) + '...'
-        : (response.detailInfo?.description || response.productInfo?.description)}
+                                    <span title="${description}">
+                                        ${description.length > 30
+        ? description.slice(0, 30) + '...'
+        : description}
                                     </span>
                                     <br/>
                                 ` : ''}
+                                
                                 ${abcpOneItem?.weight ? `
                                     <strong>Вес ABCP:</strong>
                                     <span class="weight-value"
@@ -119,62 +138,65 @@
                                     </span>
                                     <br/>
                                 ` : ''}
-                                ${response.productInfo ? `
+                                
+                                ${productInfo.shorT_DESCRIPTION || productInfo.barcodes || productInfo.packagE_WEIGHT ? `
                                     <strong>Доп. информация:</strong><br>
                                     <ul style="font-size: 16px; padding-left: 20px;">
-                                        ${response.productInfo.shorT_DESCRIPTION ? `<li><strong>Категория:</strong> ${response.productInfo.shorT_DESCRIPTION}</li>` : ''}
-                                        ${response.productInfo.barcodes ? `<li><strong>Штрих-коды:</strong> ${response.productInfo.barcodes}</li>` : ''}
-                                        ${response.productInfo.packagE_WEIGHT ? `
+                                        ${productInfo.shorT_DESCRIPTION ? `<li><strong>Категория:</strong> ${productInfo.shorT_DESCRIPTION}</li>` : ''}
+                                        ${productInfo.barcodes ? `<li><strong>Штрих-коды:</strong> ${productInfo.barcodes}</li>` : ''}
+                                        ${productInfo.packagE_WEIGHT ? `
                                             <li>
                                                 <strong>Вес:</strong>
                                                 <span class="weight-value"
                                                       style="cursor: pointer; text-decoration: underline; color: blue;"
-                                                      data-weight="${response.productInfo.packagE_WEIGHT}"
+                                                      data-weight="${productInfo.packagE_WEIGHT}"
                                                       data-order-id="${orderId}">
-                                                    ${response.productInfo.packagE_WEIGHT} кг
+                                                    ${productInfo.packagE_WEIGHT} кг
                                                 </span>
                                             </li>
                                         ` : ''}
-                                        ${response.productInfo.packagE_LENGTH && response.productInfo.packagE_WIDTH && response.productInfo.packagE_HEIGHT ?
-        `<li><strong>Габариты упаковки:</strong> ${response.productInfo.packagE_LENGTH}×${response.productInfo.packagE_WIDTH}×${response.productInfo.packagE_HEIGHT} см</li>` : ''}
+                                        ${productInfo.packagE_LENGTH && productInfo.packagE_WIDTH && productInfo.packagE_HEIGHT ?
+        `<li><strong>Габариты упаковки:</strong> ${productInfo.packagE_LENGTH}×${productInfo.packagE_WIDTH}×${productInfo.packagE_HEIGHT} см</li>` : ''}
                                     </ul>
                                 ` : ''}
 
-                                ${response.detailInfo?.detailAttributes?.length > 0 ? `
-                                            <strong>Характеристики:</strong><br>
-                                            <ul class="attributes-list" style="font-size: 18px; max-height: 200px; overflow-y: auto; padding-left: 20px;">
-                                                ${response.detailInfo.detailAttributes
-                                .filter(attr => attr.displayTitle || attr.description || attr.displayValue)
-                                .map(attr => {
-                                    const title = attr.displayTitle || attr.description || '';
-                                    const value = attr.displayValue || '';
-                                    const isWeight = /Вес \[кг\]|Масса/i.test(title);
-                        
-                                    const displayValue = isWeight && value
-                                        ? `<span class="weight-value"
-                                                                     style="cursor: pointer; text-decoration: underline; color: blue;"
-                                                                     data-weight="${value}"
-                                                                     data-order-id="${orderId}">
-                                                                   ${value} кг
-                                                               </span>`
-                                        : value ? `- ${value.length > 15 ? value.slice(0, 15) + '...' : value}` : '';
-                        
-                                    return `<li title="${attr.description || ''} - ${value}">
-                                                                    ${title.length > 15 ? title.slice(0, 15) + '...' : title} ${displayValue}
-                                                                </li>`;
-                                }).join('')}
-                                            </ul>
-                                        ` : ''}
+                                ${detailAttributes.length > 0 ? `
+                                    <strong>Характеристики:</strong><br>
+                                    <ul class="attributes-list" style="font-size: 18px; max-height: 200px; overflow-y: auto; padding-left: 20px;">
+                                        ${detailAttributes
+        .filter(attr => attr && (attr.displayTitle || attr.description || attr.displayValue))
+        .map(attr => {
+            const title = attr.displayTitle || attr.description || '';
+            const value = attr.displayValue || '';
+            const isWeight = /Вес \[кг\]|Масса/i.test(title);
+
+            const displayValue = isWeight && value
+                ? `<span class="weight-value"
+                                                         style="cursor: pointer; text-decoration: underline; color: blue;"
+                                                         data-weight="${value}"
+                                                         data-order-id="${orderId}">
+                                                       ${value} кг
+                                                   </span>`
+                : value ? `- ${value.length > 15 ? value.slice(0, 15) + '...' : value}` : '';
+
+            return `<li title="${attr.description || ''} - ${value}">
+                                                    ${title.length > 15 ? title.slice(0, 15) + '...' : title} ${displayValue}
+                                                </li>`;
+        }).join('')}
+                                    </ul>
+                                ` : ''}
                                 
-                                ${bitrixData && bitrixData.length > 0 ? `
+                                ${bitrixData.length > 0 ? `
                                     <strong>Данные Bitrix:</strong>
                                     <ul style="font-size: 16px; padding-left: 20px;">
-                                        ${bitrixData.map(item => `
+                                        ${bitrixData.map(item => item ? `
                                             <li>
-                                                <b>Цена</b>: <em>${item.group}</em> ${item.price} ${item.currency}<br/>
-                                                Склад: ${Object.entries(item.stores).map(([store, qty]) => `${store}: ${qty}`).join(', ') || 'Нет данных'}
+                                                <b>Цена</b>: <em>${item.group || 'Нет группы'}</em> ${item.price || '0'} ${item.currency || 'RUB'}<br/>
+                                                Склад: ${item.stores && Object.keys(item.stores).length > 0
+        ? Object.entries(item.stores).map(([store, qty]) => `${store}: ${qty}`).join(', ')
+        : 'Нет данных'}
                                             </li>
-                                        `).join('')}
+                                        ` : '').join('')}
                                     </ul>
                                 ` : ''}
                             </div>
