@@ -322,6 +322,8 @@ namespace OzonDomains.Models
         }
 
         [Display(Name = "Сумма отправления")]
+        
+        [DisplayFormat(DataFormatString = "{0:F2}", ApplyFormatInEditMode = true)]
         public decimal? ShipmentAmount { get; set; }
 
         [Display(Name = "Наименование")]
@@ -346,6 +348,7 @@ namespace OzonDomains.Models
         public EtProducer? EtProducer { get; set; }
 
         [Display(Name = "Цена")]
+        [DisplayFormat(DataFormatString = "{0:F2}", ApplyFormatInEditMode = true)]
         public decimal? Price { get; set; }
 
         [Display(Name = "Количество")]

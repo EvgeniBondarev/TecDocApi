@@ -2010,8 +2010,8 @@ namespace OzonOrdersWeb.Controllers
                 OrderSortState.StatusAsc => orders.OrderBy(o => o.Status),
                 OrderSortState.StatusDesc => orders.OrderByDescending(o => o.Status),
 
-                OrderSortState.AppStatusIdAsc => orders.OrderBy(o => o.AppStatus.Name),
-                OrderSortState.AppStatusIdDesc => orders.OrderByDescending(o => o.AppStatus.Name),
+                OrderSortState.AppStatusIdAsc => orders.OrderBy(o => o.AppStatus?.Name),
+                OrderSortState.AppStatusIdDesc => orders.OrderByDescending(o => o.AppStatus?.Name),
 
                 OrderSortState.ShipmentAmountAsc => orders.OrderBy(o => o.ShipmentAmount),
                 OrderSortState.ShipmentAmountDesc => orders.OrderByDescending(o => o.ShipmentAmount),
@@ -2034,8 +2034,8 @@ namespace OzonOrdersWeb.Controllers
                 OrderSortState.СurrencyIdAsc => orders.OrderBy(o => o.СurrencyId),
                 OrderSortState.СurrencyIdDesc => orders.OrderByDescending(o => o.СurrencyId),
 
-                OrderSortState.SupplierAsc => orders.OrderBy(o => o.Supplier.Name),
-                OrderSortState.SupplierDesc => orders.OrderByDescending(o => o.Supplier.Name),
+                OrderSortState.SupplierAsc => orders.OrderBy(o => o.Supplier?.Name),
+                OrderSortState.SupplierDesc => orders.OrderByDescending(o => o.Supplier?.Name),
 
                 OrderSortState.PurchasePriceAsc => orders.OrderBy(o => o.PurchasePrice),
                 OrderSortState.PurchasePriceDesc => orders.OrderByDescending(o => o.PurchasePrice),
@@ -2052,11 +2052,11 @@ namespace OzonOrdersWeb.Controllers
                 OrderSortState.ProfitAsc => orders.OrderBy(o => o.MinProfit),
                 OrderSortState.ProfitDesc => orders.OrderByDescending(o => o.MinProfit),
 
-                OrderSortState.CurrentPriceAsc => orders.OrderBy(o => o.ProductInfo.CurrentPriceWithDiscount),
-                OrderSortState.CurrentPriceDesc => orders.OrderByDescending(o => o.ProductInfo.CurrentPriceWithDiscount),
+                OrderSortState.CurrentPriceAsc => orders.OrderBy(o => o.ProductInfo?.CurrentPriceWithDiscount),
+                OrderSortState.CurrentPriceDesc => orders.OrderByDescending(o => o.ProductInfo?.CurrentPriceWithDiscount),
 
-                OrderSortState.VolumeAsc => orders.OrderBy(o => o.ProductInfo.VolumetricWeight),
-                OrderSortState.VolumeDesc => orders.OrderByDescending(o => o.ProductInfo.VolumetricWeight),
+                OrderSortState.VolumeAsc => orders.OrderBy(o => o.ProductInfo?.VolumetricWeight),
+                OrderSortState.VolumeDesc => orders.OrderByDescending(o => o.ProductInfo?.VolumetricWeight),
 
                 OrderSortState.DiscountAsc => orders.OrderBy(o => o.MinDiscount),
                 OrderSortState.DiscountDesc => orders.OrderByDescending(o => o.MinDiscount),
