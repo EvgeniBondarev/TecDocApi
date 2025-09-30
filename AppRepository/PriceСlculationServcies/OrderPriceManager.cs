@@ -1,5 +1,6 @@
 ﻿using System.Globalization;
 using Microsoft.Extensions.Logging;
+using OzonDomains;
 using OzonDomains.Models;
 using OzonDomains.Models.Extensions;
 using SlqStudio.Application.Services.EmailService;
@@ -26,8 +27,8 @@ namespace Servcies.PriceСlculationServcies
             _logger = logger;
         }
 
-       public async Task<Order> SetPurchasePriceToRUB(Order order)
-       {
+      public async Task<Order> SetPurchasePriceToRUB(Order order)
+      {
             if (order?.Supplier == null)
             {
                 _logger.LogWarning("Order or Supplier is null in SetPurchasePriceToRUB");
@@ -36,27 +37,26 @@ namespace Servcies.PriceСlculationServcies
 
             try
             {
-                if (order.PurchasePrice <= 0 && order.OriginalPurchasePrice <= 0)
+                if ((order.PurchasePrice <= 0) && (order.OriginalPurchasePrice ?? 0) <= 0)
                 {
                     _logger.LogWarning($"Invalid PurchasePrice: {order.PurchasePrice}, OriginalPurchasePrice: {order.OriginalPurchasePrice} for order {order?.Id}");
                     return order;
                 }
 
-                decimal rate = 1m;
-                bool shouldConvert = false;
-
-                if (order.Supplier.CurrencyCode == null)
+                if (order.Supplier.CurrencyCode == CurrencyCode.NON)
                 {
                     _logger.LogWarning($"Supplier CurrencyCode is null for order {order?.Id}");
                     return order;
                 }
+
+                decimal rate = 1;
+                bool shouldConvert = false;
 
                 switch (order.Supplier.CurrencyCode)
                 {
                     case OzonDomains.CurrencyCode.USD:
                     case OzonDomains.CurrencyCode.EUR:
                     case OzonDomains.CurrencyCode.BYN:
-                        // ✅ Если OriginalPurchasePrice ещё не задан — сохраняем его один раз
                         if (!order.OriginalPurchasePrice.HasValue || order.OriginalPurchasePrice == 0)
                         {
                             order.OriginalPurchasePrice = order.PurchasePrice;
@@ -67,7 +67,12 @@ namespace Servcies.PriceСlculationServcies
                         break;
 
                     case OzonDomains.CurrencyCode.RUB:
-                        // ✅ В рублях не нужно хранить OriginalPurchasePrice
+                        if (order.OriginalPurchasePrice == null)
+                        {
+                            await LogRecalculationSkipped(nameof(SetPurchasePriceToRUB), order);
+                            return order;
+                        }
+
                         order.OriginalPurchasePrice = null;
                         break;
 
@@ -86,10 +91,14 @@ namespace Servcies.PriceСlculationServcies
 
                     ValidateCostFactor(order.Supplier.CostFactor);
 
-                    // ✅ Считаем всегда из OriginalPurchasePrice, а не из уже пересчитанного PurchasePrice
-                    order.PurchasePrice = SafeCalculate(
-                        () => (order.OriginalPurchasePrice ?? 0) * (order.Supplier.CostFactor ?? 1) * rate,
+                    // считаем только от OriginalPurchasePrice
+                    var basePrice = order.OriginalPurchasePrice ?? 0;
+                    var calculated = SafeCalculate(
+                        () => basePrice * (order.Supplier.CostFactor ?? 1) * rate,
                         $"PurchasePrice calculation for order {order?.Id}");
+
+                    // отбрасываем дробную часть
+                    order.PurchasePrice = Math.Truncate(calculated);
 
                     await LogIfAbnormal(order.PurchasePrice, nameof(SetPurchasePriceToRUB), order);
                 }
@@ -101,7 +110,7 @@ namespace Servcies.PriceСlculationServcies
                 _logger.LogError(ex, $"Error in SetPurchasePriceToRUB for order {order?.Id}");
                 throw new OrderPriceCalculationException("Failed to convert purchase price to RUB", ex);
             }
-        }
+      }
 
 
         public async Task<Order> CalculateProfit(Order order)
@@ -288,7 +297,7 @@ namespace Servcies.PriceСlculationServcies
 
             try
             {
-                decimal weightFactorInRub = 0m;
+                decimal weightFactorInRub = 0;
 
                 if (order.Supplier?.WeightFactor > 0)
                 {
@@ -300,7 +309,7 @@ namespace Servcies.PriceСlculationServcies
 
                     var currencyRate = order.Supplier.WeightFactorCurrencyCode != OzonDomains.CurrencyCode.RUB
                         ? await GetValidatedCurrencyRateAsync(order.Supplier.WeightFactorCurrencyCode)
-                        : 1m;
+                        : 1;
 
                     weightFactorInRub = SafeCalculate(
                         () => (order.Supplier?.WeightFactor ?? 0) * currencyRate,
@@ -348,7 +357,7 @@ namespace Servcies.PriceСlculationServcies
                 OzonDomains.CurrencyCode.USD => await _currencyRateFetcher.GetUSDRateAsync(),
                 OzonDomains.CurrencyCode.EUR => await _currencyRateFetcher.GetEURRateAsync(),
                 OzonDomains.CurrencyCode.BYN => await _currencyRateFetcher.GetBYNRateAsync(),
-                OzonDomains.CurrencyCode.RUB => 1m,
+                OzonDomains.CurrencyCode.RUB => 1,
                 _ => throw new ArgumentOutOfRangeException(nameof(currencyCode), $"Unsupported currency: {currencyCode}")
             };
 
@@ -368,7 +377,7 @@ namespace Servcies.PriceСlculationServcies
                 throw new ArgumentNullException(nameof(costFactor), "Cost factor cannot be null");
             }
 
-            if (costFactor <= 0m || costFactor > 100m)
+            if (costFactor <= 0 || costFactor > 100)
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(costFactor), 
@@ -430,29 +439,47 @@ namespace Servcies.PriceСlculationServcies
                 return value.Value;
             }
         }
+        
+        private async Task LogRecalculationSkipped(string context, Order order)
+        {
+            string message =
+                $"Пересчёт пропущен в {context}\n" +
+                $"Заказ: {order?.Print() ?? "NULL_ORDER"}";
 
+            try
+            {
+                await _emailService.SendEmailAsync("Пересчёт пропущен", message);
+                _logger.LogInformation($"Залогировано событие 'пересчёт пропущен': {message}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Не удалось залогировать событие 'пересчёт пропущен' для заказа {order?.Id}");
+            }
+        }
+
+        
         private async Task LogIfAbnormal(decimal? value, string context, Order order)
         {
             if (!value.HasValue) 
             {
-                _logger.LogWarning($"Null value detected in {context} for order {order?.Id}");
+                _logger.LogWarning($"Обнаружено пустое значение в {context} для заказа {order?.Id}");
                 return;
             }
-            
+    
             if (Math.Abs(value.Value) >= MaxReasonableValue)
             {
                 string message = 
-                    $"Abnormal value detected in {context}: {value.Value.ToString(CultureInfo.InvariantCulture)}\n" +
-                    $"Order: {order?.Print() ?? "NULL_ORDER"}";
-                
+                    $"Обнаружено аномальное значение в {context}: {value.Value.ToString(CultureInfo.InvariantCulture)}\n" +
+                    $"Заказ: {order?.Print() ?? "NULL_ORDER"}";
+        
                 try
                 {
-                    await _emailService.SendEmailAsync("Abnormal value detected", message);
-                    _logger.LogWarning($"Sent abnormal value alert: {message}");
+                    await _emailService.SendEmailAsync("Обнаружено аномальное значение", message);
+                    _logger.LogWarning($"Отправлено предупреждение об аномальном значении: {message}");
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, $"Failed to send abnormal value email for order {order?.Id}");
+                    _logger.LogError(ex, $"Не удалось отправить письмо об аномальном значении для заказа {order?.Id}");
                 }
             }
         }

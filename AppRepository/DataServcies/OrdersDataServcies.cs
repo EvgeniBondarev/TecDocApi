@@ -515,6 +515,43 @@ namespace Servcies.DataServcies
 
             return order;
         }
+        
+        private async Task<Order> CastToModelForOzon(Order order)
+        {
+            if (order.AppStatus == null && order.AppStatusId != null)
+            {
+                
+                if (order.AppStatusId.HasValue)
+                {
+                    order.AppStatus = await appStatusDataServcies.GetAppStatusAsync(order.AppStatusId.Value);
+                }
+
+                if (order.SupplierId.HasValue)
+                {
+                    order.Supplier = await supplierDataServcies.GetSupplierAsync(order.SupplierId.Value);
+                }
+
+                decimal? weight = order.ProductInfo?.Weight;
+
+                if (order.ProductInfoId.HasValue)
+                {
+                    order.ProductInfo = await productsDataServcies.GetProductAsync(order.ProductInfoId.Value);
+                }
+
+                order.ProductInfo.Weight = weight;
+                await productsDataServcies.Update(order.ProductInfo);
+
+                //order = await orderPriceManager.SetPurchasePriceToRUB(order);
+
+                //order = await orderPriceManager.CalculateCostPrice(order);
+
+                //order = await orderPriceManager.CalculateProfit(order);
+                //order = await orderPriceManager.CalculateDiscount(order);
+            }
+            order = await SetIsReturnable(order);
+
+            return order;
+        }
 
         private async Task<Order> SetIsReturnable(Order order)
         {
