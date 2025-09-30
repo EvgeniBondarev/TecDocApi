@@ -1445,19 +1445,20 @@ document.querySelectorAll('.dropdown-menu .form-check-input').forEach(cb => {
                 @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Цена закупки"))
                 {
                 <div class="column-content">
-                    <input asp-for="Orders[i].PurchasePrice"
+                    <input asp-for="Orders[i].OriginalPurchasePrice"
                            type="text"
                            class="form-control form-control-sm purchase-price-field"
                            id="PurchasePrice_@Model.Orders[i].Id"
                            data-order-id="@Model.Orders[i].Id"
-                           value="@(
-                                  (Model.Orders[i].OriginalPurchasePrice.HasValue && Model.Orders[i].OriginalPurchasePrice.Value != 0) 
-                                      ? string.Format("{0:N0}", Model.Orders[i].OriginalPurchasePrice).Replace(",", "") 
-                                      : string.Format("{0:N0}", Model.Orders[i].PurchasePrice).Replace(",", "")
-                                  )"
                            style="width: 70px; max-width: 70px;" />
+
                     <div class="form-group" style="font-size: 13px;">
-                        <span class="purchase-price-rub" id="PurchasePriceRub_@Model.Orders[i].Id" style="text-align: left; display: none;"></span>
+                        <input type="hidden" asp-for="Orders[i].PurchasePrice"
+                               id="PurchasePriceHidden_@Model.Orders[i].Id" />
+                        <span class="purchase-price-rub"
+                              id="PurchasePriceRub_@Model.Orders[i].Id"
+                              style="display:none;">
+                        </span>
                     </div>
                 </div>
                 }
@@ -2207,7 +2208,8 @@ else
                 updateCostPrice(orderId, currencyCode, costFactor, weightCurrencyCode, purchasePriceInRub);
             } else {
                 $('#CurrencyCode_' + orderId).text('');
-                $('#PurchasePriceRub_' + orderId).text('');
+                $('#PurchasePriceRub_' + orderId).text('')
+                $('#PurchasePriceHidden_' + orderId).text('');
                 $('#CostPrice_' + orderId).text('');
             }
         });
@@ -2261,6 +2263,7 @@ else
             } else {
                 $('#CurrencyCode_' + orderId).text('');
                 $('#PurchasePriceRub_' + orderId).text('');
+                $('#PurchasePriceHidden_' + orderId).text('');
                 $('#CostPrice_' + orderId).text('');
             }
         });
@@ -2300,6 +2303,7 @@ else
             $('#PurchasePriceRub_' + orderId).text(!isNaN(purchasePriceInRub) ? Math.round(purchasePriceInRub) + ' RUB' : '');
             $('#PurchasePriceRub_' + orderId).attr('title', titleText);
             $('#PurchasePrice_' + orderId).data('purchase-price-rub', purchasePriceInRub);
+            $('#PurchasePriceHidden_' + orderId).text('');
 
             return purchasePriceInRub;
         }

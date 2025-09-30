@@ -29,6 +29,8 @@ namespace Servcies.PriceСlculationServcies
 
       public async Task<Order> SetPurchasePriceToRUB(Order order)
       {
+          
+          return order;
             if (order?.Supplier == null)
             {
                 _logger.LogWarning("Order or Supplier is null in SetPurchasePriceToRUB");

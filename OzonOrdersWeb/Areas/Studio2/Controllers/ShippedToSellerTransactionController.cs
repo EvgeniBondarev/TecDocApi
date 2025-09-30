@@ -69,7 +69,7 @@ public class ShippedToSellerTransactionController : Controller
 
     // GET
      public async Task<IActionResult> CreateShippedToSellerTransaction(string ids, int page)
-        {
+     {
             var filteredStatuses = _context.AppStatuses
                 .Where(status => status.Name == "Отменен")
                 .ToList();
