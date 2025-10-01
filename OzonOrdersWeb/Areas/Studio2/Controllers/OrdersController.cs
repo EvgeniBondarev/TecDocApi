@@ -1068,7 +1068,7 @@ namespace OzonOrdersWeb.Controllers
 
             try
             {
-                int editOrdersCount = await _orderServcies.MultiplayEditOrder(orders);
+                int editOrdersCount = await _orderServcies.MultiplayEditOrder(orders, User.Identity?.Name);
                 await _cache.Update();
 
                 ClearSelectedIdsSession();
@@ -1135,7 +1135,7 @@ namespace OzonOrdersWeb.Controllers
             }
             try
             {
-                await _orderServcies.MultiplayEditOrder(orders);
+                await _orderServcies.MultiplayEditOrder(orders, User.Identity?.Name);
                 await _cache.Update();
                 ClearSelectedIdsSession();
                 return RedirectToAction(nameof(Index), new { sortOrder = GetSortStateCookie(), page = redirectPage });

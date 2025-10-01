@@ -1,6 +1,7 @@
 ﻿using OzonDomains;
 using OzonDomains.Models;
 using OzonRepositories.Context;
+using OzonRepositories.Data;
 using Servcies.DataServcies;
 
 namespace Servcies.TransactionUtilsServcies
@@ -8,151 +9,59 @@ namespace Servcies.TransactionUtilsServcies
     public class TransactionManager : ITransactionManager
     {
         private readonly TransactionDataServcies _transactionDataServcies;
+        private readonly OrderRepository _orderRepository;
 
         public TransactionManager(TransactionDataServcies transactionDataServcies)
         {
             _transactionDataServcies = transactionDataServcies;
         }
-
-        public async Task<(int, string)> CreateOrderToSupplierTransaction(List<Order> orders, 
-                                                string userName, 
-                                                DateTime createDateTime,
-                                                string comment)
+        
+        private async Task<(int, string)> CreateTransaction(
+            TransactionType type,
+            List<Order> orders,
+            string userName,
+            DateTime createDateTime,
+            string comment)
         {
-                Transaction transaction = new Transaction()
-                {
-                    Type = TransactionType.OrderedToSupplier,
-                    Orders = orders,
-                    CreateBy = userName,
-                    CreatedDateTime = createDateTime,
-                    Comment = comment
-                };
-                await _transactionDataServcies.AddTransaction(transaction);
+            var transaction = new Transaction
+            {
+                Type = type,
+                Orders = orders,
+                CreateBy = userName,
+                CreatedDateTime = createDateTime,
+                Comment = comment
+            };
 
-                foreach(var order in orders)
-                {
-                    ConfirmAccepted(order);
-                    
-                }
-                return (await _transactionDataServcies.SaveChanges(), $"{transaction.FormattedCreatedDate}\t{transaction.FormattedCreatedTime}");
+            await _transactionDataServcies.AddTransaction(transaction);
+
+            foreach (var order in orders)
+            {
+                ConfirmAccepted(order);
+            }
+
+            var result = await _transactionDataServcies.SaveChanges();
+            return (result, $"{transaction.FormattedCreatedDate}\t{transaction.FormattedCreatedTime}");
         }
         
-        public async Task<(int, string)> CreateShippedBySupplierTransaction(List<Order> orders, 
-            string userName, 
-            DateTime createDateTime,
-            string comment)
-        {
-            Transaction transaction = new Transaction()
-            {
-                Type = TransactionType.ShippedBySupplier,
-                Orders = orders,
-                CreateBy = userName,
-                CreatedDateTime = createDateTime,
-                Comment = comment
-            };
-            await _transactionDataServcies.AddTransaction(transaction);
+        public Task<(int, string)> CreateOrderToSupplierTransaction(List<Order> orders, string userName, DateTime createDateTime, string comment)
+            => CreateTransaction(TransactionType.OrderedToSupplier, orders, userName, createDateTime, comment);
 
-            foreach(var order in orders)
-            {
-                ConfirmAccepted(order);
-                    
-            }
-            return (await _transactionDataServcies.SaveChanges(), $"{transaction.FormattedCreatedDate}\t{transaction.FormattedCreatedTime}");
-        }
+        public Task<(int, string)> CreateShippedBySupplierTransaction(List<Order> orders, string userName, DateTime createDateTime, string comment)
+            => CreateTransaction(TransactionType.ShippedBySupplier, orders, userName, createDateTime, comment);
 
-        public async Task<(int, string)> CreateShippedToSellerTransaction(List<Order> orders, 
-            string userName, 
-            DateTime createDateTime,
-            string comment)
-        {
-            Transaction transaction = new Transaction()
-            {
-                Type = TransactionType.ShippedToSeller,
-                Orders = orders,
-                CreateBy = userName,
-                CreatedDateTime = createDateTime,
-                Comment = comment
-            };
-            await _transactionDataServcies.AddTransaction(transaction);
+        public Task<(int, string)> CreateShippedToSellerTransaction(List<Order> orders, string userName, DateTime createDateTime, string comment)
+            => CreateTransaction(TransactionType.ShippedToSeller, orders, userName, createDateTime, comment);
 
-            foreach(var order in orders)
-            {
-                ConfirmAccepted(order);
-                    
-            }
-            return (await _transactionDataServcies.SaveChanges(), $"{transaction.FormattedCreatedDate}\t{transaction.FormattedCreatedTime}");
-        }
-        
-        public async Task<(int, string)> CreateOrderedToSellerTransaction(List<Order> orders, 
-            string userName, 
-            DateTime createDateTime,
-            string comment)
-        {
-            Transaction transaction = new Transaction()
-            {
-                Type = TransactionType.OrderedToSeller,
-                Orders = orders,
-                CreateBy = userName,
-                CreatedDateTime = createDateTime,
-                Comment = comment
-            };
-            await _transactionDataServcies.AddTransaction(transaction);
+        public Task<(int, string)> CreateOrderedToSellerTransaction(List<Order> orders, string userName, DateTime createDateTime, string comment)
+            => CreateTransaction(TransactionType.OrderedToSeller, orders, userName, createDateTime, comment);
 
-            foreach(var order in orders)
-            {
-                ConfirmAccepted(order);
-                    
-            }
-            return (await _transactionDataServcies.SaveChanges(), $"{transaction.FormattedCreatedDate}\t{transaction.FormattedCreatedTime}");
-        }
-        
-        public async Task<(int, string)> CreateShippedToClientTransaction(List<Order> orders, 
-            string userName, 
-            DateTime createDateTime,
-            string comment)
-        {
-            Transaction transaction = new Transaction()
-            {
-                Type = TransactionType.ShippedToSeller,
-                Orders = orders,
-                CreateBy = userName,
-                CreatedDateTime = createDateTime,
-                Comment = comment
-            };
-            await _transactionDataServcies.AddTransaction(transaction);
+        public Task<(int, string)> CreateShippedToClientTransaction(List<Order> orders, string userName, DateTime createDateTime, string comment)
+            => CreateTransaction(TransactionType.ShippedToClient, orders, userName, createDateTime, comment);
 
-            foreach(var order in orders)
-            {
-                ConfirmAccepted(order);
-                    
-            }
-            return (await _transactionDataServcies.SaveChanges(), $"{transaction.FormattedCreatedDate}\t{transaction.FormattedCreatedTime}");
-        }
-        
-        public async Task<(int, string)> CreatePercentageTransaction(List<Order> orders, 
-            string userName, 
-            DateTime createDateTime,
-            string comment)
-        {
-            Transaction transaction = new Transaction()
-            {
-                Type = TransactionType.Percentage,
-                Orders = orders,
-                CreateBy = userName,
-                CreatedDateTime = createDateTime,
-                Comment = comment
-            };
-            await _transactionDataServcies.AddTransaction(transaction);
+        public Task<(int, string)> CreatePercentageTransaction(List<Order> orders, string userName, DateTime createDateTime, string comment)
+            => CreateTransaction(TransactionType.Percentage, orders, userName, createDateTime, comment);
 
-            foreach(var order in orders)
-            {
-                ConfirmAccepted(order);
-                    
-            }
-            return (await _transactionDataServcies.SaveChanges(), $"{transaction.FormattedCreatedDate}\t{transaction.FormattedCreatedTime}");
-        }
-
-        public void ConfirmAccepted(Order order)
+        private void ConfirmAccepted(Order order)
         {
             order.IsAccepted = true;
             order.IsVerified = true;

@@ -106,6 +106,7 @@ public class ShippedToSellerTransactionController : Controller
                 if (concretOrder.AppStatus?.Name == "Заказан реализатору")
                 {
                     concretOrder.AppStatus = appStatus;
+                    concretOrder.UpdatedBy = User.Identity?.Name;
                     ordersToTransaction.Add(concretOrder);
                 }
                 else

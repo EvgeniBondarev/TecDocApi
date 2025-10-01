@@ -96,6 +96,7 @@ public class ShippedBySupplierTransactionController : Controller
             if (order.AppStatus?.Name == "Заказан поставщику")
             {
                 order.AppStatus = appStatus;
+                order.UpdatedBy = User.Identity?.Name;
                 ordersToTransaction.Add(order);
             }
             else

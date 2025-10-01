@@ -95,6 +95,7 @@ public class OrderedToSellerTransactionController : Controller
                 if (isTransaction && !isTransaction2 && !isTransaction3)
                 {
                     concretOrder.AppStatus = appStatus;
+                    concretOrder.UpdatedBy = User.Identity?.Name;
                     ordersToTransaction.Add(concretOrder);
                 }
 
@@ -221,7 +222,6 @@ public class OrderedToSellerTransactionController : Controller
         [HttpPost]
         public IActionResult ClearSelectedIdsSession()
         {
-            // Заменяем список ID на пустой
             HttpContext.Session.SetString("selectedIds", JsonConvert.SerializeObject(new List<int>()));
             return Ok();
         }

@@ -440,5 +440,15 @@ namespace OzonRepositories.Data
         {
             return await _context.Orders.CountAsync();
         }
+        public async Task<int> SetUpdatedUser(Order order, string userName)
+        {
+            Order updatedOrder = _context.Orders.Find(order.Id);
+            updatedOrder.UpdatedBy = userName;
+
+            _context.Attach(updatedOrder);
+            _context.Entry(updatedOrder).Property(x => x.UpdatedBy).IsModified = true;
+            return await _context.SaveChangesAsync();
+        }
+
     }
 }

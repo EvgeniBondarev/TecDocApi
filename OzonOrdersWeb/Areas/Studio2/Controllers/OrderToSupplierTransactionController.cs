@@ -93,6 +93,7 @@ public class OrderToSupplierTransactionController : Controller
             if (isTransaction && !isTransaction2 && !isTransaction3)
             {
                 concretOrder.AppStatus = appStatus;
+                concretOrder.UpdatedBy = User.Identity?.Name;
                 ordersToTransaction.Add(concretOrder);
             }
         }

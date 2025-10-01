@@ -329,6 +329,7 @@ public class PercentageController : Controller
         foreach (var orderId in idArray)
         {
             var concretOrder = await _orderServcies.GetOrder(orderId);
+            concretOrder.UpdatedBy = User.Identity?.Name;
             ordersToTransaction.Add(concretOrder);
         }
 

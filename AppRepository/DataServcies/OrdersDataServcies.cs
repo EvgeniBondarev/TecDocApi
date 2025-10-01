@@ -25,7 +25,7 @@ namespace Servcies.DataServcies
         [
             "AppStatus",  "СurrencyId", "ProductInfoId", "UpdatedColumns", "Id", "AppStatusId", "ShipmentWarehouseId",
             "IsVerified", "Comment", "Key", "IsAccepted", "MaxCommissionInfo", "MinCommissionInfo", "MinDiscount",
-            "MaxDiscount", "PurchasePrice","Supplier", "SupplierId", "MinProfit", "MaxProfit", "UpdatedBy", "IsReturnable",
+            "MaxDiscount", "PurchasePrice","Supplier", "SupplierId", "MinProfit", "MaxProfit", "IsReturnable",
             "OrderNumberToSupplier", "FromFile", "OriginalPurchasePrice", "CostPrice", "PurchasePrice"
         ];
 
@@ -246,7 +246,7 @@ namespace Servcies.DataServcies
 
         }
         
-        public async Task<int> MultiplayEditOrder(IEnumerable<Order> orders)
+        public async Task<int> MultiplayEditOrder(IEnumerable<Order> orders, string userName)
         {
             foreach(Order order in orders)
             {
@@ -256,6 +256,7 @@ namespace Servcies.DataServcies
                     Order existingOrder = await GetOrder(complitOrder.Id);
                     await UpdateOrderWeb(existingOrder, complitOrder);
                     existingOrder.IsVerified = true;
+                    existingOrder.UpdatedBy = userName;
                 }
                 catch (Exception ex)
                 {
