@@ -110,14 +110,6 @@ public class ShippedToClientTransactionController : Controller
         }
         else
         {
-            var distinctSuppliers = ordersToTransaction.GroupBy(o => o.Supplier?.Name).ToList();
-            if (distinctSuppliers.Count > 1)
-            {
-                errorReason = "Выбраны заказы с разными поставщиками: " +
-                              string.Join(", ", distinctSuppliers.SelectMany(g => g.Select(o => $"{o.ShipmentNumber} (поставщик: {g.Key})")));
-                ordersToTransaction.Clear();
-            }
-
             var distinctWarehouses = ordersToTransaction.GroupBy(o => o.ShipmentWarehouse?.Name).ToList();
             if (distinctWarehouses.Count > 1)
             {

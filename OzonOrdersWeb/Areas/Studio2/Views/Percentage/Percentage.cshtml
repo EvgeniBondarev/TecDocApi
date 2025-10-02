@@ -119,7 +119,7 @@ Layout = "~/Views/Shared/_Layout.cshtml";
 
 @if (Model.Orders.Count > 0)
 {
-<form asp-area="Studio2" asp-controller="OrderToSupplierTransaction" asp-action="CreateOrderToSupplierTransactionV2" id="createOrderForm">
+<form asp-area="Studio2" asp-controller="Percentage" asp-action="Percentage" id="createOrderForm">
     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
     <input type="hidden" asp-for="RedirectPage" />
     
