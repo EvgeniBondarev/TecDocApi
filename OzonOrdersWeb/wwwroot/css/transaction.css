@@ -1,0 +1,353 @@
+﻿
+/*
+            #shipmentTable td {
+                padding: 5px 2px; /* вертикальный  горизонтальный
+            }
+
+            #shipmentTable th {
+                padding: 5px 2px; /* вертикальный  горизонтальный
+            }
+
+            */
+
+th {
+    white-space: nowrap;
+}
+
+.container .row .col-md-4 {
+    flex: 0 0 auto;
+    max-width: 33.3333%;
+}
+
+.container .custom-width-large {
+    width: 400px; /* Устанавливаем фиксированную ширину для поля "Наименование товара" */
+}
+
+
+.custom-white {
+    background-color: #fff;
+}
+
+.custom-gray {
+    background-color: #585858;
+    color: #fff;
+}
+
+.custom-gray:hover {
+    color: #fff;
+}
+
+.custom-red {
+    background-color: #DC143C;
+    color: #fff;
+}
+
+.custom-red:hover {
+    color: #fff;
+}
+
+.product-popup {
+    display: none;
+    position: absolute;
+    z-index: 1;
+}
+
+.product-cell {
+    font-size: 11px;
+}
+
+.product-cell:hover .product-popup {
+    display: block;
+}
+
+#processingDateFilter,
+#shippingDateFilter {
+    width: 70px;
+}
+
+#deliveryPeriodInput,
+#timeLeftDayInput {
+    width: 50px;
+}
+
+#statusFilter,
+#appStatusFilterInput,
+#supplierFilter {
+    width: 103px;
+}
+
+#ozonClientFilterInput,
+#deliveryCityFilter {
+    width: 125px;
+}
+
+#currentPriceWithDiscountFilter,
+#quantityFilter,
+#priceFilter,
+#shipmentAmountFilter,
+#purchasePriceFilter,
+#costPriceFilter,
+#ozonCommissionFilter,
+#profitFilter,
+#discountFilter {
+    width: 70px;
+    max-width: 70px;
+}
+
+a {
+    text-decoration: none;
+}
+
+.horizontal-line {
+    border-top: 1px solid #ccc;
+    margin: 20px 0;
+}
+
+#infoWindow {
+    position: fixed;
+    display: none;
+    border: 1px solid #ccc;
+    background-color: #fff;
+    padding: 10px;
+    z-index: 9999;
+}
+
+th.active {
+    background-color: #f4f4f4; /* Цвет подсветки */
+}
+
+.button-container {
+    display: flex;
+    gap: 10px; /* Расстояние между кнопками */
+}
+
+.horizontal-inputs {
+    display: flex;
+    align-items: center;
+}
+
+.horizontal-inputs > div {
+    margin-right: 10px; /* Отступ между элементами */
+}
+
+.vertical-align {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    height: 100%;
+}
+
+.vertical-align > * {
+    margin: 2px 0; /* Минимальный отступ между элементами */
+}
+
+.checkbox-column {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 10px;
+}
+
+.nowrap {
+    white-space: nowrap;
+}
+
+.product-cell {
+    /* Убедитесь, что ширина элемента установлена */
+    width: 100%; /* Или установите конкретную ширину, если нужно */
+    /* Обрезка текста и добавление многоточия */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Изначально скрываем кнопку */
+.clear-btn {
+    display: none;
+    position: absolute;
+    left: 100%;
+    transform: translateX(0) translateY(-50%); /* Прижимаем к основной кнопке и центрируем по вертикали */
+    z-index: 10; /* Поверх других элементов */
+    top: 50%; /* Центрируем по вертикали относительно главной кнопки */
+    opacity: 0; /* Прозрачность кнопки */
+    border: solid 1px;
+}
+
+/* Показываем кнопку при наведении на основную или на саму кнопку очистки */
+.btn-container:hover .clear-btn,
+.clear-btn:hover {
+    display: block;
+    opacity: 1; /* Увеличиваем непрозрачность при наведении */
+    border: solid 1px;
+}
+
+/* Обёртка для кнопок */
+.btn-container {
+    position: relative;
+    display: inline-block;
+}
+
+.link-option {
+    color: blue;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.highlight-error {
+    border: 3px solid rgba(220, 53, 69, 0.5);
+;
+}
+
+.highlight-warning {
+    border: 3px solid rgba(255, 255, 0, 0.5);
+}
+
+.bg-green-300 {
+    background-color: #73c487 !important; /* Bootstrap's 'bg-success' color */
+}
+
+.form-check-label {
+    user-select: none; /* предотвращает выделение текста */
+    cursor: pointer; /* меняет курсор при наведении */
+}
+
+.highlight-error {
+    border: 3px solid rgba(220, 53, 69, 0.5); /* Красный цвет для ошибки */
+}
+
+.highlight-null {
+    border: 3px solid rgba(128, 128, 128, 0.5); /* Серый цвет для ошибки */
+}
+
+.highlight-success {
+    border: 3px solid rgba(40, 167, 69, 0.5); /* Зеленый цвет для успешного статуса */
+}
+
+
+
+
+.show-card {
+    display: block !important;
+}
+
+.gallery {
+    margin-left: 0 !important;
+}
+
+.always-light {
+    background-color: #f8f9fa !important; /* Ensure it stays light, even if the rest of the table uses dark rows */
+}
+
+.btn-link:focus, .btn-link:hover, .btn-link:active {
+    outline: none;
+    border: none;
+}
+
+.btn-link {
+    border: none;
+    outline: none;
+    box-shadow: none;
+}
+
+td table {
+    border-spacing: 0;
+}
+td table tr td {
+    padding: 5px;
+    text-align: center;
+}
+
+/* Стиль для подсвеченной строки в других столбцах */
+.highlight-row {
+    background-color: #fff3cd !important; /* светло-желтый */
+    transition: background-color 0.3s ease;
+    border-radius: 4px;
+    padding: 2px 5px;
+    box-shadow: 0 0 0 2px #ffc107; /* желтая обводка */
+}
+
+/* Стиль для нажатой кнопки */
+.highlight-button {
+    animation: pulse 0.5s;
+}
+
+@@keyframes pulse {
+     0% { transform: scale(1); }
+     50% { transform: scale(1.2); }
+     100% { transform: scale(1); }
+ }
+/* Стиль для подсвеченной строки направления */
+.highlight-stok-row {
+    background-color: #e6f7ff !important; /* светло-голубой */
+    border-left: 3px solid #1890ff;
+    padding: 2px 5px;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+/* Выделение всех ячеек с одинаковым индексом */
+.highlighted {
+    background-color: #e0e0e0; /* Светлый цвет для выделенных ячеек */
+}
+
+/* Выделение конкретного элемента при наведении */
+.highlighted-item {
+    background-color: #e0e0e0; /* Цвет фона для текущего элемента */
+}
+
+.spinner-overlay {
+    display: flex;
+    position: fixed;
+    top: 50%; /* Центрируем по вертикали */
+    left: 50%; /* Центрируем по горизонтали */
+    transform: translate(-50%, -50%); /* Смещаем на половину ширины и высоты спиннера */
+    z-index: 1050; /* Убедимся, что он выше всех элементов */
+    background-color: rgba(255, 255, 255, 0.8); /* Полупрозрачный фон */
+    align-items: center;
+    justify-content: center;
+}
+
+.spinner-border {
+    width: 3rem;
+    height: 3rem;
+    color: #007bff; /* Синий цвет Bootstrap */
+}
+.custom-product-link {
+    color: black;
+    text-decoration: none;
+}
+
+.custom-product-link:hover {
+    text-decoration: underline dashed;
+}
+.preferred-supplier,
+.preferred-tradesoft,
+.preferred-stock,
+.preferred-zzap,
+.preferred-abcp {
+    background: none;
+    border: none;
+    width: 15px;
+    height: 15px;
+    display: none;
+    padding: 0;
+    margin-left: 8px;
+    cursor: pointer;
+}
+
+.preferred-supplier svg { fill: #28a745; }
+.preferred-tradesoft svg { fill: #28a745; }
+.preferred-stock svg { fill: #28a745; }
+.preferred-zzap svg { fill: #dc3545; }
+.preferred-abcp svg { fill: #1976d2; }
+
+.sortable {
+    cursor: pointer;
+    position: relative;
+}
+
+.sort-arrow {
+    display: inline-block;
+    margin-left: 5px;
+}
