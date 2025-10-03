@@ -66,6 +66,14 @@
                                 </div>
                                 checkboxCounter++;
                             }
+                            @{
+                                <div class="form-group col-md-8">
+                                    <input type="checkbox" class="form-check-input" id="chk5" checked>
+                                    <label class="form-check-label" for="chk5">Облагается НДС</label>
+                                </div>
+                                checkboxCounter++;
+                            }
+
                         </div>
 
                     </div>
@@ -154,6 +162,12 @@
                                         <small>@(ViewBag.AdditionalTermSort == SupplierSortState.AdditionalTermAsc ? "Доп. срок↑" : "Доп. срок↓")</small>
                                     </a>
                                 </th>
+                                <th>
+                                    <a class="text-dark" asp-action="Index" asp-route-sortOrder="@ViewBag.IsVatApplicableSort">
+                                        <small>@(ViewBag.IsVatApplicableSort == SupplierSortState.IsVatApplicableAsc ? "Облагается НДС↑" : "Облагается НДС↓")</small>
+                                    </a>
+                                </th>
+
                             </tr>
                         </thead>
                         <tbody>
@@ -256,6 +270,9 @@
                                 </td>
                                 <td>
                                     <input asp-for="@Model.FilterModel.AdditionalTerm" id="additionalTermFilter" name="AdditionalTerm" class="form-control form-control-sm" />
+                                </td>
+                                <td>
+                                    <input type="checkbox" name="IsVatApplicable" value="true" @(Model.FilterModel.IsVatApplicable == true ? "checked" : "") />
                                 </td>
                                 <button type="submit" id="submitFilterButton" style="display:none;"></button>
                                 </form>
@@ -425,6 +442,16 @@
                                             <button type="submit" class="btn btn-link" style="display: none;">Сохранить</button>
                                         </form>
                                     </td>
+                                    <td>
+                                        <form asp-area="Studio2" asp-controller="Supplier" asp-action="Edit" method="post" oninput="toggleSaveButton(this)">
+                                            <input type="hidden" name="Id" value="@item.Id" />
+                                            <input type="hidden" name="page" value="@Model.PageNumber" />
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="IsVatApplicable" value="true" @(item.IsVatApplicable ? "checked" : "") />
+                                            </div>
+                                            <button type="submit" class="btn btn-link" style="display: none;">Сохранить</button>
+                                        </form>
+                                    </td>
                                 </tr>
                             }
                         </tbody>
@@ -480,25 +507,33 @@
 
     <script>
         function toggleSaveButton(form) {
-            var inputs = form.querySelectorAll('input[type="text"], select');
+            var inputs = form.querySelectorAll('input[type="text"], select, input[type="checkbox"]');
             var button = form.querySelector('button[type="submit"]');
             var hasChanged = false;
 
             inputs.forEach(function (input) {
-                if (input.dataset.initialValue !== undefined && input.value !== input.dataset.initialValue) {
-                    hasChanged = true;
+                if (input.type === "checkbox") {
+                    // Сравниваем текущее состояние с исходным
+                    if (input.dataset.initialValue !== undefined && (input.checked.toString() !== input.dataset.initialValue)) {
+                        hasChanged = true;
+                    }
+                } else {
+                    if (input.dataset.initialValue !== undefined && input.value !== input.dataset.initialValue) {
+                        hasChanged = true;
+                    }
                 }
             });
 
-            if (hasChanged) {
-                button.style.display = 'inline';
-            } else {
-                button.style.display = 'none';
-            }
+            button.style.display = hasChanged ? 'inline' : 'none';
         }
 
-        document.querySelectorAll('input[type="text"], select').forEach(function (input) {
-            input.dataset.initialValue = input.value;
+        // Инициализация исходных значений при загрузке
+        document.querySelectorAll('input[type="text"], select, input[type="checkbox"]').forEach(function (input) {
+            if (input.type === "checkbox") {
+                input.dataset.initialValue = input.checked.toString();
+            } else {
+                input.dataset.initialValue = input.value;
+            }
         });
     </script>
 

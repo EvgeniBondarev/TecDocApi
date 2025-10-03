@@ -27,5 +27,8 @@
         
         AdditionalTermAsc,
         AdditionalTermDesc,
+        
+        IsVatApplicableAsc,
+        IsVatApplicableDesc,
     }
 }

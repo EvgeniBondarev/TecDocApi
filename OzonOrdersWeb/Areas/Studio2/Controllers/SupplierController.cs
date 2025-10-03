@@ -256,6 +256,7 @@ namespace OzonOrdersWeb.Controllers
             ViewData["SupplieCsvUrlSort"] = supplierSort == SupplierSortState.CsvUrlAsc ? SupplierSortState.CsvUrlDesc : SupplierSortState.CsvUrlAsc;
             ViewData["SupplieSitelSort"] = supplierSort == SupplierSortState.SiteAsc ? SupplierSortState.SiteDesc : SupplierSortState.SiteAsc;
             ViewData["AdditionalTermSort"] = supplierSort == SupplierSortState.AdditionalTermAsc ? SupplierSortState.AdditionalTermDesc : SupplierSortState.AdditionalTermAsc;
+            ViewData["IsVatApplicableSort"] = supplierSort == SupplierSortState.IsVatApplicableAsc ? SupplierSortState.IsVatApplicableDesc : SupplierSortState.IsVatApplicableAsc;
         }
 
         public async Task<IEnumerable<Supplier>> ApplySortOrder(IEnumerable<Supplier> suppliers, SupplierSortState supplierSort)
@@ -285,6 +286,9 @@ namespace OzonOrdersWeb.Controllers
                 
                 SupplierSortState.AdditionalTermAsc => suppliers.OrderBy(o => o.AdditionalTerm),
                 SupplierSortState.AdditionalTermDesc => suppliers.OrderByDescending(o => o.AdditionalTerm),
+                
+                SupplierSortState.IsVatApplicableAsc => suppliers.OrderBy(o => o.IsVatApplicable),
+                SupplierSortState.IsVatApplicableDesc => suppliers.OrderByDescending(o => o.IsVatApplicable),
 
                 _ => suppliers
             }; ;

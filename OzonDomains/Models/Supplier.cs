@@ -45,5 +45,8 @@ namespace OzonDomains.Models
         
         [Display(Name = "Дополнительный срок")]
         public int? AdditionalTerm { get; set; }
+        
+        [Display(Name = "Облагается НДС")]
+        public bool IsVatApplicable { get; set; } = false;
     }
 }

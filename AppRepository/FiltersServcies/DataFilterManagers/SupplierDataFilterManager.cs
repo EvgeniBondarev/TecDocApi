@@ -14,14 +14,28 @@ namespace Servcies.FiltersServcies.DataFilterManagers
 
         public List<Supplier> FilterByFilterData(List<Supplier> suppliers, SupplierFilterModel filterData)
         {
+            if (suppliers == null || filterData == null)
+                return suppliers;
+
             suppliers = _filter.FilterByString(suppliers, pr => pr.Name, filterData.Name).ToList();
             suppliers = _filter.FilterByDecimal(suppliers, pr => pr.CostFactor, filterData.CostFactor).ToList();
-            suppliers = _filter.FilterByDecimal(suppliers, pr => pr.WeightFactor, filterData.WeightFactor).ToList();    
+            suppliers = _filter.FilterByDecimal(suppliers, pr => pr.WeightFactor, filterData.WeightFactor).ToList();
             suppliers = _filter.FilterByEnum(suppliers, pr => pr.CurrencyCode, filterData.CurrencyCode).ToList();
             suppliers = _filter.FilterByEnum(suppliers, pr => pr.WeightFactorCurrencyCode, filterData.WeightFactorCurrencyCode).ToList();
             suppliers = _filter.FilterByString(suppliers, pr => pr.CsvUrl, filterData.CsvUrl).ToList();
             suppliers = _filter.FilterByString(suppliers, pr => pr.Site, filterData.Site).ToList();
-            suppliers = _filter.FilterByInt(suppliers, pr => pr.AdditionalTerm.Value, filterData.AdditionalTerm).ToList();
+
+            // Безопасная фильтрация по nullable int
+            if (filterData.AdditionalTerm.HasValue)
+            {
+                suppliers = suppliers.Where(pr => pr.AdditionalTerm.HasValue && pr.AdditionalTerm.Value == filterData.AdditionalTerm.Value).ToList();
+            }
+
+            // Фильтрация по nullable bool
+            if (filterData.IsVatApplicable.HasValue)
+            {
+                suppliers = suppliers.Where(pr => pr.IsVatApplicable == filterData.IsVatApplicable.Value).ToList();
+            }
 
             return suppliers;
         }
