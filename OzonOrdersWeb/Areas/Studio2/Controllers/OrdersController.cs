@@ -231,8 +231,6 @@ namespace OzonOrdersWeb.Controllers
                 pageViewModel.User.UserAccess = _context.UserAccess.Find(pageViewModel.User.UserAccessId);
             }
 
-            var i = ordersFromCache.ToList().Where(o => o.FromFile == true).ToList();
-
             return View(pageViewModel);
         }
         
