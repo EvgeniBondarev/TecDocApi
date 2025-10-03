@@ -15,5 +15,5 @@ public class ReceiptProduct
     public decimal Sum { get; set; }
 
     [JsonProperty("sumNDS")]
-    public decimal SumNDS { get; set; }
+    public decimal? SumNDS { get; set; }
 }

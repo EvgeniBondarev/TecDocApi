@@ -48,5 +48,9 @@ namespace OzonDomains.Models
         
         [Display(Name = "Облагается НДС")]
         public bool IsVatApplicable { get; set; } = false;
+        
+        [MaxLength(20)]
+        [Display(Name = "ИНН")]
+        public string? INNCode { get; set; }
     }
 }

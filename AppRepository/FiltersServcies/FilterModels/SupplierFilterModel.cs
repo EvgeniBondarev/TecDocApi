@@ -45,7 +45,7 @@ namespace Servcies.FiltersServcies.FilterModels
         public string? CsvUrl { get; set; }
         public string? Site { get; set; }
         public int? AdditionalTerm { get; set; }
-        
         public bool? IsVatApplicable { get; set; }
+        public string? INNCode { get; set; }
     }
 }

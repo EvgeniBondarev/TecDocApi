@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
+using Microsoft.IdentityModel.Tokens;
 using OzonDomains.Models;
 using Servcies.ApiServcies;
 using Servcies.ApiServcies._1CApi;
@@ -44,6 +45,17 @@ public class OneCReceiptManager : IApiDataManager<OneCReceiptManager>
         {
             throw new ArgumentException("Не указан склад отгрузки для заказов.");
         }
+        
+        var distinctSuppliers = ordersToReceipt
+            .Where(o => o.Supplier != null && !string.IsNullOrEmpty(o.Supplier.INNCode))
+            .GroupBy(o => o.Supplier.INNCode)
+            .ToList();
+
+        if (distinctSuppliers.Count > 1)
+        {
+            var suppliersNames = string.Join(", ", distinctWarehouses.Select(g => g.Key));
+            throw new ArgumentException($"Заказы имеют различных поставщиков: {suppliersNames}");
+        }
 
         
         var mappingWarehouse = await _warehouseMappingDataServcies.GetByOzonName(distinctWarehouses[0].Key);
@@ -52,6 +64,12 @@ public class OneCReceiptManager : IApiDataManager<OneCReceiptManager>
             throw new ArgumentException($"Связь складов не найдена для {distinctWarehouses[0].Key}.");
         }
         var warehouseName = mappingWarehouse.BitrixWarehouseName;
+        
+        var supplierName = distinctSuppliers[0].Key;
+        if (supplierName.IsNullOrEmpty())
+        {
+            throw new ArgumentException($"Поставщик не найден по ИНН.");
+        }
 
         var ordersByClient = ordersToReceipt
             .Where(o => o.OzonClient != null)
@@ -80,11 +98,12 @@ public class OneCReceiptManager : IApiDataManager<OneCReceiptManager>
                 {
                     Article = o.Article,
                     Quantity = o.Quantity.Value,
-                    Price = o.Price ?? 0,
-                    Sum = (o.Price ?? 0) * o.Quantity.Value,
-                    SumNDS = ((o.Price ?? 0) * o.Quantity.Value) * 0.20m // условно НДС 20%
+                    Price = o.PurchasePrice ?? 0,
+                    Sum = (o.PurchasePrice ?? 0) * o.Quantity.Value,
+                    SumNDS = (o.PurchasePrice ?? 0) * o.Quantity.Value * (o.Supplier.IsVatApplicable ? 0.20m : null) // проверка НДС
                 })
                 .ToList();
+
 
             if (!products.Any())
             {
@@ -96,6 +115,7 @@ public class OneCReceiptManager : IApiDataManager<OneCReceiptManager>
                     Date = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz)
                             .ToString("dd.MM.yyyy HH:mm:ss", new System.Globalization.CultureInfo("ru-RU")),
                     INNorganization = client.INNCode,
+                    Innbuyer = supplierName,
                     Subdivisions  = client.WarehouseName,
                     SenderRecipient  = warehouseName,
                     Comment = $"Перемещение для клиента {client.Name}. Заказы: {string.Join(", ", orders.Select(o => o.ShipmentNumber))}",

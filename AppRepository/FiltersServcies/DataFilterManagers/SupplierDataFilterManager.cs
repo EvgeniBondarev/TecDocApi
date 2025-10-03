@@ -24,7 +24,8 @@ namespace Servcies.FiltersServcies.DataFilterManagers
             suppliers = _filter.FilterByEnum(suppliers, pr => pr.WeightFactorCurrencyCode, filterData.WeightFactorCurrencyCode).ToList();
             suppliers = _filter.FilterByString(suppliers, pr => pr.CsvUrl, filterData.CsvUrl).ToList();
             suppliers = _filter.FilterByString(suppliers, pr => pr.Site, filterData.Site).ToList();
-
+            suppliers = _filter.FilterByString(suppliers, pr => pr.INNCode, filterData.INNCode).ToList();
+            
             // Безопасная фильтрация по nullable int
             if (filterData.AdditionalTerm.HasValue)
             {

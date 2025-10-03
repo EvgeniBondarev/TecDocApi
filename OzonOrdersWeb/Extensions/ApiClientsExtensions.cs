@@ -133,6 +133,14 @@ public static class ApiClientsExtensions
             return new OneCTransferManager(config, cache, warehouseMappingDataServcies);
         });
         
+        services.AddTransient<OneCReceiptManager>(serviceProvider =>
+        {
+            var config = serviceProvider.GetRequiredService<OneCApiConfig>();
+            var cache = serviceProvider.GetRequiredService<IMemoryCache>();
+            var warehouseMappingDataServcies = serviceProvider.GetRequiredService<WarehouseMappingDataServcies>();
+            return new OneCReceiptManager(config, cache, warehouseMappingDataServcies);
+        });
+        
         services.AddScoped<ProxyHttpClientService>();
         
     }

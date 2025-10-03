@@ -30,5 +30,8 @@
         
         IsVatApplicableAsc,
         IsVatApplicableDesc,
+        
+        INNCodeAsc,
+        INNCodeDesc,
     }
 }

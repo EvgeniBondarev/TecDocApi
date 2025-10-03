@@ -163,11 +163,15 @@
                                     </a>
                                 </th>
                                 <th>
+                                    <a class="text-dark" asp-action="Index" asp-route-sortOrder="@ViewBag.INNCodeSort">
+                                        <small>@(ViewBag.INNCodeSort == SupplierSortState.INNCodeAsc ? "ИНН↑" : "ИНН↓")</small>
+                                    </a>
+                                </th>
+                                <th>
                                     <a class="text-dark" asp-action="Index" asp-route-sortOrder="@ViewBag.IsVatApplicableSort">
                                         <small>@(ViewBag.IsVatApplicableSort == SupplierSortState.IsVatApplicableAsc ? "Облагается НДС↑" : "Облагается НДС↓")</small>
                                     </a>
                                 </th>
-
                             </tr>
                         </thead>
                         <tbody>
@@ -272,6 +276,9 @@
                                     <input asp-for="@Model.FilterModel.AdditionalTerm" id="additionalTermFilter" name="AdditionalTerm" class="form-control form-control-sm" />
                                 </td>
                                 <td>
+                                    <input asp-for="@Model.FilterModel.INNCode" id="innCodeFilter" name="INNCode" class="form-control form-control-sm" maxlength="20" placeholder="Укажите ИНН" />
+                                </td>
+                                <td>
                                     <input type="checkbox" name="IsVatApplicable" value="true" @(Model.FilterModel.IsVatApplicable == true ? "checked" : "") />
                                 </td>
                                 <button type="submit" id="submitFilterButton" style="display:none;"></button>
@@ -295,6 +302,8 @@
                                             <input type="hidden" name="CsvUrl" value="@item.CsvUrl"/>
                                             <input type="hidden" name="Site" value="@item.Site"/>
                                             <input type="hidden" name="AdditionalTerm" value="@item.AdditionalTerm"/>
+                                            <input type="hidden" name="IsVatApplicable" value="@(item.IsVatApplicable ? "true" : "false")" />
+                                            <input type="hidden" name="INNCode" class="form-control form-control-sm" value="@item.INNCode" maxlength="20" placeholder="Указать ИНН" />
                                             <button type="submit" class="btn btn-link" style="display: none;">Сохранить</button>
                                         </form>
                                     </td>
@@ -312,6 +321,8 @@
                                             <input type="hidden" name="CsvUrl" value="@item.CsvUrl"/>
                                             <input type="hidden" name="Site" value="@item.Site"/>
                                             <input type="hidden" name="AdditionalTerm" value="@item.AdditionalTerm"/>
+                                            <input type="hidden" name="IsVatApplicable" value="@(item.IsVatApplicable ? "true" : "false")" />
+                                            <input type="hidden" name="INNCode" class="form-control form-control-sm" value="@item.INNCode" maxlength="20" placeholder="Указать ИНН" />
                                             <button type="submit" class="btn btn-link" style="display: none;">Сохранить</button>
                                         </form>
                                     </td>
@@ -335,6 +346,8 @@
                                             <input type="hidden" name="CsvUrl" value="@item.CsvUrl"/>
                                             <input type="hidden" name="Site" value="@item.Site"/>
                                             <input type="hidden" name="AdditionalTerm" value="@item.AdditionalTerm"/>
+                                            <input type="hidden" name="IsVatApplicable" value="@(item.IsVatApplicable ? "true" : "false")" />
+                                            <input type="hidden" name="INNCode" class="form-control form-control-sm" value="@item.INNCode" maxlength="20" placeholder="Указать ИНН" />
                                             <button type="submit" class="btn btn-link" style="display: none;">Сохранить</button>
                                         </form>
                                     </td>
@@ -352,6 +365,8 @@
                                             <input type="hidden" name="CsvUrl" value="@item.CsvUrl"/>
                                             <input type="hidden" name="Site" value="@item.Site"/>
                                             <input type="hidden" name="AdditionalTerm" value="@item.AdditionalTerm"/>
+                                            <input type="hidden" name="IsVatApplicable" value="@(item.IsVatApplicable ? "true" : "false")" />
+                                            <input type="hidden" name="INNCode" class="form-control form-control-sm" value="@item.INNCode" maxlength="20" placeholder="Указать ИНН" />
                                             <button type="submit" class="btn btn-link" style="display: none;">Сохранить</button>
                                         </form>
                                     </td>
@@ -366,6 +381,8 @@
                                             <input type="hidden" name="CsvUrl" value="@item.CsvUrl"/>
                                             <input type="hidden" name="Site" value="@item.Site"/>
                                             <input type="hidden" name="AdditionalTerm" value="@item.AdditionalTerm"/>
+                                            <input type="hidden" name="IsVatApplicable" value="@(item.IsVatApplicable ? "true" : "false")" />
+                                            <input type="hidden" name="INNCode" class="form-control form-control-sm" value="@item.INNCode" maxlength="20" placeholder="Указать ИНН" />
                                             <div class="underline-input">
                                                 <select name="WeightFactorCurrencyCode" class="form-control form-control-sm">
                                                     <option value="">@((item.WeightFactorCurrencyCode == CurrencyCode.NON) ? "Указать валюту" : item.WeightFactorCurrencyCode.ToString())</option>
@@ -389,6 +406,8 @@
                                             <input type="hidden" name="WeightFactorCurrencyCode" value="@item.WeightFactorCurrencyCode"/>
                                             <input type="hidden" name="Site" value="@item.Site"/>
                                             <input type="hidden" name="AdditionalTerm" value="@item.AdditionalTerm"/>
+                                            <input type="hidden" name="IsVatApplicable" value="@(item.IsVatApplicable ? "true" : "false")" />
+                                            <input type="hidden" name="INNCode" class="form-control form-control-sm" value="@item.INNCode" maxlength="20" placeholder="Указать ИНН" />
                                             <div class="underline-input">
                                                 <input type="text" name="CsvUrl" class="form-control form-control-sm"
                                                        value="@item.CsvUrl"
@@ -411,6 +430,8 @@
                                             <input type="hidden" name="WeightFactorCurrencyCode" value="@item.WeightFactorCurrencyCode"/>
                                             <input type="hidden" name="CsvUrl" value="@item.CsvUrl"/>
                                             <input type="hidden" name="AdditionalTerm" value="@item.AdditionalTerm"/>
+                                            <input type="hidden" name="IsVatApplicable" value="@(item.IsVatApplicable ? "true" : "false")" />
+                                            <input type="hidden" name="INNCode" class="form-control form-control-sm" value="@item.INNCode" maxlength="20" placeholder="Указать ИНН" />
                                             <div class="underline-input">
                                                 <input type="text" name="Site" class="form-control form-control-sm"
                                                        value="@item.Site"
@@ -432,6 +453,8 @@
                                             <input type="hidden" name="WeightFactorCurrencyCode" value="@item.WeightFactorCurrencyCode"/>
                                             <input type="hidden" name="CsvUrl" value="@item.CsvUrl"/>
                                             <input type="hidden" name="Site" value="@item.Site"/>
+                                            <input type="hidden" name="IsVatApplicable" value="@(item.IsVatApplicable ? "true" : "false")" />
+                                            <input type="hidden" name="INNCode" class="form-control form-control-sm" value="@item.INNCode" maxlength="20" placeholder="Указать ИНН" />
                                             <div class="underline-input">
                                                 <input type="text" name="AdditionalTerm" class="form-control form-control-sm"
                                                        value="@item.AdditionalTerm"
@@ -446,6 +469,37 @@
                                         <form asp-area="Studio2" asp-controller="Supplier" asp-action="Edit" method="post" oninput="toggleSaveButton(this)">
                                             <input type="hidden" name="Id" value="@item.Id" />
                                             <input type="hidden" name="page" value="@Model.PageNumber" />
+                                            <input type="hidden" name="Id" value="@item.Id" />
+                                            <input type="hidden" name="page" value="@Model.PageNumber" />
+                                            <input type="hidden" name="Name" value="@item.Name" />
+                                            <input type="hidden" name="CostFactor" value="@item.CostFactor" />
+                                            <input type="hidden" name="CurrencyCode" value="@item.CurrencyCode.ToString()" />
+                                            <input type="hidden" name="WeightFactor" value="@item.WeightFactor" />
+                                            <input type="hidden" name="WeightFactorCurrencyCode" value="@item.WeightFactorCurrencyCode"/>
+                                            <input type="hidden" name="CsvUrl" value="@item.CsvUrl"/>
+                                            <input type="hidden" name="Site" value="@item.Site"/>
+                                            <input type="hidden" name="AdditionalTerm" value="@item.AdditionalTerm"/>
+                                            <div class="underline-input">
+                                                <input type="text" name="INNCode" class="form-control form-control-sm" value="@item.INNCode" maxlength="20" placeholder="Указать ИНН" />
+                                            </div>
+                                            <button type="submit" class="btn btn-link" style="display: none;">Сохранить</button>
+                                        </form>
+                                    </td>
+                                    <td>
+                                        <form asp-area="Studio2" asp-controller="Supplier" asp-action="Edit" method="post" oninput="toggleSaveButton(this)">
+                                            <input type="hidden" name="Id" value="@item.Id" />
+                                            <input type="hidden" name="page" value="@Model.PageNumber" />
+                                            <input type="hidden" name="Id" value="@item.Id" />
+                                            <input type="hidden" name="page" value="@Model.PageNumber" />
+                                            <input type="hidden" name="Name" value="@item.Name" />
+                                            <input type="hidden" name="CostFactor" value="@item.CostFactor" />
+                                            <input type="hidden" name="CurrencyCode" value="@item.CurrencyCode.ToString()" />
+                                            <input type="hidden" name="WeightFactor" value="@item.WeightFactor" />
+                                            <input type="hidden" name="WeightFactorCurrencyCode" value="@item.WeightFactorCurrencyCode"/>
+                                            <input type="hidden" name="CsvUrl" value="@item.CsvUrl"/>
+                                            <input type="hidden" name="Site" value="@item.Site"/>
+                                            <input type="hidden" name="AdditionalTerm" value="@item.AdditionalTerm"/>
+                                            <input type="hidden" name="INNCode" class="form-control form-control-sm" value="@item.INNCode" maxlength="20" placeholder="Указать ИНН" />
                                             <div class="form-check">
                                                 <input class="form-check-input" type="checkbox" name="IsVatApplicable" value="true" @(item.IsVatApplicable ? "checked" : "") />
                                             </div>

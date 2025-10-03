@@ -37,7 +37,7 @@ public class ShippedBySupplierTransactionController : Controller
     private readonly CacheUpdater<Order> _cacheUpdater;
     private readonly OrderCache _cache;
     private readonly ProxyHttpClientService _proxyHttpClientService;
-    private readonly OneCTransferManager _oneCTransferManager;
+    private readonly OneCReceiptManager _oneCReceiptManager;
 
     public ShippedBySupplierTransactionController(
         OzonOrderContext context,
@@ -52,7 +52,7 @@ public class ShippedBySupplierTransactionController : Controller
         CacheUpdater<Order> cacheUpdater,
         OrderCache cache,
         ProxyHttpClientService proxyHttpClientService,
-        OneCTransferManager oneCTransferManager)
+        OneCReceiptManager oneCReceiptManager)
     {
         _context = context;
         _appStatusServcies = appStatusServcies;
@@ -66,7 +66,7 @@ public class ShippedBySupplierTransactionController : Controller
         _cacheUpdater = cacheUpdater;
         _cache = cache;
         _proxyHttpClientService = proxyHttpClientService;
-        _oneCTransferManager = oneCTransferManager;
+        _oneCReceiptManager = oneCReceiptManager;
     }
 
     // ==============================
@@ -247,7 +247,7 @@ public class ShippedBySupplierTransactionController : Controller
                     {
                         try
                         {
-                            transferResult = await _oneCTransferManager.TransferStock(ordersToTransaction);
+                            transferResult = await _oneCReceiptManager.CreateReceipts(ordersToTransaction);
                         }
                         catch (Exception e)
                         {
