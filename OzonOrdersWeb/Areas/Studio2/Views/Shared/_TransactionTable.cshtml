@@ -947,7 +947,8 @@
                            class="form-control form-control-sm purchase-price-field"
                            id="PurchasePrice_@Model.Orders[i].Id"
                            data-order-id="@Model.Orders[i].Id"
-                           style="width: 70px; max-width: 70px;" />
+                           style="width: 70px; max-width: 70px;"
+                           value="@(Model.Orders[i].OriginalPurchasePrice ?? Model.Orders[i].PurchasePrice)" />
 
                     <div class="form-group" style="font-size: 13px;">
                         <input type="hidden" asp-for="Orders[i].PurchasePrice"
