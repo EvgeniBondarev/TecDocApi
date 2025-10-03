@@ -2,7 +2,7 @@
 
 namespace Servcies.ApiServcies._1CApi.Models;
 
-public class MovementOfGoodsResponse
+public class OneCResponse
 {
     [JsonProperty("success")]
     public bool Success { get; set; }

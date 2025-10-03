@@ -6,14 +6,14 @@ using Servcies.DataServcies;
 
 namespace Servcies.ApiServcies._1CApi;
 
-public class OneCDataManager : IApiDataManager<OneCDataManager>
+public class OneCTransferManager : IApiDataManager<OneCTransferManager>
 {
     private OneCApiClient _apiClient;
     private OneCApiConfig _apiConfig;
     private readonly IMemoryCache _cache;
     private readonly WarehouseMappingDataServcies _warehouseMappingDataServcies;
 
-    public OneCDataManager(OneCApiConfig config, 
+    public OneCTransferManager(OneCApiConfig config, 
                             IMemoryCache cache, 
                             WarehouseMappingDataServcies warehouseMappingDataServcies)
     {
@@ -23,7 +23,7 @@ public class OneCDataManager : IApiDataManager<OneCDataManager>
         _warehouseMappingDataServcies = warehouseMappingDataServcies;
     }
 
-    public OneCDataManager SetClient(string user, string password)
+    public OneCTransferManager SetClient(string user, string password)
     {
         _apiClient = new OneCApiClient(user, password);
         _apiConfig.User = user;
@@ -31,7 +31,7 @@ public class OneCDataManager : IApiDataManager<OneCDataManager>
         return this;
     }
 
-    public async Task<List<MovementOfGoodsResponse>> TransferStock(List<Order> ordersToTransfer)
+    public async Task<List<OneCResponse>> TransferStock(List<Order> ordersToTransfer)
     {
         if (ordersToTransfer == null || !ordersToTransfer.Any())
         {
@@ -72,7 +72,7 @@ public class OneCDataManager : IApiDataManager<OneCDataManager>
             throw new ArgumentException("Не найдено заказов с валидными данными клиента Ozon.");
         }
 
-        var results = new List<MovementOfGoodsResponse>();
+        var results = new List<OneCResponse>();
         var tz = TimeZoneInfo.FindSystemTimeZoneById("Russian Standard Time");
         List<MovementOfGoodsRequest> modelsToTransfer = [];
 
@@ -119,7 +119,7 @@ public class OneCDataManager : IApiDataManager<OneCDataManager>
         }
         catch (Exception ex)
         {
-            var errorResponse = new MovementOfGoodsResponse
+            var errorResponse = new OneCResponse
             {
                 Success = false,
                 Message = $"Ошибка при обработке заказов клиента {ex.Message}",
@@ -129,7 +129,7 @@ public class OneCDataManager : IApiDataManager<OneCDataManager>
         }
         return results;
     }
-    public async Task<MovementOfGoodsResponse> CreateMovementOfGoodsAsync(MovementOfGoodsRequest request)
+    public async Task<OneCResponse> CreateMovementOfGoodsAsync(MovementOfGoodsRequest request)
     {
         if (request == null)
         {
@@ -149,7 +149,7 @@ public class OneCDataManager : IApiDataManager<OneCDataManager>
         if (request.Products == null || !request.Products.Any())
             throw new ArgumentException("Необходим хотя бы один товар в документе");
 
-        var result = new MovementOfGoodsResponse();
+        var result = new OneCResponse();
         try
         {
             var response = await _apiClient.MakeRequestPostAsync(request, OneCApiUrl.MOVEMENT_OF_GOODS_URL);

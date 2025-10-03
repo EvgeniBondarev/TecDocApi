@@ -30,6 +30,9 @@ namespace OzonDomains
         
         [Display(Name = "Проценён")]
         Percentage = 6,
+        
+        [Display(Name = "Приходная накладная")]
+        ReceiptNote = 7
     }
     
     public static class EnumExtensions

@@ -125,12 +125,12 @@ public static class ApiClientsExtensions
             return new OneCApiClient(config.User, config.Password);
         });
 
-        services.AddTransient<OneCDataManager>(serviceProvider =>
+        services.AddTransient<OneCTransferManager>(serviceProvider =>
         {
             var config = serviceProvider.GetRequiredService<OneCApiConfig>();
             var cache = serviceProvider.GetRequiredService<IMemoryCache>();
             var warehouseMappingDataServcies = serviceProvider.GetRequiredService<WarehouseMappingDataServcies>();
-            return new OneCDataManager(config, cache, warehouseMappingDataServcies);
+            return new OneCTransferManager(config, cache, warehouseMappingDataServcies);
         });
         
         services.AddScoped<ProxyHttpClientService>();

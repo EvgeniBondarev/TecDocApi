@@ -36,7 +36,7 @@ public class ShippedToClientTransactionController : Controller
     private readonly CacheUpdater<Order> _cacheUpdater;
     private readonly OrderCache _cache;
     private readonly ProxyHttpClientService _proxyHttpClientService;
-    private readonly OneCDataManager _oneCDataManager;
+    private readonly OneCTransferManager _oneCTransferManager;
 
     public ShippedToClientTransactionController(
         OzonOrderContext context,
@@ -51,7 +51,7 @@ public class ShippedToClientTransactionController : Controller
         CacheUpdater<Order> cacheUpdater,
         OrderCache cache,
         ProxyHttpClientService proxyHttpClientService,
-        OneCDataManager oneCDataManager)
+        OneCTransferManager oneCTransferManager)
     {
         _context = context;
         _appStatusServcies = appStatusServcies;
@@ -65,7 +65,7 @@ public class ShippedToClientTransactionController : Controller
         _cacheUpdater = cacheUpdater;
         _cache = cache;
         _proxyHttpClientService = proxyHttpClientService;
-        _oneCDataManager = oneCDataManager;
+        _oneCTransferManager = oneCTransferManager;
     }
 
     // ==============================
@@ -233,12 +233,12 @@ public class ShippedToClientTransactionController : Controller
 
                     string oneCResult = "";
                     IEnumerable<string> oneCHash = [];
-                    List<MovementOfGoodsResponse> transferResult = new List<MovementOfGoodsResponse>();
+                    List<OneCResponse> transferResult = new List<OneCResponse>();
                     if (processIn1C)
                     {
                         try
                         {
-                            transferResult = await _oneCDataManager.TransferStock(ordersToTransaction);
+                            transferResult = await _oneCTransferManager.TransferStock(ordersToTransaction);
                         }
                         catch (Exception e)
                         {

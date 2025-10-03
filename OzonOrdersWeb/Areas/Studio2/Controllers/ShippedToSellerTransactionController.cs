@@ -34,7 +34,7 @@ public class ShippedToSellerTransactionController : Controller
     private readonly CacheUpdater<Order> _cacheUpdater;
     private readonly OrderCache _cache;
     private readonly WarehouseMappingDataServcies _warehouseMappingDataServcies;
-    private readonly OneCDataManager _oneCDataManager;
+    private readonly OneCTransferManager _oneCTransferManager;
     private readonly ProxyHttpClientService _proxyHttpClientService;
 
     public ShippedToSellerTransactionController(
@@ -49,7 +49,7 @@ public class ShippedToSellerTransactionController : Controller
         CacheUpdater<Order> cacheUpdater,
         OrderCache cache,
         WarehouseMappingDataServcies warehouseMappingDataServcies,
-        OneCDataManager oneCDataManager,
+        OneCTransferManager oneCTransferManager,
         ProxyHttpClientService proxyHttpClientService)
     {
         _context = context;
@@ -63,7 +63,7 @@ public class ShippedToSellerTransactionController : Controller
         _cacheUpdater = cacheUpdater;
         _cache = cache;
         _warehouseMappingDataServcies = warehouseMappingDataServcies;
-        _oneCDataManager = oneCDataManager;
+        _oneCTransferManager = oneCTransferManager;
         _proxyHttpClientService = proxyHttpClientService;
     }
 
@@ -261,12 +261,12 @@ public class ShippedToSellerTransactionController : Controller
 
                     string oneCResult = "";
                     IEnumerable<string> oneCHash = [];
-                    List<MovementOfGoodsResponse> transferResult = new List<MovementOfGoodsResponse>();
+                    List<OneCResponse> transferResult = new List<OneCResponse>();
                     if (processIn1C)
                     {
                         try
                         {
-                            transferResult = await _oneCDataManager.TransferStock(ordersToTransaction);
+                            transferResult = await _oneCTransferManager.TransferStock(ordersToTransaction);
                         }
                         catch (Exception e)
                         {

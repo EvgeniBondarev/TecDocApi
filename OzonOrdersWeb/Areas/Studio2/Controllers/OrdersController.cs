@@ -93,7 +93,7 @@ namespace OzonOrdersWeb.Controllers
         private readonly ProductInformationModelBuilder _productInformationModelBuilder;
         private readonly DeliveryDataServcies _deliveryDataServcies;
         private readonly WarehouseMappingDataServcies _warehouseMappingDataServcies;
-        private readonly OneCDataManager _oneCDataManager;
+        private readonly OneCTransferManager _oneCTransferManager;
         private readonly BitrixStockRepository _bitrixStockRepository;
         public OrdersController(OzonOrderContext context,
                                 OrdersDataServcies orderRepository,
@@ -134,7 +134,7 @@ namespace OzonOrdersWeb.Controllers
                                 ProductInformationModelBuilder productInformationModelBuilder,
                                 DeliveryDataServcies deliveryDataServcies,
                                 WarehouseMappingDataServcies warehouseMappingDataServcies,
-                                OneCDataManager oneCDataManager,
+                                OneCTransferManager oneCTransferManager,
                                 BitrixStockRepository bitrixStockRepository)
         {
             _context = context;
@@ -177,7 +177,7 @@ namespace OzonOrdersWeb.Controllers
             _deliveryDataServcies = deliveryDataServcies;
             _warehouseDataServcies = warehouseDataServcies;
             _warehouseMappingDataServcies = warehouseMappingDataServcies;
-            _oneCDataManager = oneCDataManager;
+            _oneCTransferManager = oneCTransferManager;
             _bitrixStockRepository = bitrixStockRepository;
         }
         
