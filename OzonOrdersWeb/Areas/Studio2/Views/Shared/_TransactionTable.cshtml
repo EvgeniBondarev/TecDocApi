@@ -308,41 +308,29 @@
 
         @for (int i = 0; i < Model.Orders.Count; i++)
         {
+            var order = Model.Orders[i];
             string rowClass = "custom-white";
-
-            if (Model.Orders[i].AppStatus?.Name == "Заказан поставщику")
-            {
-                rowClass = "table-success";
-            }
-
-            if (Model.Orders[i].IsReturnable == true)
-            {
-                rowClass = "custom-red";
-            }
-
-            if (
-                (Model.Orders[i].AppStatus?.Name == "Отменен" && (Model.Orders[i].Status == "Отменён" || string.IsNullOrEmpty(Model.Orders[i].Status))) ||
-                Model.Orders[i].Status == "Отменен" ||
-                Model.Orders[i].Status == "Отменён"
-            )
+            if ((order.AppStatus?.Name == "Отменен" && (order.Status == "Отменён" || string.IsNullOrEmpty(order.Status))) ||
+                order.Status is "Отменен" or "Отменён")
             {
                 rowClass = "table-danger";
             }
-            
-            if (Model.Orders[i].AppStatus.Name  == "Отгружен поставщиком")
+            else if (order.IsReturnable == true)
             {
-                rowClass = "table-info";
+                rowClass = "custom-red";
             }
-            
-            if (Model.Orders[i].AppStatus.Name  == "Отгружен реализатору")
+            else
             {
-                rowClass = "table-warning";
+                rowClass = order.AppStatus?.Name switch
+                {
+                    "Заказан поставщику"   => "table-success",
+                    "Отгружен поставщиком" => "table-info",
+                    "Отгружен реализатору" => "table-warning",
+                    "Заказан реализатору"  => "table-secondary",
+                    _ => rowClass
+                };
             }
-            
-            if (Model.Orders[i].AppStatus.Name  == "Заказан реализатору")
-            {
-                rowClass = "table-secondary";
-            }
+
         <tr id="orderRow_@Model.Orders[i].Id" class=@rowClass>
             <div class="form-group" style="display: none">
                 <label asp-for="Orders[i].Id" class="control-label"></label><span style="margin-left: 10px; color: gray;">/ </span>

@@ -136,7 +136,8 @@ Layout = "~/Views/Shared/_Layout.cshtml";
 }
 else
 {
-<p>Нет выбранных заказов для проведения документа (Статус выбранного заказа должен быть отличным от <b>'Заказан поставщику'</b>)</p>
+    <p>Нет выбранных заказов для проведения документа (Статус выбранного заказа должен быть отличным от <b>'Заказан поставщику'</b>)</p>
+    @Html.Partial("_OrderStatusFlow")
 }
 
 <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">

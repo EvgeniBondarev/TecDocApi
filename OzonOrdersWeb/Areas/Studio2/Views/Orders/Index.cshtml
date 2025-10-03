@@ -972,39 +972,25 @@
         @foreach (var item in Model.Items)
         {
             string rowClass = "custom-white";
-
-            if (item.AppStatus?.Name == "Заказан поставщику")
-            {
-                rowClass = "table-success";
-            }
-
-            if (item.IsReturnable == true)
-            {
-                rowClass = "custom-red";
-            }
-
-            if (
-                (item.AppStatus?.Name == "Отменен" && (item.Status == "Отменён" || string.IsNullOrEmpty(item.Status))) ||
-                item.Status == "Отменен" ||
-                item.Status == "Отменён"
-            )
+            if ((item.AppStatus?.Name == "Отменен" && (item.Status == "Отменён" || string.IsNullOrEmpty(item.Status))) ||
+                item.Status is "Отменен" or "Отменён")
             {
                 rowClass = "table-danger";
             }
-            
-            if (item.AppStatus?.Name  == "Отгружен поставщиком")
+            else if (item.IsReturnable == true)
             {
-                rowClass = "table-info";
+                rowClass = "custom-red";
             }
-            
-            if (item.AppStatus?.Name  == "Отгружен реализатору")
+            else
             {
-                rowClass = "table-warning";
-            }
-            
-            if (item.AppStatus?.Name  == "Заказан реализатору")
-            {
-                rowClass = "table-secondary";
+                rowClass = item.AppStatus?.Name switch
+                {
+                    "Заказан поставщику"   => "table-success",
+                    "Отгружен поставщиком" => "table-info",
+                    "Отгружен реализатору" => "table-warning",
+                    "Заказан реализатору"  => "table-secondary",
+                    _ => rowClass
+                };
             }
             
             <tr class=@rowClass oncontextmenu="showInfoAtCursor('@item.Id', '@item.CartItemId', event); return false;">
