@@ -26,9 +26,16 @@ Layout = "~/Views/Shared/_Layout.cshtml";
 
 <hr />
 
-<div id="loadingSpinner" class="spinner-overlay" style="display: none; background-color: inherit;">
-    <div class="spinner-border text-primary" role="status">
-        <span class="sr-only"></span>
+<!-- Модальное окно со спиннером -->
+<div class="modal fade" id="loadingModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background: transparent; border: none; box-shadow: none;">
+            <div class="d-flex justify-content-center align-items-center" style="height: 150px;">
+                <div class="spinner-border text-white" role="status" style="width: 4rem; height: 4rem;">
+                    <span class="visually-hidden">Загрузка...</span>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -63,27 +70,74 @@ Layout = "~/Views/Shared/_Layout.cshtml";
 
 @if (Model.Orders.Count > 0)
 {
-<form asp-area="Studio2" asp-controller="ShippedBySupplierTransaction" asp-action="CreateShippedBySupplierTransaction" id="createOrderForm">
-    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-    <input type="hidden" asp-for="RedirectPage" />
+    <form asp-area="Studio2" asp-controller="ShippedBySupplierTransaction" asp-action="CreateShippedBySupplierTransaction" id="createOrderForm">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <input type="hidden" asp-for="RedirectPage" />
     
-    @await Html.PartialAsync("_TransactionTable", Model)
+        @await Html.PartialAsync("_TransactionTable", Model)
     
-    <div class="form-check ms-3">
-        <input class="form-check-input" type="checkbox" id="processIn1C" name="processIn1C" value="true" checked>
-        <label class="form-check-label" for="processIn1C">
-            Провести в 1С
-        </label>
-    </div>
-
-    <div class="form-group mt-3 d-flex justify-content-end">
-        <div class="input-group">
-                <span class="input-group-btn">
-                    <input type="submit" value="Сохранить" style="width: 170px;" class="btn btn-primary" data-bs-target="#staticBackdrop"/>
-                </span>
+        <div class="form-check ms-3">
+            <input class="form-check-input" type="checkbox" id="ProcessIn1C" name="ProcessIn1C" value="true" checked>
+            <label class="form-check-label" for="ProcessIn1C">
+                Провести в 1С
+            </label>
         </div>
-    </div>
-</form>
+        
+            
+        <!-- ================== МОДАЛЬНОЕ ОКНО ================== -->
+        <div class="modal fade" id="transactionModal" tabindex="-1" aria-labelledby="transactionModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="transactionModalLabel">Данные документа</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                    </div>
+
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="Contract" class="form-label">Договор</label>
+                            <input type="text" id="Contract" name="Contract" class="form-control" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="NumberVh" class="form-label">Номер входящего</label>
+                            <input type="text" id="NumberVh" name="NumberVh" class="form-control" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="DateVh" class="form-label">Дата входящего</label>
+                            <input type="date"
+                                   id="DateVh"
+                                   name="DateVh"
+                                   class="form-control"
+                                   required
+                                   value="@DateTime.Now.ToString("yyyy-MM-dd")">
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                        <button type="button" id="confirmSubmit" class="btn btn-primary">Подтвердить и сохранить</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <input type="hidden" name="UserName" id="UserName" value="@User.Identity.Name"/>
+        <input type="hidden" name="Page" id="Page" value="@Model.RedirectPage"/>
+
+        <div class="form-group mt-3 d-flex justify-content-end">
+            <div class="input-group">
+                <span class="input-group-btn">
+                    <input type="button" value="Сохранить" id="openModalBtn"
+                           style="width: 170px;"
+                           class="btn btn-primary"
+                           data-bs-toggle="modal"
+                           data-bs-target="#transactionModal" />
+                </span>
+            </div>
+        </div>
+    </form>
 }
 else
 {
@@ -149,51 +203,69 @@ else
     </div>
 </div>
 
-<input type="hidden" id="deletedOrders" name="deletedOrders" />
+<input type="hidden" id="DeletedOrders" name="DeletedOrders" />
 @await Html.PartialAsync("_TransactionScript", Model)
+
 <script>
-    $('form').submit(function (e) {
-        e.preventDefault();
+    document.addEventListener("DOMContentLoaded", function () {
+        const openModalBtn = document.getElementById("openModalBtn");
+        const processIn1CCheckbox = document.getElementById("ProcessIn1C");
+        const form = document.getElementById("createOrderForm");
 
-        var fieldsFilled = true;
-        $('.purchase-price-field').each(function () {
-            if ($(this).val() === '') {
-                fieldsFilled = false;
+        const transactionModalEl = document.getElementById("transactionModal");
+        const transactionModal = new bootstrap.Modal(transactionModalEl);
+
+        const loadingModalEl = document.getElementById("loadingModal");
+        const loadingModal = new bootstrap.Modal(loadingModalEl);
+
+        // === Устанавливаем сегодняшнюю дату ===
+        transactionModalEl.addEventListener("show.bs.modal", function () {
+            const dateInput = document.getElementById("DateVh");
+            if (dateInput && !dateInput.value) {
+                const today = new Date().toISOString().split("T")[0];
+                dateInput.value = today;
             }
         });
 
-        $('.supplier-select').each(function () {
-            if ($(this).val() === '' || $(this).val() === '1') {
-                fieldsFilled = false;
+        // === Кнопка "Сохранить" ===
+        openModalBtn.addEventListener("click", function (e) {
+            e.preventDefault();
+
+            if (processIn1CCheckbox.checked) {
+                transactionModal.show();
+            } else {
+                showLoadingModal();
+                form.submit();
             }
         });
 
-        if (!fieldsFilled) {
-            $('#myModal').modal('show');
-            return;
-        } else {
-            $('#staticBackdrop').modal('show');
-            var formData = $(this).serialize();
+        // === Подтверждение из модалки ===
+        document.getElementById("confirmSubmit").addEventListener("click", function () {
+            const contract = document.getElementById("Contract").value.trim();
+            const numberVh = document.getElementById("NumberVh").value.trim();
+            const dateVh = document.getElementById("DateVh").value;
 
-            formData += '&userName=' + '@User.Identity.Name' + '&comment=' + $('#commentField').val() + '&page=' + '@Model.RedirectPage';
+            if (!contract || !numberVh || !dateVh) {
+                alert("Пожалуйста, заполните все поля.");
+                return;
+            }
 
-            $.ajax({
-                url: '@Url.Action("CreateShippedBySupplierTransaction", "ShippedBySupplierTransaction")',
-                type: 'POST',
-                data: formData,
-                success: function (result) {
-                    if (result.redirectTo) {
-                        window.location.href = result.redirectTo;
-                    } else {
-                        alert('Произошла ошибка: не удалось получить URL для перенаправления.');
-                    }
-                },
-                error: function (xhr, status, error) {
-                    let errorMessage = xhr.responseText || 'Произошла неизвестная ошибка';
-                    alert('Произошла ошибка при отправке формы: ' + errorMessage);
-                }
-            });
+            transactionModal.hide();
+            showLoadingModal();
 
+            // отправляем форму
+            form.submit();
+        });
+
+        // === Функция показа модального спиннера ===
+        function showLoadingModal() {
+            loadingModal.show();
         }
+
+        // === Скрываем спиннер при возврате на страницу (например, после redirect) ===
+        window.addEventListener("pageshow", () => {
+            const modal = bootstrap.Modal.getInstance(loadingModalEl);
+            if (modal) modal.hide();
+        });
     });
 </script>

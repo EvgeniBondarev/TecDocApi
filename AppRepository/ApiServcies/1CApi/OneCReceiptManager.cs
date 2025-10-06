@@ -3,6 +3,7 @@ using Microsoft.IdentityModel.Tokens;
 using OzonDomains.Models;
 using Servcies.ApiServcies;
 using Servcies.ApiServcies._1CApi;
+using Servcies.ApiServcies._1CApi.DTO;
 using Servcies.ApiServcies._1CApi.Models;
 using Servcies.DataServcies;
 
@@ -23,7 +24,8 @@ public class OneCReceiptManager : IApiDataManager<OneCReceiptManager>
         _warehouseMappingDataServcies = warehouseMappingDataServcies;
     }
     
-    public async Task<List<OneCResponse>> CreateReceipts(List<Order> ordersToReceipt)
+    public async Task<List<OneCResponse>> CreateReceipts(List<Order> ordersToReceipt, 
+                                                         ShippedBySupplierTransactionDto shippedBySupplierTransactionDto)
     {
         if (ordersToReceipt == null || !ordersToReceipt.Any())
         {
@@ -119,6 +121,11 @@ public class OneCReceiptManager : IApiDataManager<OneCReceiptManager>
                     Subdivisions  = client.WarehouseName,
                     SenderRecipient  = warehouseName,
                     Comment = $"Перемещение для клиента {client.Name}. Заказы: {string.Join(", ", orders.Select(o => o.ShipmentNumber))}",
+                    NDS = orders.FirstOrDefault().Supplier.IsVatApplicable ? "да" : "",
+                    DateVh = TimeZoneInfo.ConvertTimeFromUtc(shippedBySupplierTransactionDto.DateVh, tz)
+                        .ToString("dd.MM.yyyy HH:mm:ss", new System.Globalization.CultureInfo("ru-RU")),
+                    NumberVh = shippedBySupplierTransactionDto.NumberVh,
+                    Contract = shippedBySupplierTransactionDto.Contract,
                     Products = products 
             };
             modelsToTransfer.Add(model);

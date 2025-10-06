@@ -20,6 +20,18 @@ public class ReceiptOfGoodsRequest : IRequestModel
     public string Innbuyer { get; set; }
     [JsonProperty("comment")]
     public string Comment { get; set; }
+    [JsonProperty("NDS")]
+    public string NDS { get; set; }
+    
+    [JsonProperty("contract")]
+    public string Contract { get; set; }
+    
+    [JsonProperty("NumberVh")]
+    public string NumberVh { get; set; }
+    
+    [JsonProperty("DateVh")]
+    public string DateVh { get; set; }
+
 
     [JsonProperty("product")]
     public List<ReceiptProduct> Products { get; set; } = new List<ReceiptProduct>();

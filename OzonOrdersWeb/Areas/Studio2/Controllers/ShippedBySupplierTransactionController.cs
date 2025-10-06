@@ -3,11 +3,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Newtonsoft.Json;
 using OzonDomains.Models;
+using OzonOrdersWeb.Areas.Studio2.ViewModels.ShippedBySupplierTransaction;
 using OzonOrdersWeb.ViewModels.OrderViewModels;
 using OzonRepositories.Context;
 using OzonRepositories.Data.Bitrix;
 using PartsInfo.HttpUtils;
 using Servcies.ApiServcies._1CApi;
+using Servcies.ApiServcies._1CApi.DTO;
 using Servcies.ApiServcies._1CApi.Models;
 using Servcies.CacheServcies.Cache.OzonOrdersCache;
 using Servcies.CacheServcies.Cache.UserCacheService;
@@ -182,38 +184,33 @@ public class ShippedBySupplierTransactionController : Controller
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> CreateShippedBySupplierTransaction(
-            List<Order> orders,
-            string userName,
-            string comment,
-            int page,
-            string deletedOrders,
-            bool processIn1C = false)
+        ShippedBySupplierTransactionViewModel model)
     {
             
-            if (orders == null)
+            if (model.Orders == null)
             {
                 TempData["ErorrResult"] = $"Не удалось провести выбранные заказы.<br>Было передано слишком большое количество записей.";
                 return RedirectToAction("Index");
             }
             else
             {
-                if (deletedOrders != null)
+                if (model.DeletedOrders != null)
                 {
-                    var deletedOrderIds = deletedOrders.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(int.Parse).ToList();
-                    orders = orders.Where(o => !deletedOrderIds.Contains(o.Id)).ToList();
+                    var deletedOrderIds = model.DeletedOrders.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(int.Parse).ToList();
+                   model.Orders = model.Orders.Where(o => !deletedOrderIds.Contains(o.Id)).ToList();
                 }
             }
 
             try
             {
-                if (orders.Count != 0)
+                if (model.Orders.Count != 0)
                 {
                     DateTime createAt = DateTime.Now;
                     var changeCount = 0;
                     var dateTime = "";
                     List<Order> ordersToUpdate = new List<Order>();
                     List<string> ordersNotFoundInOzone = [];
-                    foreach (var order in orders)
+                    foreach (var order in model.Orders)
                     {
                         ordersToUpdate.Add(await _orderServcies.TransactOrder(order));
                     }
@@ -243,11 +240,18 @@ public class ShippedBySupplierTransactionController : Controller
                     string oneCResult = "";
                     IEnumerable<string> oneCHash = [];
                     List<OneCResponse> transferResult = new List<OneCResponse>();
-                    if (processIn1C)
+                    if (model.ProcessIn1C)
                     {
                         try
                         {
-                            transferResult = await _oneCReceiptManager.CreateReceipts(ordersToTransaction);
+                            transferResult = await _oneCReceiptManager.CreateReceipts(ordersToTransaction,
+                                                                                        new ShippedBySupplierTransactionDto()
+                                                                                        {
+                                                                                            NDS = model.NDS,
+                                                                                            Contract = model.Contract,
+                                                                                            NumberVh = model.NumberVh,
+                                                                                            DateVh = model.DateVh,
+                                                                                        });
                         }
                         catch (Exception e)
                         {
@@ -267,7 +271,7 @@ public class ShippedBySupplierTransactionController : Controller
                                        $"</div>";
                             }
                             TempData["TransactionResult"] = msg;
-                            return Json(new { redirectTo = Url.Action("Index", "Orders", new { sortOrder = GetSortStateCookie(), page }) });
+                            return RedirectToAction("Index", "Orders", new { sortOrder = GetSortStateCookie(), page = model.Page });
                         }
                         
                         var successfulTransfers = transferResult.Where(tr => tr.Success).ToList();
@@ -304,7 +308,7 @@ public class ShippedBySupplierTransactionController : Controller
                                               $"</div>";
                             }
                             TempData["TransactionResult"] = msg;
-                            return Json(new { redirectTo = Url.Action("Index", "Orders", new { sortOrder = GetSortStateCookie(), page }) });
+                            return RedirectToAction("Index", "Orders", new { sortOrder = GetSortStateCookie(), page = model.Page });
                         }
                         else
                         {
@@ -332,9 +336,9 @@ public class ShippedBySupplierTransactionController : Controller
                     }
                     await NotificationService.NotifyAllAsync(oneCResult);
                     (changeCount, dateTime) = await _transaction.CreateShippedBySupplierTransaction(ordersToTransaction,
-                                                                                                  userName,
+                                                                                                  model.UserName,
                                                                                                   createAt,
-                                                                                                  comment + string.Join(", ", oneCHash));
+                                                                                                  model.Comment + string.Join(", ", oneCHash));
                     int cancelCount = ordersToUpdate.Where(o => o.AppStatus.Name == "Отменен").Count();
 
                     if (changeCount > 0)
@@ -343,9 +347,9 @@ public class ShippedBySupplierTransactionController : Controller
                         string msg = $"Заказы добавлены в журнал<br/>" +
                                      $"<b>{changeCount}</b> заказам изменен статус на '<b>Отгружен поставщиком</b>', <b>{cancelCount}</b> заказов были отменены." +
                                      $"<br/>Время<b>: {dateTime}</b>" +
-                                     $"<br/>Пользователь<b>: {userName}</b>" +
-                                     $"<br/>Комментарий: {comment}" +
-                                     $"<br/>Заказы: {string.Join(" ", orders.Select(o => o.ShipmentNumber))}"+
+                                     $"<br/>Пользователь<b>: {model.UserName}</b>" +
+                                     $"<br/>Комментарий: {model.Comment}" +
+                                     $"<br/>Заказы: {string.Join(" ", model.Orders.Select(o => o.ShipmentNumber))}"+
                                      $"<br/>{oneCResult}";
                         await NotificationService.NotifyAllAsync(msg);
                         TempData["TransactionResult"] = msg;
@@ -359,7 +363,7 @@ public class ShippedBySupplierTransactionController : Controller
                     }
                 }
                 ClearSelectedIdsSession();
-                foreach (var order in orders)
+                foreach (var order in model.Orders)
                 {
                     var cookieKey = $"PurchasePrice_{order.Id}";
                     if (Request.Cookies.ContainsKey(cookieKey))
@@ -368,13 +372,12 @@ public class ShippedBySupplierTransactionController : Controller
                     }
                 }
                 
-                return Json(new { redirectTo = Url.Action("Index", "Orders", new { sortOrder = GetSortStateCookie(), page }) });
+                return RedirectToAction("Index", "Orders", new { sortOrder = GetSortStateCookie(), page = model.Page });
             }
             catch (Exception ex)
             {
                 TempData["ErorrResult"] = $"Не удалось провести выбранные заказы ({ex.Message})";
-                return Json(new { redirectTo = Url.Action("Index", "Orders", new { sortOrder = GetSortStateCookie(), page }) });
-
+                return RedirectToAction("Index", "Orders", new { sortOrder = GetSortStateCookie(), page = model.Page });
             }
     }
 
