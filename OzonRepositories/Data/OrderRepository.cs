@@ -152,14 +152,9 @@ namespace OzonRepositories.Data
                 .Where(o => articles.Contains(o.ProductKey))
                 .AsNoTracking()
                 .ToListAsync(); // выгружаем в память
-
-            // Фильтруем ShipmentNumber с обрезкой "-число"
+            
             var matching = query
-                .Where(o => orderNumbers.Any(on =>
-                    o.ShipmentNumber == on ||
-                    (o.ShipmentNumber.Contains('-') &&
-                     o.ShipmentNumber.Substring(0, o.ShipmentNumber.LastIndexOf('-')) == on)
-                ))
+                .Where(o => orderNumbers.Contains(o.ShipmentNumber))
                 .Select(o => o.Id)
                 .ToList();
 
