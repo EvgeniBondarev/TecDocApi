@@ -15,4 +15,5 @@ public class ShippedBySupplierTransactionViewModel
     public string Contract { get; set; }
     public string NumberVh { get; set; }
     public DateTime DateVh { get; set; }
+    public string? TransactionComment { get; set; }
 }

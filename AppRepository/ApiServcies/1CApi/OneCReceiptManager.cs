@@ -120,7 +120,7 @@ public class OneCReceiptManager : IApiDataManager<OneCReceiptManager>
                     Innbuyer = supplierName,
                     Subdivisions  = client.WarehouseName,
                     SenderRecipient  = warehouseName,
-                    Comment = $"Перемещение для клиента {client.Name}. Заказы: {string.Join(", ", orders.Select(o => o.ShipmentNumber))}",
+                    Comment = shippedBySupplierTransactionDto.TransactionComment,
                     NDS = orders.FirstOrDefault().Supplier.IsVatApplicable ? "да" : "",
                     DateVh = TimeZoneInfo.ConvertTimeFromUtc(shippedBySupplierTransactionDto.DateVh, tz)
                         .ToString("dd.MM.yyyy HH:mm:ss", new System.Globalization.CultureInfo("ru-RU")),

@@ -251,6 +251,7 @@ public class ShippedBySupplierTransactionController : Controller
                                                                                             Contract = model.Contract,
                                                                                             NumberVh = model.NumberVh,
                                                                                             DateVh = model.DateVh,
+                                                                                            TransactionComment = model.TransactionComment,
                                                                                         });
                         }
                         catch (Exception e)

@@ -113,6 +113,11 @@ Layout = "~/Views/Shared/_Layout.cshtml";
                                    required
                                    value="@DateTime.Now.ToString("yyyy-MM-dd")">
                         </div>
+                        
+                        <div class="mb-3">
+                            <label for="TransactionComment" class="form-label">Комментарий</label>
+                            <textarea id="TransactionComment" name="TransactionComment" class="form-control" rows="3" placeholder="Введите комментарий..."></textarea>
+                        </div>
                     </div>
 
                     <div class="modal-footer">
