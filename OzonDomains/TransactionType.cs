@@ -25,14 +25,14 @@ namespace OzonDomains
         [Display(Name = "Заказан реализатору")]
         OrderedToSeller = 4,
         
-        [Display(Name = "Отгружен клиенту")]
+        [Display(Name = "Отгружен клиентом")]
         ShippedToClient = 6,
         
         [Display(Name = "Проценён")]
-        Percentage = 6,
+        Percentage = 7,
         
         [Display(Name = "Приходная накладная")]
-        ReceiptNote = 7
+        ReceiptNote = 8
     }
     
     public static class EnumExtensions

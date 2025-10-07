@@ -144,24 +144,27 @@ namespace OzonRepositories.Data
             if (orders == null || orders.Count == 0)
                 return new List<int>();
 
-            // Переводим в список для удобства поиска на клиенте
-            var orderKeys = orders.ToList();
+            var orderNumbers = orders.Select(o => o.OrderNumber).ToList();
+            var articles = orders.Select(o => o.Article).ToList();
 
-            // Сначала выбираем все заказы, которые могут соответствовать (ShipmentNumber и ProductKey)
-            var allOrders = await _context.Orders
-                .Where(o => orderKeys.Select(k => k.OrderNumber).Contains(o.ShipmentNumber))
+            // Сначала фильтруем по ProductKey в БД, остальное на клиенте
+            var query = await _context.Orders
+                .Where(o => articles.Contains(o.ProductKey))
                 .AsNoTracking()
-                .ToListAsync();
+                .ToListAsync(); // выгружаем в память
 
-            // Фильтруем на клиенте точно по кортежу (OrderNumber + Article)
-            var matchingIds = allOrders
-                .Where(o => orderKeys.Any(k => k.OrderNumber == o.ShipmentNumber && k.Article == o.ProductKey))
+            // Фильтруем ShipmentNumber с обрезкой "-число"
+            var matching = query
+                .Where(o => orderNumbers.Any(on =>
+                    o.ShipmentNumber == on ||
+                    (o.ShipmentNumber.Contains('-') &&
+                     o.ShipmentNumber.Substring(0, o.ShipmentNumber.LastIndexOf('-')) == on)
+                ))
                 .Select(o => o.Id)
                 .ToList();
 
-            return matchingIds;
+            return matching;
         }
-
 
         
         public async Task<Order> GetAsyncForCart(int id)

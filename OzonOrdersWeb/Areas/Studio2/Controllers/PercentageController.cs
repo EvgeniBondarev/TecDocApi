@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Newtonsoft.Json;
 using OfficeOpenXml;
+using OzonDomains;
 using OzonDomains.Models;
 using OzonOrdersWeb.ViewModels.OrderViewModels;
 using OzonRepositories.Context;
@@ -11,6 +12,7 @@ using Servcies.CacheServcies.Cache.OzonOrdersCache;
 using Servcies.CacheServcies.Cache.UserCacheService;
 using Servcies.DataServcies;
 using Servcies.FiltersServcies.SortModels;
+using Servcies.ParserServcies.FileProcessing;
 using Servcies.PriceСlculationServcies;
 using Servcies.SignalRServcies;
 using Servcies.TransactionUtilsServcies;
@@ -34,6 +36,7 @@ public class PercentageController : Controller
     private readonly CacheUpdater<Order> _cacheUpdater;
     private readonly OrderCache _cache;
     private readonly ProxyHttpClientService _proxyHttpClientService;
+    private readonly IFileProcessingService _fileProcessingService;
 
     public PercentageController(OzonOrderContext context,
                                                 AppStatusDataServcies appStatusServcies,
@@ -45,7 +48,8 @@ public class PercentageController : Controller
                                                 CurrencyRateFetcher currencyRateFetcher,
                                                 CacheUpdater<Order> cacheUpdater,
                                                 OrderCache cache,
-                                                ProxyHttpClientService proxyHttpClientService)
+                                                ProxyHttpClientService proxyHttpClientService,
+                                                IFileProcessingService fileProcessingService)
     {
         _context = context;
         _appStatusServcies = appStatusServcies;
@@ -59,6 +63,7 @@ public class PercentageController : Controller
         _cacheUpdater = cacheUpdater;
         _cache = cache;
         _proxyHttpClientService = proxyHttpClientService;
+        _fileProcessingService = fileProcessingService;
     }
 
     public IActionResult UploadFile()
@@ -67,255 +72,58 @@ public class PercentageController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> UploadFile(IFormFile excelFile)
+    public async Task<IActionResult> UploadFile(IFormFile excelFile, TransactionType selectedTransactionType)
     {
         if (excelFile == null || excelFile.Length == 0)
         {
             TempData["Error"] = "Файл не выбран или пуст";
-            return Json(new
-            {
-                redirectTo = Url.Action("UploadFile")
-            });
+            return RedirectToAction("UploadFile");
         }
 
-        var filteredStatuses = _context.AppStatuses.Where(status => status.Name == "Отменен").ToList();
-        ViewBag.AppStatuses = new SelectList(filteredStatuses, "Id", "Name");
-        ViewBag.StatusColors = filteredStatuses.ToDictionary(s => s.Id.ToString(), s => s.GetStatusColor());
-
-        List<Order> ordersToTransaction = new List<Order>();
-        var processedOrders = new List<(string OrderNumber, string Article)>();
+        List<(string OrderNumber, string Article)> processedOrders;
 
         try
         {
-            var fileExtension = Path.GetExtension(excelFile.FileName).ToLower();
-            
-            if (fileExtension == ".csv")
-            {
-                processedOrders = await ProcessCsvFile(excelFile);
-            }
-            else if (fileExtension == ".xlsx" || fileExtension == ".xls")
-            {
-                processedOrders = await ProcessExcelFile(excelFile);
-            }
-            else
-            {
-                TempData["Error"] = "Неподдерживаемый формат файла. Поддерживаются только CSV, XLSX и XLS файлы.";
-                return Json(new
-                {
-                    redirectTo = Url.Action("Index", "Orders")
-                });
-            }
-
-            if (processedOrders.Count == 0)
-            {
-                TempData["Error"] = "Не найдено подходящих данных для обработки";
-                return Json(new
-                {
-                    redirectTo = Url.Action("UploadFile")
-                });
-            }
-
-           
-
-            TempData["Success"] = $"Обработано {processedOrders.Count} записей, найдено {ordersToTransaction.Count} заказов";
+            processedOrders = await _fileProcessingService.ProcessFileAsync(excelFile);
         }
         catch (Exception ex)
         {
             TempData["Error"] = $"Ошибка при обработке файла: {ex.Message}";
-            return Json(new
-            {
-                redirectTo = Url.Action("UploadFile")
-            });
+            return RedirectToAction("UploadFile");
         }
-        
-        var ids =await _orderServcies.GetOrderIdsByNumbersAndArticles(processedOrders);
+
+        if (!processedOrders.Any())
+        {
+            TempData["Error"] = "Файл не содержит подходящих данных";
+            return RedirectToAction("UploadFile");
+        }
+
+        var ids = await _orderServcies.GetOrderIdsByNumbersAndArticles(processedOrders);
+        if (!ids.Any())
+        {
+            TempData["Success"] = $"Обработано {processedOrders.Count} записей, заказов не найдено.";
+            return RedirectToAction("UploadFile");
+        }
+
         var orderIds = string.Join(",", ids);
-        
-        TempData["Success"] = $"Обработано {processedOrders.Count} записей, найдено {ordersToTransaction.Count} заказов";
-        return RedirectToAction("Percentage", new { ids = orderIds});
-    }
 
-    // Обработка Excel файлов
-    private async Task<List<(string OrderNumber, string Article)>> ProcessExcelFile(IFormFile excelFile)
-    {
-        var processedOrders = new List<(string OrderNumber, string Article)>();
-
-        using (var stream = new MemoryStream())
+        switch (selectedTransactionType)
         {
-            await excelFile.CopyToAsync(stream);
-            using (var package = new ExcelPackage(stream))
-            {
-                var worksheet = package.Workbook.Worksheets[0];
-                var rowCount = worksheet.Dimension?.Rows ?? 0;
-                var colCount = worksheet.Dimension?.Columns ?? 0;
+            case TransactionType.ShippedToClient:
+                return RedirectToAction(
+                    "CreateShippedToClientTransaction",
+                    "ShippedToClientTransaction",      
+                    new { area = "Studio2", ids = orderIds, page = 1 }
+                );
 
-                if (rowCount == 0 || colCount == 0)
-                {
-                    throw new Exception("Файл не содержит данных");
-                }
+            case TransactionType.Percentage:
+                return RedirectToAction("Percentage", new { ids = orderIds });
 
-                // Находим индексы столбцов
-                int orderNumberCol = -1;
-                int articleCol = -1;
-
-                // Поиск столбцов по заголовкам
-                for (int col = 1; col <= colCount; col++)
-                {
-                    var header = worksheet.Cells[1, col].Value?.ToString()?.ToLower();
-                    if (header != null)
-                    {
-                        if (header.Contains("номер") && header.Contains("заказ"))
-                            orderNumberCol = col;
-                        else if (header.Contains("артикул"))
-                            articleCol = col;
-                    }
-                }
-
-                // Альтернативные варианты поиска столбцов
-                if (orderNumberCol == -1)
-                {
-                    for (int col = 1; col <= colCount; col++)
-                    {
-                        var header = worksheet.Cells[1, col].Value?.ToString()?.ToLower();
-                        if (header != null && (header.Contains("order") || header.Contains("number")))
-                            orderNumberCol = col;
-                    }
-                }
-
-                if (articleCol == -1)
-                {
-                    for (int col = 1; col <= colCount; col++)
-                    {
-                        var header = worksheet.Cells[1, col].Value?.ToString()?.ToLower();
-                        if (header != null && (header.Contains("article") || header.Contains("art") || header.Contains("sku")))
-                            articleCol = col;
-                    }
-                }
-
-                if (orderNumberCol == -1 || articleCol == -1)
-                {
-                    throw new Exception("Не найдены необходимые столбцы 'Номер заказа' и 'Артикул'");
-                }
-
-                // Обработка данных
-                for (int row = 2; row <= rowCount; row++) // начинаем с 2 строки, пропускаем заголовки
-                {
-                    var orderNumberStr = worksheet.Cells[row, orderNumberCol].Value?.ToString();
-                    var article = worksheet.Cells[row, articleCol].Value?.ToString();
-
-                    if (!string.IsNullOrEmpty(orderNumberStr) && !string.IsNullOrEmpty(article))
-                    {
-                        processedOrders.Add((orderNumberStr.Trim(), article.Trim()));
-                    }
-                }
-            }
+            default:
+                TempData["Error"] = "Неизвестный тип документа";
+                return RedirectToAction("UploadFile");
         }
-
-        return processedOrders;
     }
-
-    // Обработка CSV файлов
-    private async Task<List<(string OrderNumber, string Article)>> ProcessCsvFile(IFormFile csvFile)
-    {
-        var processedOrders = new List<(string OrderNumber, string Article)>();
-        
-        using (var stream = new MemoryStream())
-        {
-            await csvFile.CopyToAsync(stream);
-            stream.Position = 0;
-            
-            using (var reader = new StreamReader(stream, System.Text.Encoding.UTF8))
-            {
-                // Создаем конфигурацию для CSV с разделителем ';'
-                var config = new CsvHelper.Configuration.CsvConfiguration(System.Globalization.CultureInfo.InvariantCulture)
-                {
-                    Delimiter = ";",
-                    HasHeaderRecord = true,
-                    TrimOptions = CsvHelper.Configuration.TrimOptions.Trim
-                };
-                
-                using (var csv = new CsvHelper.CsvReader(reader, config))
-                {
-                    // Читаем заголовки
-                    await csv.ReadAsync();
-                    csv.ReadHeader();
-                    
-                    var headers = csv.HeaderRecord?.Select(h => h?.ToLower()).ToArray();
-                    
-                    if (headers == null || headers.Length == 0)
-                    {
-                        throw new Exception("CSV файл не содержит заголовков");
-                    }
-                    
-                    // Находим индексы столбцов по точным названиям из вашего примера
-                    int orderNumberCol = -1;
-                    int articleCol = -1;
-                    
-                    for (int i = 0; i < headers.Length; i++)
-                    {
-                        var header = headers[i];
-                        if (header != null)
-                        {
-                            // Ищем столбец с номером заказа
-                            if (header.Contains("номер заказа") || header.Contains("номер отправления"))
-                                orderNumberCol = i;
-                            // Ищем столбец с артикулом
-                            else if (header.Contains("артикул"))
-                                articleCol = i;
-                        }
-                    }
-                    
-                    // Альтернативные варианты поиска столбцов
-                    if (orderNumberCol == -1)
-                    {
-                        for (int i = 0; i < headers.Length; i++)
-                        {
-                            var header = headers[i];
-                            if (header != null && (header.Contains("заказ") || header.Contains("отправление") || header.Contains("order") || header.Contains("number")))
-                                orderNumberCol = i;
-                        }
-                    }
-                    
-                    if (articleCol == -1)
-                    {
-                        for (int i = 0; i < headers.Length; i++)
-                        {
-                            var header = headers[i];
-                            if (header != null && (header.Contains("article") || header.Contains("art") || header.Contains("sku")))
-                                articleCol = i;
-                        }
-                    }
-                    
-                    if (orderNumberCol == -1 || articleCol == -1)
-                    {
-                        throw new Exception("Не найдены необходимые столбцы 'Номер заказа' и 'Артикул'. " +
-                                          "Найдены заголовки: " + string.Join(", ", headers));
-                    }
-                    
-                    Console.WriteLine($"Найден столбец номера заказа: {headers[orderNumberCol]} (индекс {orderNumberCol})");
-                    Console.WriteLine($"Найден столбец артикула: {headers[articleCol]} (индекс {articleCol})");
-                    
-                    // Обработка данных
-                    int processedCount = 0;
-                    while (await csv.ReadAsync())
-                    {
-                        var orderNumberStr = csv.GetField(orderNumberCol);
-                        var article = csv.GetField(articleCol);
-                        
-                        if (!string.IsNullOrEmpty(orderNumberStr) && !string.IsNullOrEmpty(article))
-                        {
-                            processedOrders.Add((orderNumberStr.Trim(), article.Trim()));
-                            processedCount++;
-                        }
-                    }
-                    
-                    Console.WriteLine($"Обработано {processedCount} строк из CSV файла");
-                }
-            }
-        }
-        return processedOrders;
-    }
-
     // GET
     public async Task<IActionResult> Percentage(string ids, int page)
     {

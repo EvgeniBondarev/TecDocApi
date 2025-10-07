@@ -15,6 +15,7 @@ using Servcies.HangfireService;
 using Servcies.ImportProductPricesServcies;
 using Servcies.ParserServcies;
 using Servcies.ParserServcies.FielParsers;
+using Servcies.ParserServcies.FileProcessing;
 using Servcies.ParserServcies.HelpDictEnum;
 using Servcies.PriceСlculationServcies;
 using Servcies.TransactionUtilsServcies;
@@ -174,7 +175,7 @@ public static class RepositoryExtensions
 
         services.AddScoped<PdfService>();
         
+        services.AddScoped<IFileProcessingService, FileProcessingService>();
         
-
     }
 }

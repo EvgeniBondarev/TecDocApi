@@ -1,4 +1,7 @@
-﻿<div class="container mt-4">
+﻿@using System.ComponentModel.DataAnnotations
+@using System.Reflection
+@using OzonDomains
+<div class="container mt-4">
     <div class="row">
         <div class="col-md-8 offset-md-2">
             <div class="card">
@@ -39,6 +42,35 @@
                                 </label>
                             </div>
                         </div>
+                        
+                                            
+                        <div class="mb-3">
+                            <label class="form-label">Выберите тип документа <span class="text-danger">*</span></label>
+                            <div id="transactionTypeList">
+                                @foreach (TransactionType type in Enum.GetValues(typeof(TransactionType)))
+                                {
+                                    if (type == TransactionType.All) continue; <!-- пропускаем "All" -->
+
+                                    var displayName = type.GetType()
+                                        .GetMember(type.ToString())
+                                        .First()
+                                        .GetCustomAttribute<DisplayAttribute>()?
+                                        .Name ?? type.ToString();
+            
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" 
+                                               name="selectedTransactionType" 
+                                               id="type_@type" 
+                                               value="@type"
+                                               style="width: 1rem; height: 1rem; margin-top: 0.25rem;" />
+                                        <label class="form-check-label" for="type_@type" style="margin-left: 0.25rem;">
+                                            @displayName
+                                        </label>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
 
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end">
                             <button type="submit" class="btn btn-primary" id="submitBtn">
@@ -104,6 +136,13 @@
 @section Scripts {
     <script>
         document.getElementById('uploadForm').addEventListener('submit', function(e) {
+            const selectedType = document.querySelector('input[name="selectedTransactionType"]:checked');
+            if (!selectedType) {
+                e.preventDefault();
+                alert('Пожалуйста, выберите тип документа');
+                return;
+            }
+    
             const fileInput = document.getElementById('excelFile');
             const submitBtn = document.getElementById('submitBtn');
             
@@ -112,7 +151,7 @@
                 alert('Пожалуйста, выберите файл');
                 return;
             }
-
+    
             const file = fileInput.files[0];
             const fileExtension = file.name.split('.').pop().toLowerCase();
             const allowedExtensions = ['xlsx', 'xls', 'csv'];
@@ -122,28 +161,10 @@
                 alert('Пожалуйста, выберите файл в формате Excel (.xlsx, .xls) или CSV (.csv)');
                 return;
             }
-
+    
             // Блокируем кнопку во время загрузки
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Обработка...';
-        });
-
-        // Валидация файла при выборе
-        document.getElementById('excelFile').addEventListener('change', function(e) {
-            const validateCheckbox = document.getElementById('validateFile');
-            
-            if (validateCheckbox.checked && e.target.files.length > 0) {
-                const file = e.target.files[0];
-                const fileExtension = file.name.split('.').pop().toLowerCase();
-                console.log('Выбран файл:', file.name, 'Тип:', fileExtension);
-                
-                // Дополнительная валидация размера файла
-                const maxSize = 10 * 1024 * 1024; // 10MB
-                if (file.size > maxSize) {
-                    alert('Файл слишком большой. Максимальный размер: 10MB');
-                    e.target.value = '';
-                }
-            }
         });
     </script>
 }
