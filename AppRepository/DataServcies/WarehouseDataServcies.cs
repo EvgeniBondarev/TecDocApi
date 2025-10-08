@@ -21,6 +21,11 @@ namespace Servcies.DataServcies
         {
             return await _repository.GetAsync(id);
         }
+
+        public async Task<Warehouse> GetWarehouseAsync(Warehouse value)
+        {
+            return await _repository.GetAsync(value);
+        }
         
         public async Task<int> SaveChanges()
         {

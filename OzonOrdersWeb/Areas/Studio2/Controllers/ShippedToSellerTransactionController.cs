@@ -36,6 +36,7 @@ public class ShippedToSellerTransactionController : Controller
     private readonly WarehouseMappingDataServcies _warehouseMappingDataServcies;
     private readonly OneCTransferManager _oneCTransferManager;
     private readonly ProxyHttpClientService _proxyHttpClientService;
+    private readonly WarehouseDataServcies _warehouseDataServcies;
 
     public ShippedToSellerTransactionController(
         OzonOrderContext context,
@@ -50,7 +51,8 @@ public class ShippedToSellerTransactionController : Controller
         OrderCache cache,
         WarehouseMappingDataServcies warehouseMappingDataServcies,
         OneCTransferManager oneCTransferManager,
-        ProxyHttpClientService proxyHttpClientService)
+        ProxyHttpClientService proxyHttpClientService,
+        WarehouseDataServcies warehouseDataServcies)
     {
         _context = context;
         _appStatusServcies = appStatusServcies;
@@ -65,6 +67,7 @@ public class ShippedToSellerTransactionController : Controller
         _warehouseMappingDataServcies = warehouseMappingDataServcies;
         _oneCTransferManager = oneCTransferManager;
         _proxyHttpClientService = proxyHttpClientService;
+        _warehouseDataServcies = warehouseDataServcies;
     }
 
     // GET
@@ -107,6 +110,21 @@ public class ShippedToSellerTransactionController : Controller
                 {
                     concretOrder.AppStatus = appStatus;
                     concretOrder.UpdatedBy = User.Identity?.Name;
+                    if (concretOrder.FromFile.Value)
+                    {
+                        if (concretOrder.Supplier != null)
+                        {
+                            var curentWarehouse = await _warehouseDataServcies.GetWarehouseAsync(
+                                                                    new Warehouse()
+                                                                    {
+                                                                        Name = concretOrder.Supplier.Name
+                                                                    });
+                            if (curentWarehouse != null)
+                            {
+                                concretOrder.ShipmentWarehouse = curentWarehouse;
+                            }
+                        }
+                    }
                     ordersToTransaction.Add(concretOrder);
                 }
                 else
@@ -234,7 +252,23 @@ public class ShippedToSellerTransactionController : Controller
                     List<string> ordersNotFoundInOzone = [];
                     foreach (var order in orders)
                     {
-                        ordersToUpdate.Add(await _orderServcies.TransactOrder(order));
+                        var orderToUpdate = await _orderServcies.TransactOrder(order);
+                        if (orderToUpdate.FromFile.Value)
+                        {
+                            if (orderToUpdate.Supplier != null)
+                            {
+                                var curentWarehouse = await _warehouseDataServcies.GetWarehouseAsync(
+                                    new Warehouse()
+                                    {
+                                        Name = orderToUpdate.Supplier.Name
+                                    });
+                                if (curentWarehouse != null)
+                                {
+                                    orderToUpdate.ShipmentWarehouse = curentWarehouse;
+                                }
+                            }
+                        }
+                        ordersToUpdate.Add(orderToUpdate);
                     }
 
                     var appStatus = await _appStatusServcies.GetAppStatusAsync(new AppStatus() { Name = "Отгружен реализатору" });

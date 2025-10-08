@@ -441,6 +441,11 @@
                 <input asp-for="Orders[i].ProductInfo.Id" class="form-control" value="@Model.Orders[i].ProductInfo.Id" />
                 <span asp-validation-for="Orders[i].ProductInfo.Id" class="text-danger"></span>
             </div>
+            <div class="form-group" style="display: none">
+                <label asp-for="Orders[i].ShipmentWarehouse.Name" class="control-label"></label><span style="margin-left: 10px; color: gray;">/ </span>
+                <input asp-for="Orders[i].ShipmentWarehouse.Name" class="form-control" value="@Model.Orders[i].ShipmentWarehouse.Name" />
+                <span asp-validation-for="Orders[i].ShipmentWarehouse" class="text-danger"></span>
+            </div>
 
             <input type="hidden" asp-for="Orders[i].ProductInfoId" />
             @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Номер заказа"))
