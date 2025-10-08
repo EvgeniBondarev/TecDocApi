@@ -37,17 +37,18 @@ public class FileProcessingService : IFileProcessingService
 
         int orderNumberCol = -1;
         int articleCol = -1;
+        int deliveryDateCol = -1;
 
         for (int col = 1; col <= colCount; col++)
         {
             var header = worksheet.Cells[1, col].Value?.ToString()?.ToLower();
             if (header != null)
             {
-                // Ищем либо "номер заказа", либо "номер отправления"
-                if ((header.Contains("номер") && header.Contains("заказ")) || 
+                if ((header.Contains("номер") && header.Contains("заказ")) ||
                     (header.Contains("номер") && header.Contains("отправления")))
                     orderNumberCol = col;
                 if (header.Contains("артикул")) articleCol = col;
+                if (header.Contains("фактическая дата передачи")) deliveryDateCol = col;
             }
         }
 
@@ -58,13 +59,18 @@ public class FileProcessingService : IFileProcessingService
         {
             var orderNumber = worksheet.Cells[row, orderNumberCol].Value?.ToString();
             var article = worksheet.Cells[row, articleCol].Value?.ToString();
-            if (!string.IsNullOrEmpty(orderNumber) && !string.IsNullOrEmpty(article))
+            var deliveryDate = deliveryDateCol != -1 
+                ? worksheet.Cells[row, deliveryDateCol].Value?.ToString() 
+                : null;
+
+            // Добавляем только если заполнена дата передачи
+            if (!string.IsNullOrEmpty(orderNumber) && !string.IsNullOrEmpty(article) && !string.IsNullOrEmpty(deliveryDate))
                 processedOrders.Add((orderNumber.Trim(), article.Trim()));
         }
 
         return processedOrders;
     }
-
+    
     public async Task<List<(string OrderNumber, string Article)>> ProcessCsvFileAsync(IFormFile csvFile)
     {
         var processedOrders = new List<(string OrderNumber, string Article)>();
@@ -87,10 +93,9 @@ public class FileProcessingService : IFileProcessingService
         var headers = csv.HeaderRecord?.Select(h => h?.ToLower()).ToArray();
         if (headers == null) throw new Exception("CSV файл пустой");
 
-        // Ищем либо "номер заказа", либо "номер отправления"
-        int orderNumberCol = Array.FindIndex(headers, h => 
-            h.Contains("номер заказа") || h.Contains("номер отправления"));
+        int orderNumberCol = Array.FindIndex(headers, h => h.Contains("номер заказа") || h.Contains("номер отправления"));
         int articleCol = Array.FindIndex(headers, h => h.Contains("артикул"));
+        int deliveryDateCol = Array.FindIndex(headers, h => h.Contains("фактическая дата передачи"));
 
         if (orderNumberCol == -1 || articleCol == -1)
             throw new Exception("Не найдены необходимые столбцы 'Номер заказа'/'Номер отправления' и 'Артикул'");
@@ -99,7 +104,9 @@ public class FileProcessingService : IFileProcessingService
         {
             var orderNumber = csv.GetField(orderNumberCol);
             var article = csv.GetField(articleCol);
-            if (!string.IsNullOrEmpty(orderNumber) && !string.IsNullOrEmpty(article))
+            var deliveryDate = deliveryDateCol != -1 ? csv.GetField(deliveryDateCol) : null;
+
+            if (!string.IsNullOrEmpty(orderNumber) && !string.IsNullOrEmpty(article) && !string.IsNullOrEmpty(deliveryDate))
                 processedOrders.Add((orderNumber.Trim(), article.Trim()));
         }
 

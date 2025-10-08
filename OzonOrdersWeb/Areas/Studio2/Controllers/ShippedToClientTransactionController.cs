@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Text;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Newtonsoft.Json;
 using OzonDomains.Models;
+using OzonOrdersWeb.Areas.Studio2.ViewModels;
 using OzonOrdersWeb.ViewModels.OrderViewModels;
 using OzonRepositories.Context;
 using OzonRepositories.Data.Bitrix;
@@ -67,11 +69,9 @@ public class ShippedToClientTransactionController : Controller
         _proxyHttpClientService = proxyHttpClientService;
         _oneCTransferManager = oneCTransferManager;
     }
-
-    // ==============================
-    // GET: CreateShippedToClientTransaction
-    // ==============================
-    public async Task<IActionResult> CreateShippedToClientTransaction(string ids, int page)
+    
+    
+    public async Task<IActionResult> CreateShippedToClientTransactionFromFile(string ids, int page)
     {
         var filteredStatuses = _context.AppStatuses.Where(s => s.Name == "Отменен").ToList();
         ViewBag.AppStatuses = new SelectList(filteredStatuses, "Id", "Name");
@@ -79,7 +79,6 @@ public class ShippedToClientTransactionController : Controller
 
         int[] idArray = ids.Split(',').Select(int.Parse).ToArray();
         List<Order> ordersToTransaction = new();
-        string errorReason = null;
 
         var appStatus = await _appStatusServcies.GetAppStatusAsync(new AppStatus { Name = "Отгружен клиенту" });
         if (appStatus == null)
@@ -92,6 +91,141 @@ public class ShippedToClientTransactionController : Controller
         foreach (var orderId in idArray)
         {
             var order = await _orderServcies.GetOrder(orderId);
+            ordersToTransaction.Add(order);
+        }
+
+        if (ordersToTransaction.Any())
+        {
+            // Группировка заказов по складам
+            var groupedByWarehouse = ordersToTransaction
+                .Where(o => o.ShipmentWarehouse != null && !string.IsNullOrEmpty(o.ShipmentWarehouse.Name))
+                .GroupBy(o => o.ShipmentWarehouse.Name)
+                .ToList();
+
+            var urls = new List<(string Url, string WarehouseName)>();
+
+            foreach (var group in groupedByWarehouse)
+            {
+                var warehouseName = group.Key;
+                var groupIds = string.Join(",", group.Select(o => o.Id));
+
+                var url = Url.Action(
+                    "CreateShippedToClientTransactionFromFileView",
+                    "ShippedToClientTransaction",
+                    new { ids = groupIds, warehouse = warehouseName }
+                );
+
+                urls.Add((url, warehouseName));
+            }
+
+            // Модель для представления
+            var model = new MultipleTransactionPagesViewModel
+            {
+                WarehousePages = urls.Select(u => new WarehouseTransactionPage
+                {
+                    WarehouseName = u.WarehouseName,
+                    Url = u.Url
+                }).ToList()
+            };
+
+            return View("MultipleTransactionPagesByWarehouse", model);
+        }
+        
+        var pageViewModel = new MultiplayEditOrderViewModel
+        {
+            RedirectPage = page,
+            Orders = ordersToTransaction.OrderBy(o => o.ShipmentNumber).ToList(),
+            User = await _userCacheService.GetCachedUserAsync(User),
+            Suppliers = (await _supplierDataServcies.GetSuppliers()).OrderBy(s => s.Name).ToList(),
+            RateEUR = await _currencyRateFetcher.GetEURRateAsync(),
+            RateUSD = await _currencyRateFetcher.GetUSDRateAsync(),
+            RateBYN = await _currencyRateFetcher.GetBYNRateAsync(),
+            UniqueArticles = await _orderServcies.GetUniqueArticles(),
+            UniqueDeliveryCitys = await _orderServcies.GetUniqueDeliveryCities(),
+            UniqueNumbers = await _orderServcies.GetUniqueShipmentNumbers(),
+            AppStatus = appStatus
+        };
+
+        if (pageViewModel.User.UserAccessId != null)
+            pageViewModel.User.UserAccess = _context.UserAccess.Find(pageViewModel.User.UserAccessId);
+
+        RunBackgroundCacheTask(pageViewModel.Orders);
+        return View("CreateShippedToClientTransaction", pageViewModel);
+    }
+    
+    public async Task<IActionResult> CreateShippedToClientTransactionFromFileView(string ids, int page)
+    {
+        var filteredStatuses = _context.AppStatuses.Where(s => s.Name == "Отменен").ToList();
+        ViewBag.AppStatuses = new SelectList(filteredStatuses, "Id", "Name");
+        ViewBag.StatusColors = filteredStatuses.ToDictionary(s => s.Id.ToString(), s => s.GetStatusColor());
+
+        int[] idArray = ids.Split(',').Select(int.Parse).ToArray();
+        List<Order> ordersToTransaction = new();
+
+        var appStatus = await _appStatusServcies.GetAppStatusAsync(new AppStatus { Name = "Отгружен клиенту" });
+        if (appStatus == null)
+        {
+            appStatus = new AppStatus { Name = "Отгружен клиенту" };
+            _context.AppStatuses.Add(appStatus);
+            await _context.SaveChangesAsync();
+        }
+
+        foreach (var orderId in idArray)
+        {
+            var order = await _orderServcies.GetOrder(orderId);
+            order.AppStatus = appStatus;
+            order.UpdatedBy = User.Identity?.Name;
+            ordersToTransaction.Add(order);
+        }
+        
+        var pageViewModel = new MultiplayEditOrderViewModel
+        {
+            RedirectPage = page,
+            Orders = ordersToTransaction.OrderBy(o => o.ShipmentNumber).ToList(),
+            User = await _userCacheService.GetCachedUserAsync(User),
+            Suppliers = (await _supplierDataServcies.GetSuppliers()).OrderBy(s => s.Name).ToList(),
+            RateEUR = await _currencyRateFetcher.GetEURRateAsync(),
+            RateUSD = await _currencyRateFetcher.GetUSDRateAsync(),
+            RateBYN = await _currencyRateFetcher.GetBYNRateAsync(),
+            UniqueArticles = await _orderServcies.GetUniqueArticles(),
+            UniqueDeliveryCitys = await _orderServcies.GetUniqueDeliveryCities(),
+            UniqueNumbers = await _orderServcies.GetUniqueShipmentNumbers(),
+            AppStatus = appStatus
+        };
+
+        if (pageViewModel.User.UserAccessId != null)
+            pageViewModel.User.UserAccess = _context.UserAccess.Find(pageViewModel.User.UserAccessId);
+
+        RunBackgroundCacheTask(pageViewModel.Orders);
+        return View("CreateShippedToClientTransaction", pageViewModel);
+    }
+
+
+    // ==============================
+    // GET: CreateShippedToClientTransaction
+    // ==============================
+    public async Task<IActionResult> CreateShippedToClientTransaction(string ids, int page)
+    {
+        var filteredStatuses = _context.AppStatuses.Where(s => s.Name == "Отменен").ToList();
+        ViewBag.AppStatuses = new SelectList(filteredStatuses, "Id", "Name");
+        ViewBag.StatusColors = filteredStatuses.ToDictionary(s => s.Id.ToString(), s => s.GetStatusColor());
+
+        int[] idArray = ids.Split(',').Select(int.Parse).ToArray();
+        List<Order> ordersToTransaction = new();
+        List<string> errorMessages = new();
+
+        var appStatus = await _appStatusServcies.GetAppStatusAsync(new AppStatus { Name = "Отгружен клиенту" });
+        if (appStatus == null)
+        {
+            appStatus = new AppStatus { Name = "Отгружен клиенту" };
+            _context.AppStatuses.Add(appStatus);
+            await _context.SaveChangesAsync();
+        }
+
+        // Проверяем все заказы и собираем ошибки
+        foreach (var orderId in idArray)
+        {
+            var order = await _orderServcies.GetOrder(orderId);
             if (order.AppStatus?.Name == "Заказан поставщику")
             {
                 order.AppStatus = appStatus;
@@ -100,26 +234,48 @@ public class ShippedToClientTransactionController : Controller
             }
             else
             {
-                errorReason = $"Заказ {order.ShipmentNumber} имеет статус '{order.AppStatus?.Name}', а должен быть 'Заказан поставщику'.";
+                var link = $"<a href=\"/Studio2/Orders/MultiplayEditV2?ids={order.Id}&page=1\" target=\"_blank\">{order.ShipmentNumber}</a>";
+                errorMessages.Add($"Заказ {link} имеет статус '{order.AppStatus?.Name}', а должен быть 'Заказан поставщику'.");
             }
         }
 
-        if (!ordersToTransaction.Any())
+        // Если есть ошибки — очищаем список и показываем все причины
+        if (errorMessages.Any())
         {
-            errorReason ??= "Нет заказов со статусом 'Заказан клиенту'.";
-        }
-        else
-        {
-            var distinctWarehouses = ordersToTransaction.GroupBy(o => o.ShipmentWarehouse?.Name).ToList();
-            if (distinctWarehouses.Count > 1)
+            // Добавляем ссылку "Изменить все"
+            var allIds = string.Join(",", idArray);
+            var editAllLink = $"<a href=\"/Studio2/Orders/MultiplayEditV2?ids={allIds}&page=1\" target=\"_blank\"><b>Изменить все</b></a>";
+
+            ViewData["ErrorReason"] =
+                "<ul>" +
+                string.Join("", errorMessages.Select(e => $"<li>{e}</li>")) +
+                $"</ul><br/>{editAllLink}";
+
+            var emptyModel = new MultiplayEditOrderViewModel
             {
-                errorReason = "Выбраны заказы с разными складами: " +
-                              string.Join(", ", distinctWarehouses.SelectMany(g => g.Select(o => $"{o.ShipmentNumber} (склад: {g.Key})")));
-                ordersToTransaction.Clear();
-            }
+                RedirectPage = page,
+                Orders = new List<Order>(),
+                User = await _userCacheService.GetCachedUserAsync(User),
+                Suppliers = (await _supplierDataServcies.GetSuppliers()).OrderBy(s => s.Name).ToList(),
+                RateEUR = await _currencyRateFetcher.GetEURRateAsync(),
+                RateUSD = await _currencyRateFetcher.GetUSDRateAsync(),
+                RateBYN = await _currencyRateFetcher.GetBYNRateAsync(),
+                UniqueArticles = await _orderServcies.GetUniqueArticles(),
+                UniqueDeliveryCitys = await _orderServcies.GetUniqueDeliveryCities(),
+                UniqueNumbers = await _orderServcies.GetUniqueShipmentNumbers(),
+                AppStatus = appStatus
+            };
+
+            if (emptyModel.User.UserAccessId != null)
+                emptyModel.User.UserAccess = _context.UserAccess.Find(emptyModel.User.UserAccessId);
+
+            return View(emptyModel);
         }
 
-        ViewData["ErrorReason"] = errorReason;
+
+        // Если ошибок нет
+        if (!ordersToTransaction.Any())
+            ViewData["ErrorReason"] = "Нет заказов со статусом 'Заказан поставщику'.";
 
         var pageViewModel = new MultiplayEditOrderViewModel
         {
@@ -142,6 +298,8 @@ public class ShippedToClientTransactionController : Controller
         RunBackgroundCacheTask(pageViewModel.Orders);
         return View(pageViewModel);
     }
+
+
 
     private void RunBackgroundCacheTask(List<Order> orders)
     {
@@ -238,7 +396,7 @@ public class ShippedToClientTransactionController : Controller
                     {
                         try
                         {
-                            transferResult = await _oneCTransferManager.TransferStock(ordersToTransaction);
+                            transferResult = await _oneCTransferManager.TransferStockByWarehouses(ordersToTransaction);
                         }
                         catch (Exception e)
                         {

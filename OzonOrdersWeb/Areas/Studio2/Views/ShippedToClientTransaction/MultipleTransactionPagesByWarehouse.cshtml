@@ -1,0 +1,26 @@
+﻿@model OzonOrdersWeb.Areas.Studio2.ViewModels.MultipleTransactionPagesViewModel
+
+@{
+ViewData["Title"] = "Страницы по складам";
+}
+
+<h2>Создано несколько страниц по складам</h2>
+
+<ul>
+    @foreach (var transactionPage in Model.WarehousePages)
+    {
+    <li>
+        <strong>@transactionPage.WarehouseName:</strong>
+        <a href="@transactionPage.Url" target="_blank" class="transaction-link">Открыть страницу</a>
+    </li>
+    }
+</ul>
+
+
+<script>
+    document.querySelectorAll('.transaction-link').forEach(link => {
+        link.addEventListener('click', function() {
+            this.style.color = 'green'; // подсветка при клике
+        });
+    });
+</script>

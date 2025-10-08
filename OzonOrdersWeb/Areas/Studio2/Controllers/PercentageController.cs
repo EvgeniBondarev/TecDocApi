@@ -111,7 +111,7 @@ public class PercentageController : Controller
         {
             case TransactionType.ShippedToClient:
                 return RedirectToAction(
-                    "CreateShippedToClientTransaction",
+                    "CreateShippedToClientTransactionFromFile",
                     "ShippedToClientTransaction",      
                     new { area = "Studio2", ids = orderIds, page = 1 }
                 );

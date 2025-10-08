@@ -30,6 +30,45 @@ public class OneCTransferManager : IApiDataManager<OneCTransferManager>
         _apiConfig.Password = password;
         return this;
     }
+    
+    public async Task<List<OneCResponse>> TransferStockByWarehouses(List<Order> allOrders)
+    {
+        if (allOrders == null || !allOrders.Any())
+            throw new ArgumentException("Список заказов не может быть пустым.");
+
+        // Группируем по складу
+        var groupedByWarehouse = allOrders
+            .Where(o => o.ShipmentWarehouse != null && !string.IsNullOrEmpty(o.ShipmentWarehouse.Name))
+            .GroupBy(o => o.ShipmentWarehouse.Name)
+            .ToList();
+
+        if (!groupedByWarehouse.Any())
+            throw new ArgumentException("Не найдено заказов с указанным складом отгрузки.");
+
+        var allResults = new List<OneCResponse>();
+
+        foreach (var warehouseGroup in groupedByWarehouse)
+        {
+            try
+            {
+                // Вызываем обработку для конкретного склада
+                var results = await TransferStock(warehouseGroup.ToList());
+                allResults.AddRange(results);
+            }
+            catch (Exception ex)
+            {
+                // Добавляем ошибку по складу, чтобы не прерывать обработку остальных
+                allResults.Add(new OneCResponse
+                {
+                    Success = false,
+                    Message = $"Ошибка при обработке склада '{warehouseGroup.Key}': {ex.Message}",
+                    TransactionId = null
+                });
+            }
+        }
+
+        return allResults;
+    }
 
     public async Task<List<OneCResponse>> TransferStock(List<Order> ordersToTransfer)
     {

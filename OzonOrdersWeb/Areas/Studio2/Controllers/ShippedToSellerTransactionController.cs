@@ -266,7 +266,7 @@ public class ShippedToSellerTransactionController : Controller
                     {
                         try
                         {
-                            transferResult = await _oneCTransferManager.TransferStock(ordersToTransaction);
+                            transferResult = await _oneCTransferManager.TransferStockByWarehouses(ordersToTransaction);
                         }
                         catch (Exception e)
                         {
