@@ -91,7 +91,15 @@ public class ShippedToClientTransactionController : Controller
         foreach (var orderId in idArray)
         {
             var order = await _orderServcies.GetOrder(orderId);
-            ordersToTransaction.Add(order);
+            if (order.AppStatus.Name != "Отгружен клиенту")
+            {
+                ordersToTransaction.Add(order);
+            }
+            else
+            {
+                
+            }
+            
         }
 
         if (ordersToTransaction.Any())
