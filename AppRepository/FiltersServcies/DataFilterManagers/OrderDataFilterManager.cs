@@ -172,7 +172,7 @@ namespace Servcies.FiltersServcies.DataFilterManagers
                                 o.DeliveryPeriod.Value.Hours == StringToIntHours(filterData.DeliveryPeriod))
                     .ToList();
             }
-            return result.OrderByDescending(o => o.ProcessingDate).ToList();
+            return result.OrderBy(o => o.ProcessingDate).ToList();
         }
 
         public async Task<List<Order>> FilterTransactionsOrdersByFilterData(List<Order> orders,
@@ -183,7 +183,7 @@ namespace Servcies.FiltersServcies.DataFilterManagers
 
             if (filterIsNull)
             {
-                return orders.OrderByDescending(pr => pr.ProcessingDate).ToList();
+                return orders.OrderBy(pr => pr.ProcessingDate).ToList();
             }
 
             orders = _forTransactionOrdersFilter.FilterByString(orders, pr => pr.Key, filterData.Key).ToList();
@@ -266,11 +266,11 @@ namespace Servcies.FiltersServcies.DataFilterManagers
             }
             else
             {
-                result = orders.OrderByDescending(o => o.ProcessingDate).ToList();
+                result = orders.OrderBy(o => o.ProcessingDate).ToList();
             }
 
 
-            return result.OrderByDescending(o => o.ProcessingDate).ToList();
+            return result.OrderBy(o => o.ProcessingDate).ToList();
             ;
         }
 
@@ -278,7 +278,7 @@ namespace Servcies.FiltersServcies.DataFilterManagers
         {
             IQueryable<Order> orders = await _ordersDataServcies.GetOrders();
 
-            return orders.Where(o => o.FromFile == filter).OrderByDescending(pr => pr.ProcessingDate).ToList();
+            return orders.Where(o => o.FromFile == filter).OrderBy(pr => pr.ProcessingDate).ToList();
         }
 
         public bool AreAllPropertiesNull(OrderFilterModel model)

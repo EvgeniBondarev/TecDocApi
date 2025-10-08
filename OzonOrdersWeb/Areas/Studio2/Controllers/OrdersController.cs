@@ -213,7 +213,8 @@ namespace OzonOrdersWeb.Controllers
 
             var returnableCount = await _orderServcies.GetReturnableCount();
 
-            var pageViewModel = new OrderPageViewModel<Order, OrderFilterModel>(ordersFromCache, page, pageSize, filterData, returnableCount)
+            var pageViewModel = new OrderPageViewModel<Order, OrderFilterModel>(ordersFromCache.OrderBy(o => o.ProcessingDate).ToList(), 
+                                                                                page, pageSize, filterData, returnableCount)
             {
                 UniqueArticles = await _uniqueValuesCache.GetUniqueArticles(),
                 UniqueDeliveryCitys = await _uniqueValuesCache.GetUniqueDeliveryCitys(),
@@ -255,7 +256,8 @@ namespace OzonOrdersWeb.Controllers
 
             var returnableCount = await _orderServcies.GetReturnableCount();
 
-            var pageViewModel = new OrderPageViewModel<Order, OrderFilterModel>(ordersFromCache, page, pageSize, filterData, returnableCount)
+            var pageViewModel = new OrderPageViewModel<Order, OrderFilterModel>(ordersFromCache.OrderBy(o => o.ProcessingDate).ToList(), 
+                                                                                page, pageSize, filterData, returnableCount)
             {
                 UniqueArticles = await _orderServcies.GetUniqueArticles(),
                 UniqueDeliveryCitys = await _orderServcies.GetUniqueDeliveryCities(),

@@ -41,15 +41,6 @@
                             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
                     }
-
-                    @if (Model == null || !Model.Items.Any())
-                    {
-                        <div class="alert alert-info">
-                            Связи складов не найдены. <a asp-action="Create" class="alert-link">Создайте первую запись</a>.
-                        </div>
-                    }
-                    else
-                    {
                         <table class="table">
                             <thead>
                                 <tr>
@@ -208,7 +199,6 @@
                                 }
                             </div>
                         </div>
-                    }
                 </div>
             </div>
         </div>
