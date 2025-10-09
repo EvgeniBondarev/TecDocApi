@@ -15,7 +15,7 @@ public static class DatabaseExtensions
         string jcEtalonConnection = configuration.GetConnectionString("JcEtalonConnectionProd");
 
         string bitrixConnection = isProd
-            ? configuration.GetConnectionString("BitrixConnectionLocal")
+            ? configuration.GetConnectionString("BitrixConnectionProd")
             : configuration.GetConnectionString("BitrixConnectionLocal");
 
         services.AddDbContext<OzonOrderContext>(options =>
