@@ -60,7 +60,7 @@ Layout = "~/Views/Shared/_Layout.cshtml";
     </div>
 </div>
 
-@if (Model.Orders.Count > 0)
+@if (Model.Orders?.Count > 0)
 {
 <form asp-area="Studio2" asp-controller="OrderToSupplierTransaction" asp-action="CreateOrderToSupplierTransactionV2" id="createOrderForm">
     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
