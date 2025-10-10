@@ -1376,7 +1376,8 @@
                     @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Склад отгрузки"))
                     {
                         <div
-                            class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("AppStatusId") ? "bg-warning" : "")  text-muted">
+                            class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("AppStatusId") ? "bg-warning" : "")  text-muted"
+                            title="@item.FullFormattedLastStatusChangeDate">
                             @Html.DisplayFor(modelItem => item.FormattedLastStatusChangeDate)
                         </div>
                     }

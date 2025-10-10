@@ -23,9 +23,9 @@ namespace Servcies.DataServcies
     {
         private readonly string[] _ignoredProperties =
         [
-            "AppStatus",  "СurrencyId", "ProductInfoId", "UpdatedColumns", "Id", "AppStatusId", "ShipmentWarehouseId",
+            "AppStatus", "СurrencyId", "ProductInfoId", "UpdatedColumns", "Id", "AppStatusId", "ShipmentWarehouseId",
             "IsVerified", "Comment", "Key", "IsAccepted", "MaxCommissionInfo", "MinCommissionInfo", "MinDiscount",
-            "MaxDiscount", "PurchasePrice","Supplier", "SupplierId", "MinProfit", "MaxProfit", "IsReturnable",
+            "MaxDiscount", "PurchasePrice", "Supplier", "SupplierId", "MinProfit", "MaxProfit", "IsReturnable",
             "OrderNumberToSupplier", "FromFile", "OriginalPurchasePrice", "CostPrice", "PurchasePrice"
         ];
 
@@ -33,14 +33,14 @@ namespace Servcies.DataServcies
         [
             "СurrencyId", "ProductInfoId", "UpdatedColumns", "Id", "ShipmentWarehouseId",
             "ShipmentWarehouse", "Сurrency", "ProductInfo", "MaxCommissionInfo", "MinCommissionInfo",
-             "IsVerified", "Key", "IsAccepted", "OzonClient", "FromFile"
+            "IsVerified", "Key", "IsAccepted", "OzonClient", "FromFile"
         ];
-        
+
         private readonly string[] _ignoredWebNullProperties =
         [
-            "OrderNumberToSupplier", "Supplier",  "SupplierId"
+            "OrderNumberToSupplier", "Supplier", "SupplierId"
         ];
-        
+
         private readonly string[] _priceProperties =
         [
             "ShipmentAmount",
@@ -55,7 +55,7 @@ namespace Servcies.DataServcies
             "MaxDiscount",
             "CostPrice"
         ];
-        
+
         public async Task<IQueryable<Order>> GetOrders()
         {
             var result = await repository.GetAsync();
@@ -86,6 +86,7 @@ namespace Servcies.DataServcies
         {
             return await repository.Update(order);
         }
+
         public async Task<int> UpdateOrders(List<Order> orders)
         {
             return await repository.UpdateRange(orders);
@@ -115,10 +116,11 @@ namespace Servcies.DataServcies
         {
             Order orderToDelete = await repository.GetAsync(orderId);
 
-            if(orderToDelete != null && orderToDelete.AppStatus.Name == "Не указан")
+            if (orderToDelete != null && orderToDelete.AppStatus.Name == "Не указан")
             {
                 return await repository.Delete(orderToDelete);
             }
+
             return 0;
         }
 
@@ -148,8 +150,8 @@ namespace Servcies.DataServcies
         public async Task<int> MultiplayDeleteOrders(int[] idArray)
         {
             int result = 0;
-            
-            foreach(int orderId in idArray)
+
+            foreach (int orderId in idArray)
             {
                 Order orderToDelete = await repository.GetAsync(orderId);
 
@@ -181,7 +183,7 @@ namespace Servcies.DataServcies
                     foreach (var order in currentChunk)
                     {
                         Order existingOrder;
-                        
+
                         if (order.OzonClient?.ClientType == ClientType.YANDEX)
                         {
                             existingOrder = context.Orders.FirstOrDefault(o => o.Key == order.Key);
@@ -191,12 +193,11 @@ namespace Servcies.DataServcies
                             {
                                 continue;
                             }
-                            
                         }
                         else
                         {
                             var trimmedShipmentNumber = TrimShipmentNumber(order.ShipmentNumber);
-    
+
                             var existingOrders = context.Orders
                                 .Where(o => o.Article == order.Article)
                                 .AsEnumerable()
@@ -204,23 +205,25 @@ namespace Servcies.DataServcies
                                 .ToList();
 
                             var endsWithSlashNumber = existingOrders
-                                .FirstOrDefault(o => !string.IsNullOrEmpty(o.ShipmentNumber) && Regex.IsMatch(o.ShipmentNumber, @"/\d+$"));
+                                .FirstOrDefault(o =>
+                                    !string.IsNullOrEmpty(o.ShipmentNumber) &&
+                                    Regex.IsMatch(o.ShipmentNumber, @"/\d+$"));
 
                             if (endsWithSlashNumber != null)
                             {
                                 continue;
                             }
-                        
-                            existingOrder = existingOrders.FirstOrDefault(eo => eo.ShipmentNumber == order.ShipmentNumber);
+
+                            existingOrder =
+                                existingOrders.FirstOrDefault(eo => eo.ShipmentNumber == order.ShipmentNumber);
                         }
-                        
+
                         try
                         {
                             if (existingOrder != null)
                             {
                                 await UpdateOrder(existingOrder, order);
                                 updateCount++;
-                                    
                             }
                             else
                             {
@@ -234,6 +237,7 @@ namespace Servcies.DataServcies
                             continue;
                         }
                     }
+
                     await context.Orders.AddRangeAsync(ordersToInsert);
                     await context.SaveChangesAsync();
                     ordersToInsert.Clear();
@@ -243,18 +247,22 @@ namespace Servcies.DataServcies
 
                 return [addCount, updateCount];
             }
-
         }
-        
+
         public async Task<int> MultiplayEditOrder(IEnumerable<Order> orders, string userName)
         {
-            foreach(Order order in orders)
+            foreach (Order order in orders)
             {
                 try
                 {
                     Order complitOrder = await CastToModel(order);
                     Order existingOrder = await GetOrder(complitOrder.Id);
                     await UpdateOrderWeb(existingOrder, complitOrder);
+                    if (existingOrder.AppStatus?.Name != complitOrder.AppStatus?.Name)
+                    {
+                        existingOrder.LastStatusChangeDate = DateTime.Now;
+                    }
+
                     existingOrder.IsVerified = true;
                     existingOrder.UpdatedBy = userName;
                 }
@@ -264,22 +272,30 @@ namespace Servcies.DataServcies
                     Console.WriteLine(ex.Message);
                     Console.WriteLine(ex.StackTrace);
                     Console.WriteLine(ex.Data);
-                    
+
                     throw new Exception(message: $"Не удалось изменить заказ: {ex.Message}");
                 }
             }
+
             return await SaveChanges();
-        }    
+        }
+
         public async Task<Order> TransactOrder(Order order)
         {
             var complitOrder = await CastToModel(order);
             var existingOrder = await GetOrder(complitOrder.Id);
             await UpdateOrderWeb(existingOrder, complitOrder);
+            if (existingOrder.AppStatus?.Name != complitOrder.AppStatus?.Name)
+            {
+                existingOrder.LastStatusChangeDate = DateTime.Now;
+            }
+
             existingOrder.IsVerified = true;
 
             await SaveChanges();
             return existingOrder;
         }
+
         private async Task UpdateOrderWeb(Order existingOrder, Order jsonOrder)
         {
             var isVerified = existingOrder.IsVerified;
@@ -307,8 +323,8 @@ namespace Servcies.DataServcies
                             return;
 
                         var value = jsonProp.GetValue(jsonOrder);
-                        
-                        bool shouldUpdate = 
+
+                        bool shouldUpdate =
                             value != null && prop.Name != "Id" && existingOrder.UpdatedColumns.Contains(prop.Name) ||
                             value == null && _ignoredWebNullProperties.Contains(prop.Name);
 
@@ -326,8 +342,10 @@ namespace Servcies.DataServcies
 
             if (existingOrder.UpdatedColumns != null && existingOrder.UpdatedColumns.Contains("AppStatusId"))
             {
-                existingOrder.LastStatusChangeDate = TimeZoneInfo.ConvertTime(DateTime.UtcNow, TimeZoneInfo.FindSystemTimeZoneById("Russian Standard Time"));
+                existingOrder.LastStatusChangeDate = TimeZoneInfo.ConvertTime(DateTime.UtcNow,
+                    TimeZoneInfo.FindSystemTimeZoneById("Russian Standard Time"));
             }
+
             if (existingOrder.UpdatedColumns != null && !existingOrder.UpdatedColumns.Contains("IsAccepted"))
             {
                 existingOrder.IsAccepted = false;
@@ -339,7 +357,7 @@ namespace Servcies.DataServcies
 
             existingOrder.IsVerified = isVerified;
         }
-        
+
         private async Task UpdateOrder(Order existingOrder, Order jsonOrder)
         {
             var isVerified = existingOrder.IsVerified;
@@ -347,7 +365,6 @@ namespace Servcies.DataServcies
 
             if (isVerified)
             {
-
             }
 
             var orderChangeList = GetOrderChangeList(existingOrder, jsonOrder, _ignoredProperties);
@@ -382,7 +399,7 @@ namespace Servcies.DataServcies
                                 if (_priceProperties.Contains(prop.Name))
                                 {
                                     var currentValue = prop.GetValue(existingOrder);
-                                    if (currentValue != null) 
+                                    if (currentValue != null)
                                     {
                                         continue; // пропускаем обновление этого свойства
                                     }
@@ -405,7 +422,8 @@ namespace Servcies.DataServcies
 
             if (existingOrder.UpdatedColumns != null && existingOrder.UpdatedColumns.Contains("AppStatusId"))
             {
-                existingOrder.LastStatusChangeDate = TimeZoneInfo.ConvertTime(DateTime.UtcNow, TimeZoneInfo.FindSystemTimeZoneById("Russian Standard Time"));
+                existingOrder.LastStatusChangeDate = TimeZoneInfo.ConvertTime(DateTime.UtcNow,
+                    TimeZoneInfo.FindSystemTimeZoneById("Russian Standard Time"));
             }
 
             if (existingOrder.UpdatedColumns != null && existingOrder.UpdatedColumns[0] != "IsAccepted")
@@ -432,7 +450,8 @@ namespace Servcies.DataServcies
             return changeProp;
         }
 
-        private List<string> CompareObjects(object obj1, object obj2, List<string> changeProp, string[] ignoredProperties)
+        private List<string> CompareObjects(object obj1, object obj2, List<string> changeProp,
+            string[] ignoredProperties)
         {
             Type type = obj1.GetType();
 
@@ -450,7 +469,8 @@ namespace Servcies.DataServcies
 
                     if (val1 != null && val2 != null)
                     {
-                        if (property.PropertyType.Assembly == type.Assembly && !property.PropertyType.IsPrimitive && property.PropertyType != typeof(string))
+                        if (property.PropertyType.Assembly == type.Assembly && !property.PropertyType.IsPrimitive &&
+                            property.PropertyType != typeof(string))
                         {
                             CompareObjects(val1, val2, changeProp, ignoredProperties);
                         }
@@ -465,6 +485,7 @@ namespace Servcies.DataServcies
                     }
                 }
             }
+
             return changeProp;
         }
 
@@ -479,12 +500,11 @@ namespace Servcies.DataServcies
 
             await SaveChanges();
         }
-        
+
         private async Task<Order> CastToModel(Order order)
         {
             if (order.AppStatus == null && order.AppStatusId != null)
             {
-                
                 if (order.AppStatusId.HasValue)
                 {
                     order.AppStatus = await appStatusDataServcies.GetAppStatusAsync(order.AppStatusId.Value);
@@ -512,16 +532,16 @@ namespace Servcies.DataServcies
                 order = await orderPriceManager.CalculateProfit(order);
                 order = await orderPriceManager.CalculateDiscount(order);
             }
+
             order = await SetIsReturnable(order);
 
             return order;
         }
-        
+
         private async Task<Order> CastToModelForOzon(Order order)
         {
             if (order.AppStatus == null && order.AppStatusId != null)
             {
-                
                 if (order.AppStatusId.HasValue)
                 {
                     order.AppStatus = await appStatusDataServcies.GetAppStatusAsync(order.AppStatusId.Value);
@@ -549,6 +569,7 @@ namespace Servcies.DataServcies
                 //order = await orderPriceManager.CalculateProfit(order);
                 //order = await orderPriceManager.CalculateDiscount(order);
             }
+
             order = await SetIsReturnable(order);
 
             return order;
@@ -567,13 +588,14 @@ namespace Servcies.DataServcies
                     order.IsReturnable = false;
                 }
             }
+
             return order;
         }
 
         public async Task<List<Order>> CalculateCostPriceForNotFullOrders(List<Order> orders)
         {
             List<Order> result = new List<Order>();
-    
+
             foreach (var order in orders)
             {
                 try
@@ -606,7 +628,8 @@ namespace Servcies.DataServcies
             var usedOrders = new HashSet<Order>();
 
             // Словарь для группировки заказов по ProductKey.Split('=')[0]
-            var groupedOrders = orders.GroupBy(order => order.ProductKey.Split('=')[0]).ToDictionary(g => g.Key, g => g.ToList());
+            var groupedOrders = orders.GroupBy(order => order.ProductKey.Split('=')[0])
+                .ToDictionary(g => g.Key, g => g.ToList());
 
             // Создаем словари для результатов
             var uniqueOrders = new List<Order>();
@@ -617,7 +640,7 @@ namespace Servcies.DataServcies
             {
                 var orderGroup = groupedOrders[article];
                 var matchedOrders = appOrders.Where(o => o.ProductKey.Split('=')[0] == article).ToList();
-                
+
                 if (matchedOrders.Count == 0 || matchedOrders.All(o => o.Status == "Отменен" || o.Status == "Отменён"))
                 {
                     uniqueOrders.AddRange(orderGroup);
@@ -627,8 +650,8 @@ namespace Servcies.DataServcies
                 if (matchedOrders.Count > 1)
                 {
                     var filteredMatches = matchedOrders
-                        .Where(repoOrder => !usedOrders.Contains(repoOrder) && 
-                                            repoOrder.Status != "Отменен" && 
+                        .Where(repoOrder => !usedOrders.Contains(repoOrder) &&
+                                            repoOrder.Status != "Отменен" &&
                                             repoOrder.Status != "Отменён")
                         .ToList();
 
@@ -644,7 +667,7 @@ namespace Servcies.DataServcies
                 else if (matchedOrders.Count == 1)
                 {
                     var matchedOrder = matchedOrders.First();
-                    if (matchedOrder.Status != "Отменен" && matchedOrder.Status != "Отменён" && 
+                    if (matchedOrder.Status != "Отменен" && matchedOrder.Status != "Отменён" &&
                         !usedOrders.Contains(matchedOrder))
                     {
                         foreach (var order in orderGroup)
@@ -655,7 +678,7 @@ namespace Servcies.DataServcies
                     }
                 }
             }
-            
+
             uniqueOrders = uniqueOrders
                 .Where(o => !usedOrders.Contains(o))
                 .OrderBy(o => o.ProductKey.Split('=')[0])
@@ -664,8 +687,10 @@ namespace Servcies.DataServcies
             return new NotFullOrdersModel
             {
                 UniqueOrders = uniqueOrders,
-                OrdersWithMultipleMatches = ordersWithMultipleMatches.OrderBy(pair => pair.Key.ProductKey.Split('=')[0]).ToDictionary(pair => pair.Key, pair => pair.Value),
-                OrdersWithOneMatches = ordersWithOneMatch.OrderBy(pair => pair.Key.ProductKey.Split('=')[0]).ToDictionary(pair => pair.Key, pair => pair.Value)
+                OrdersWithMultipleMatches = ordersWithMultipleMatches.OrderBy(pair => pair.Key.ProductKey.Split('=')[0])
+                    .ToDictionary(pair => pair.Key, pair => pair.Value),
+                OrdersWithOneMatches = ordersWithOneMatch.OrderBy(pair => pair.Key.ProductKey.Split('=')[0])
+                    .ToDictionary(pair => pair.Key, pair => pair.Value)
             };
         }
 
@@ -761,7 +786,8 @@ namespace Servcies.DataServcies
 
         private DateTime GetRussianCurrentTime()
         {
-            return TimeZoneInfo.ConvertTime(DateTime.UtcNow, TimeZoneInfo.FindSystemTimeZoneById("Russian Standard Time"));
+            return TimeZoneInfo.ConvertTime(DateTime.UtcNow,
+                TimeZoneInfo.FindSystemTimeZoneById("Russian Standard Time"));
         }
 
         private async Task<Order> CastToFullOrder(Order notFullOrder, bool isNewOrder)
@@ -819,6 +845,7 @@ namespace Servcies.DataServcies
             {
                 order.NumberInExcel = numberInExcel++;
             }
+
             return orders;
         }
 
@@ -844,6 +871,7 @@ namespace Servcies.DataServcies
                     }
                 }
             }
+
             return orders;
         }
 
@@ -870,16 +898,19 @@ namespace Servcies.DataServcies
                     (orderToCancellation.Status == "Отменён" || string.IsNullOrEmpty(orderToCancellation.Status)))
                 {
                     orderToCancellation.AppStatus = appStatus;
-                    orderToCancellation.LastStatusChangeDate = TimeZoneInfo.ConvertTime(DateTime.UtcNow, TimeZoneInfo.FindSystemTimeZoneById("Russian Standard Time"));
+                    orderToCancellation.LastStatusChangeDate = TimeZoneInfo.ConvertTime(DateTime.UtcNow,
+                        TimeZoneInfo.FindSystemTimeZoneById("Russian Standard Time"));
                 }
             }
+
             return await SaveChanges();
         }
+
         private static bool IsStatusAllowedForCancellation(string statusName)
         {
             return statusName == "Не указан" || statusName == "Приостановлен";
         }
-        
+
         public List<Order> MergeOrders(List<Order> orders)
         {
             return orders
@@ -912,12 +943,13 @@ namespace Servcies.DataServcies
                         {
                             continue;
                         }
+
                         property.SetValue(mergedOrder, property.GetValue(firstOrder));
                     }
 
                     return mergedOrder;
                 })
-                .Where(order => order != null) 
+                .Where(order => order != null)
                 .OrderBy(o => o.Article)
                 .ThenBy(o => o.EtProducer?.Name)
                 .ToList();
@@ -937,9 +969,9 @@ namespace Servcies.DataServcies
                 {
                     throw new ArgumentException("Сумма частей должна равняться исходному количеству");
                 }
-        
+
                 order.Quantity = part1;
-        
+
                 var newOrder = order.Clone();
                 newOrder.Quantity = part2;
                 newOrder.ShipmentNumber = order.ShipmentNumber + "/2";
@@ -951,7 +983,7 @@ namespace Servcies.DataServcies
             }
         }
 
-        
+
         private string TrimShipmentNumber(string? shipmentNumber)
         {
             if (string.IsNullOrEmpty(shipmentNumber))
@@ -975,8 +1007,8 @@ namespace Servcies.DataServcies
         {
             return await repository.GetOrderIdsByNumbersAndArticles(orders);
         }
-   
-        
+
+
         public async Task<int> GetTotalCount()
         {
             return await repository.GetTotalCount();
