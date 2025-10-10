@@ -472,11 +472,11 @@
             </div>
             <div class="form-group" style="display: none">
                 <label asp-for="Orders[i].ProductInfo.Id" class="control-label"></label><span
-                                                                                            style="margin-left: 10px; color: gray;">/ </span>
+                    style="margin-left: 10px; color: gray;">/ </span>
                 <input asp-for="Orders[i].ProductInfo.Id" class="form-control" value="@Model.Orders[i].ProductInfo.Id"/>
                 <span asp-validation-for="Orders[i].ProductInfo.Id" class="text-danger"></span>
             </div>
-            
+
             <div class="form-group" style="display: none">
                 <label asp-for="Orders[i].ShipmentWarehouse.Name" class="control-label"></label><span
                     style="margin-left: 10px; color: gray;">/ </span>
@@ -1022,7 +1022,9 @@
                                id="PurchasePrice_@Model.Orders[i].Id"
                                data-order-id="@Model.Orders[i].Id"
                                style="width: 70px; max-width: 70px;"
-                               value="@(Model.Orders[i].OriginalPurchasePrice ?? Model.Orders[i].PurchasePrice)"/>
+                               value="@(Model.Orders[i].OriginalPurchasePrice == 0 ? "" : Model.Orders[i].OriginalPurchasePrice.ToString())"
+                               oninput="this.value = this.value.replace(',', '.').replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');"/>
+
 
                         <div class="form-group" style="font-size: 13px;">
                             <input type="hidden" asp-for="Orders[i].PurchasePrice"
