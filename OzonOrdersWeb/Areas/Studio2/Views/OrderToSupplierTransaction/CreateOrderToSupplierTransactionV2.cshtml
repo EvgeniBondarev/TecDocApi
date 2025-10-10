@@ -4,12 +4,12 @@
 @model MultiplayEditOrderViewModel
 
 @{
-ViewData["Title"] = "Edit";
-Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Edit";
+    Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<link rel="stylesheet" href="~/css/table.css" />
-<link rel="stylesheet" href="~/css/transaction.css" />
+<link rel="stylesheet" href="~/css/table.css"/>
+<link rel="stylesheet" href="~/css/transaction.css"/>
 <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
 <script src="~/js/Studio2/Orders/CreateOrderToSupplierTransactionV2/generateInfoRow.js"></script>
 
@@ -23,7 +23,7 @@ Layout = "~/Views/Shared/_Layout.cshtml";
     </div>
 </div>
 
-<hr />
+<hr/>
 
 <div id="loadingSpinner" class="spinner-overlay" style="display: none; background-color: inherit;">
     <div class="spinner-border text-primary" role="status">
@@ -62,28 +62,32 @@ Layout = "~/Views/Shared/_Layout.cshtml";
 
 @if (Model.Orders?.Count > 0)
 {
-<form asp-area="Studio2" asp-controller="OrderToSupplierTransaction" asp-action="CreateOrderToSupplierTransactionV2" id="createOrderForm">
-    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-    <input type="hidden" asp-for="RedirectPage" />
+    <form asp-area="Studio2" asp-controller="OrderToSupplierTransaction" asp-action="CreateOrderToSupplierTransactionV2"
+          id="createOrderForm">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <input type="hidden" asp-for="RedirectPage"/>
 
-    @await Html.PartialAsync("_TransactionTable", Model)
+        @await Html.PartialAsync("_TransactionTable", Model)
 
-    <div class="form-group mt-3 d-flex justify-content-end">
-        <div class="input-group">
+        <div class="form-group mt-3 d-flex justify-content-end">
+            <div class="input-group">
                 <span class="input-group-btn">
-                    <input type="submit" value="Сохранить" style="width: 170px;" class="btn btn-primary" data-bs-target="#staticBackdrop"/>
+                    <input type="submit" value="Сохранить" style="width: 170px;" class="btn btn-primary"
+                           data-bs-target="#staticBackdrop"/>
                 </span>
+            </div>
         </div>
-    </div>
-</form>
+    </form>
 }
 else
 {
-    <p>Нет выбранных заказов для проведения документа (Статус выбранного заказа должен быть отличным от <b>'Заказан поставщику'</b>)</p>
+    <p>Нет выбранных заказов для проведения документа (Статус выбранного заказа должен быть отличным от <b>'Заказан
+            поставщику'</b>)</p>
     @Html.Partial("_OrderStatusFlow")
 }
 
-<div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+<div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+     aria-labelledby="staticBackdropLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -133,7 +137,7 @@ else
     </div>
 </div>
 
-<input type="hidden" id="deletedOrders" name="deletedOrders" />
+<input type="hidden" id="deletedOrders" name="deletedOrders"/>
 @await Html.PartialAsync("_TransactionScript", Model)
 <script>
     $('form').submit(function (e) {

@@ -140,7 +140,7 @@
         function updateSelectedSuppliers() {
             for (const key in selectedSuppliers) {
                 if (selectedSuppliers.hasOwnProperty(key)) {
-                    selectedSuppliers[key] = { count: 0, totalAmount: 0, totalQuantity: 0, totalPurchasePrice: 0 };
+                    selectedSuppliers[key] = {count: 0, totalAmount: 0, totalQuantity: 0, totalPurchasePrice: 0};
                 }
             }
 
@@ -165,7 +165,12 @@
                             selectedSuppliers[supplierName].totalQuantity += quantity;
                             selectedSuppliers[supplierName].totalPurchasePrice += purchasePrice;
                         } else {
-                            selectedSuppliers[supplierName] = { count: 1, totalAmount: shipmentAmount, totalQuantity: quantity, totalPurchasePrice: purchasePrice };
+                            selectedSuppliers[supplierName] = {
+                                count: 1,
+                                totalAmount: shipmentAmount,
+                                totalQuantity: quantity,
+                                totalPurchasePrice: purchasePrice
+                            };
                         }
                     }
                 }
@@ -285,7 +290,7 @@
             });
 
             // Настраиваем наблюдение за изменениями внутри элемента 'element'
-            observer.observe(element, { childList: true, subtree: true });
+            observer.observe(element, {childList: true, subtree: true});
         });
     }
 
@@ -395,7 +400,7 @@
             var purchasePriceInRub = updatePurchasePriceInRub(orderId, currencyCode, costFactor);
             updateCostPrice(orderId, currencyCode, costFactor, weightCurrencyCode, purchasePriceInRub);
             updateCalculations(orderId);
-            
+
             window.updateSupplierList();
         });
 
@@ -511,7 +516,6 @@
 
             updateCalculations(orderId);
         }
-
 
 
         function updateCalculations(orderId) {
@@ -701,8 +705,7 @@
                     console.log("none")
                     cells[columnIndex].style.display = 'none';
 
-                }
-                else {
+                } else {
                     console.log("none2")
                     cells[columnIndex].style.display = '';
                 }
@@ -740,59 +743,60 @@
 
 
 <script>
-            // Глобальный кеш для хранения данных
-        const orderDataCache = {};
-        const rowCache = new Map();
-    
-        function setStok(userOrderId) {
-            const data = JSON.parse(sessionStorage.getItem('selectedStockList' + ids) || '[]');
-            data.forEach(({ orderId, priceValue, indexRow }) => {
-                if (userOrderId == orderId) {
-                    const button = document.querySelector(`.stok-order[data-order-id="${orderId}"][data-index-row="${indexRow}"]`);
-                    if (button) {
-                        button.click();
-                    }
+    // Глобальный кеш для хранения данных
+    const orderDataCache = {};
+    const rowCache = new Map();
+
+    function setStok(userOrderId) {
+        const data = JSON.parse(sessionStorage.getItem('selectedStockList' + ids) || '[]');
+        data.forEach(({orderId, priceValue, indexRow}) => {
+            if (userOrderId == orderId) {
+                const button = document.querySelector(`.stok-order[data-order-id="${orderId}"][data-index-row="${indexRow}"]`);
+                if (button) {
+                    button.click();
                 }
-            });
-        }
-        document.addEventListener('DOMContentLoaded', function() {
-            const buttons = document.querySelectorAll('.get-full-order-info');
-            buttons.forEach((button, index) => {
-                button.addEventListener('click', function() {
-                    fetchSupplierInfo(this);
-                });
-            });
-            document.getElementById('startButton').addEventListener('click', function () {
-                this.style.display = 'none';
-                buttons.forEach((button, index) => {
-                    setTimeout(() => fetchSupplierInfoInBg(button), index * 4500);
-                });
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const buttons = document.querySelectorAll('.get-full-order-info');
+        buttons.forEach((button, index) => {
+            button.addEventListener('click', function () {
+                fetchSupplierInfo(this);
             });
         });
+        document.getElementById('startButton').addEventListener('click', function () {
+            this.style.display = 'none';
+            buttons.forEach((button, index) => {
+                setTimeout(() => fetchSupplierInfoInBg(button), index * 4500);
+            });
+        });
+    });
 
 
-      async function fetchSupplierInfo(button) {
-                const orderId = button.getAttribute('data-order-id');
-                const orderArticle = button.getAttribute('data-order-article');
-                const rowId = `#orderRow_${orderId}`;
+    async function fetchSupplierInfo(button) {
+        const orderId = button.getAttribute('data-order-id');
+        const orderArticle = button.getAttribute('data-order-article');
+        const rowId = `#orderRow_${orderId}`;
 
-                // Иконки для кнопки
-                const svgLoading = `
+        // Иконки для кнопки
+        const svgLoading = `
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-hourglass-split" viewBox="0 0 16 16">
                         <path d="M2.5 15a.5.5 0 1 1 0-1h1v-1a4.5 4.5 0 0 1 2.557-4.06c.29-.139.443-.377.443-.59v-.7c0-.213-.154-.451-.443-.59A4.5 4.5 0 0 1 3.5 3V2h-1a.5.5 0 0 1 0-1h11a.5.5 0 0 1 0 1h-1v1a4.5 4.5 0 0 1-2.557 4.06c-.29.139-.443.377-.443.59v.7c0 .213.154.451.443.59A4.5 4.5 0 0 1 12.5 13v1h1a.5.5 0 0 1 0 1zm2-13v1c0 .537.12 1.045.337 1.5h6.326c.216-.455.337-.963.337-1.5V2zm3 6.35c0 .701-.478 1.236-1.011 1.492A3.5 3.5 0 0 0 4.5 13s.866-1.299 3-1.48zm1 0v3.17c2.134.181 3 1.48 3 1.48a3.5 3.5 0 0 0-1.989-3.158C8.978 9.586 8.5 9.052 8.5 8.351z"/>
                     </svg>
                     <span class="visually-hidden">Loading</span>
                 `;
-            
-                            const svgUp = `
+
+        const svgUp = `
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-double-up" viewBox="0 0 16 16">
                         <path fill-rule="evenodd" d="M7.646 2.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1-.708.708L8 3.707 2.354 9.354a.5.5 0 1 1-.708-.708z"/>
                         <path fill-rule="evenodd" d="M7.646 6.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1-.708.708L8 7.707l-5.646 5.647a.5.5 0 0 1-.708-.708z"/>
                     </svg>
                     <span class="visually-hidden">Info</span>
                 `;
-            
-                            const svgDown = `
+
+        const svgDown = `
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-double-down" viewBox="0 0 16 16">
                         <path fill-rule="evenodd" d="M1.646 6.646a.5.5 0 0 1 .708 0L8 12.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/>
                         <path fill-rule="evenodd" d="M1.646 2.646a.5.5 0 0 1 .708 0L8 8.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/>
@@ -800,310 +804,311 @@
                     <span class="visually-hidden">Info</span>
                 `;
 
-                // Устанавливаем иконку загрузки
-                button.innerHTML = svgLoading;
-                button.disabled = true;
+        // Устанавливаем иконку загрузки
+        button.innerHTML = svgLoading;
+        button.disabled = true;
 
-                // Если строка уже открыта - закрываем
-                if ($(rowId).next().hasClass('info-row')) {
-                    $(rowId).next().remove();
-                    button.innerHTML = svgDown;
-                    button.disabled = false;
-                    return;
+        // Если строка уже открыта - закрываем
+        if ($(rowId).next().hasClass('info-row')) {
+            $(rowId).next().remove();
+            button.innerHTML = svgDown;
+            button.disabled = false;
+            return;
+        }
+
+        try {
+            // Проверяем кеш
+            if (rowCache.has(orderId)) {
+                $(rowId).after(rowCache.get(orderId));
+                button.innerHTML = svgUp;
+                button.disabled = false;
+                setStok(orderId);
+                return;
+            }
+
+            // Создаем массив промисов для всех запросов
+            const requests = [];
+
+            // Добавляем запросы только если данных нет в кэше
+            if (!orderDataCache[orderId]?.orderDetails) {
+                requests.push(fetchOrderDetails(orderId).then(data => processOrderDetails(data, orderId)));
+            }
+
+            if (!orderDataCache[orderId]?.tradesoftData) {
+                requests.push(fetchTradesoftData(orderId).then(data => processTradesoftData(data, orderId)));
+            }
+
+            if (!orderDataCache[orderId]?.abcpData) {
+                requests.push(fetchAbcpData(orderId).then(data => processAbcpData(data, orderId)));
+            }
+
+            if (!orderDataCache[orderId]?.avdData) {
+                requests.push(fetchAvdData(orderId).then(data => processAvdData(data, orderId)));
+            }
+
+            if (!orderDataCache[orderId]?.stockData) {
+                requests.push(getOrderStocks(orderId).then(data => processStockData(data, orderId)));
+            }
+
+            if (!orderDataCache[orderId]?.zzapData) {
+                requests.push(fetchZzapDataWithRetry(orderId).then(data => processZzapData(data, orderId)));
+            }
+
+            if (!orderDataCache[orderId]?.bitrixData) {
+                requests.push(fetchBitrixData(orderArticle).then(data => processBitrixData(data, orderId)));
+            }
+
+            // Всегда выполняем этот запрос, так как он не кэшируется
+            requests.push(fetchOneAbcpData(orderId).then(data => processOneAbcpData(data, orderId)));
+
+            // Ожидаем завершения всех запросов
+            await Promise.all(requests);
+
+            const rates = {
+                'RUB': 1,
+                'USD': parseFloat('@Model.RateUSD'.replace(',', '.')),
+                'EUR': parseFloat('@Model.RateEUR'.replace(',', '.')),
+                'BYN': parseFloat('@Model.RateBYN'.replace(',', '.'))
+            };
+
+            const infoRow = generateInfoRow(orderId, rates);
+            rowCache.set(orderId, infoRow);
+            $(rowId).after(infoRow);
+            setStok(orderId);
+            updateAllPricesForOrder(orderId);
+            button.innerHTML = svgUp;
+
+        } catch (error) {
+            console.error("Ошибка при загрузке данных:", error);
+            // Возвращаем исходную иконку при ошибке
+            button.innerHTML = svgDown;
+        } finally {
+            button.disabled = false;
+        }
+    }
+
+    async function fetchSupplierInfoInBg(button) {
+        const orderId = button.getAttribute('data-order-id');
+        const orderArticle = button.getAttribute('data-order-article');
+
+        try {
+            // Создаем массив промисов для всех запросов
+            const requests = [];
+
+            // Добавляем запросы только если данных нет в кэше
+            if (!orderDataCache[orderId]?.orderDetails) {
+                requests.push(
+                    fetchOrderDetails(orderId)
+                        .then(data => {
+                            if (data && Object.keys(data).length > 0) {
+                                processOrderDetails(data, orderId);
+                            }
+                        })
+                );
+            }
+
+            if (!orderDataCache[orderId]?.tradesoftData) {
+                requests.push(
+                    fetchTradesoftData(orderId)
+                        .then(data => {
+                            if (data && Object.keys(data).length > 0) {
+                                processTradesoftData(data, orderId);
+                            }
+                        })
+                );
+            }
+
+            if (!orderDataCache[orderId]?.abcpData) {
+                requests.push(
+                    fetchAbcpData(orderId)
+                        .then(data => {
+                            if (data && Object.keys(data).length > 0) {
+                                processAbcpData(data, orderId);
+                            }
+                        })
+                );
+            }
+
+            if (!orderDataCache[orderId]?.avdData) {
+                requests.push(
+                    fetchAvdData(orderId)
+                        .then(data => {
+                            if (data && Object.keys(data).length > 0) {
+                                processAvdData(data, orderId);
+                            }
+                        })
+                );
+            }
+
+            if (!orderDataCache[orderId]?.stockData) {
+                requests.push(
+                    getOrderStocks(orderId)
+                        .then(data => {
+                            if (data && Object.keys(data).length > 0) {
+                                processStockData(data, orderId);
+                            }
+                        })
+                );
+            }
+
+            if (!orderDataCache[orderId]?.zzapData) {
+                requests.push(
+                    fetchZzapDataWithRetry(orderId)
+                        .then(data => {
+                            if (data && data.length > 0) {
+                                processZzapData(data, orderId);
+                            }
+                        })
+                );
+            }
+
+            if (!orderDataCache[orderId]?.bitrixData) {
+                requests.push(
+                    fetchBitrixData(orderArticle)
+                        .then(data => {
+                            if (data && data.length > 0) {
+                                processBitrixData(data, orderId);
+                            }
+                        })
+                );
+            }
+            await Promise.all(requests);
+
+        } catch (error) {
+            console.error("Ошибка при загрузке данных:", error);
+        } finally {
+            button.disabled = false;
+        }
+    }
+
+    function fetchOrderDetails(orderId) {
+        return $.ajax({
+            url: '@Url.Action("OrderDetailedInformation", "Orders")',
+            type: 'GET',
+            data: {orderId: orderId}
+        }).catch(error => {
+            if (error.status === 500) {
+                console.error('Ошибка 500 при получении деталей заказа:', error);
+            }
+            return null;
+        });
+    }
+
+    function fetchTradesoftData(orderId) {
+        return $.ajax({
+            url: '@Url.Action("GetTradesoftData", "Tradesoft")',
+            type: "GET",
+            data: {orderId: orderId}
+        }).catch(error => {
+            if (error.status === 500) {
+                console.error('Ошибка 500 при получении данных от Tradesoft:', error);
+            }
+            return null;
+        });
+    }
+
+    function fetchAbcpData(orderId) {
+        return $.ajax({
+            url: '@Url.Action("GetAbcpData", "Tradesoft")',
+            type: "GET",
+            data: {
+                orderId: orderId,
+            }
+        }).catch(error => {
+            if (error.status === 500) {
+                console.error('Ошибка 500 при получении данных от ABCP:', error.responseText);
+            }
+            return null;
+        });
+    }
+
+
+    function fetchOneAbcpData(orderId) {
+        return $.ajax({
+            url: '@Url.Action("GetOneAbcpData", "Tradesoft")',
+            type: "GET",
+            data: {
+                orderId: orderId,
+            }
+        }).catch(error => {
+            if (error.status === 500 || error.status === 204) {
+                console.error('Ошибка 500 при получении данных от ABCP:', error.responseText);
+            }
+            return null;
+        });
+    }
+
+    async function fetchZzapDataWithRetry(orderId, retryCount = 0) {
+        const regionCode = $('#regionSelect').val() || 1;
+
+        try {
+            const response = await $.ajax({
+                url: '@Url.Action("GetZzapData", "Tradesoft")',
+                type: "GET",
+                data: {
+                    orderId: orderId,
+                    regionCode: regionCode
                 }
-
-                try {
-                    // Проверяем кеш
-                    if (rowCache.has(orderId)) {
-                        $(rowId).after(rowCache.get(orderId));
-                        button.innerHTML = svgUp;
-                        button.disabled = false;
-                        setStok(orderId);
-                        return;
-                    }
-
-                    // Создаем массив промисов для всех запросов
-                    const requests = [];
-
-                    // Добавляем запросы только если данных нет в кэше
-                    if (!orderDataCache[orderId]?.orderDetails) {
-                        requests.push(fetchOrderDetails(orderId).then(data => processOrderDetails(data, orderId)));
-                    }
-
-                    if (!orderDataCache[orderId]?.tradesoftData) {
-                        requests.push(fetchTradesoftData(orderId).then(data => processTradesoftData(data, orderId)));
-                    }
-
-                    if (!orderDataCache[orderId]?.abcpData) {
-                        requests.push(fetchAbcpData(orderId).then(data => processAbcpData(data, orderId)));
-                    }
-
-                    if (!orderDataCache[orderId]?.avdData) {
-                        requests.push(fetchAvdData(orderId).then(data => processAvdData(data, orderId)));
-                    }
-
-                    if (!orderDataCache[orderId]?.stockData) {
-                        requests.push(getOrderStocks(orderId).then(data => processStockData(data, orderId)));
-                    }
-
-                    if (!orderDataCache[orderId]?.zzapData) {
-                        requests.push(fetchZzapDataWithRetry(orderId).then(data => processZzapData(data, orderId)));
-                    }
-
-                    if (!orderDataCache[orderId]?.bitrixData) {
-                        requests.push(fetchBitrixData(orderArticle).then(data => processBitrixData(data, orderId)));
-                    }
-
-                    // Всегда выполняем этот запрос, так как он не кэшируется
-                    requests.push(fetchOneAbcpData(orderId).then(data => processOneAbcpData(data, orderId)));
-
-                    // Ожидаем завершения всех запросов
-                    await Promise.all(requests);
-
-                    const rates = {
-                        'RUB': 1,
-                        'USD': parseFloat('@Model.RateUSD'.replace(',', '.')),
-                        'EUR': parseFloat('@Model.RateEUR'.replace(',', '.')),
-                        'BYN': parseFloat('@Model.RateBYN'.replace(',', '.'))
-                    };
-
-                    const infoRow = generateInfoRow(orderId, rates);
-                    rowCache.set(orderId, infoRow);
-                    $(rowId).after(infoRow);
-                    setStok(orderId);
-                    updateAllPricesForOrder(orderId);
-                    button.innerHTML = svgUp;
-
-                } catch (error) {
-                    console.error("Ошибка при загрузке данных:", error);
-                    // Возвращаем исходную иконку при ошибке
-                    button.innerHTML = svgDown;
-                } finally {
-                    button.disabled = false;
-                }
+            });
+            return response;
+        } catch (error) {
+            if (error.status === 400 && retryCount < 3) {
+                const delay = Math.pow(2, retryCount) * 1000;
+                await new Promise(resolve => setTimeout(resolve, delay));
+                return fetchZzapDataWithRetry(orderId, retryCount + 1);
             }
-
-            async function fetchSupplierInfoInBg(button) {
-                const orderId = button.getAttribute('data-order-id');
-                const orderArticle = button.getAttribute('data-order-article');
-
-                try {
-                    // Создаем массив промисов для всех запросов
-                    const requests = [];
-
-                    // Добавляем запросы только если данных нет в кэше
-                    if (!orderDataCache[orderId]?.orderDetails) {
-                        requests.push(
-                            fetchOrderDetails(orderId)
-                                .then(data => {
-                                    if (data && Object.keys(data).length > 0) {
-                                        processOrderDetails(data, orderId);
-                                    }
-                                })
-                        );
-                    }
-
-                    if (!orderDataCache[orderId]?.tradesoftData) {
-                        requests.push(
-                            fetchTradesoftData(orderId)
-                                .then(data => {
-                                    if (data && Object.keys(data).length > 0) {
-                                        processTradesoftData(data, orderId);
-                                    }
-                                })
-                        );
-                    }
-
-                    if (!orderDataCache[orderId]?.abcpData) {
-                        requests.push(
-                            fetchAbcpData(orderId)
-                                .then(data => {
-                                    if (data && Object.keys(data).length > 0) {
-                                        processAbcpData(data, orderId);
-                                    }
-                                })
-                        );
-                    }
-
-                    if (!orderDataCache[orderId]?.avdData) {
-                        requests.push(
-                            fetchAvdData(orderId)
-                                .then(data => {
-                                    if (data && Object.keys(data).length > 0) {
-                                        processAvdData(data, orderId);
-                                    }
-                                })
-                        );
-                    }
-
-                    if (!orderDataCache[orderId]?.stockData) {
-                        requests.push(
-                            getOrderStocks(orderId)
-                                .then(data => {
-                                    if (data && Object.keys(data).length > 0) {
-                                        processStockData(data, orderId);
-                                    }
-                                })
-                        );
-                    }
-
-                    if (!orderDataCache[orderId]?.zzapData) {
-                        requests.push(
-                            fetchZzapDataWithRetry(orderId)
-                                .then(data => {
-                                    if (data && data.length > 0) {
-                                        processZzapData(data, orderId);
-                                    }
-                                })
-                        );
-                    }
-
-                    if (!orderDataCache[orderId]?.bitrixData) {
-                        requests.push(
-                            fetchBitrixData(orderArticle)
-                                .then(data => {
-                                    if (data && data.length > 0) {
-                                        processBitrixData(data, orderId);
-                                    }
-                                })
-                        );
-                    }
-                    await Promise.all(requests);
-
-                } catch (error) {
-                    console.error("Ошибка при загрузке данных:", error);
-                } finally {
-                    button.disabled = false;
-                }
+            if (error.status === 500) {
+                console.error('Ошибка 500 при запросе к Zzap API:', error);
             }
-            
-            function fetchOrderDetails(orderId) {
-                return $.ajax({
-                    url: '@Url.Action("OrderDetailedInformation", "Orders")',
-                    type: 'GET',
-                    data: { orderId: orderId }
-                }).catch(error => {
-                    if (error.status === 500) {
-                        console.error('Ошибка 500 при получении деталей заказа:', error);
-                    }
-                    return null;
-                });
-            }
+            return [];
+        }
+    }
 
-            function fetchTradesoftData(orderId) {
-                return $.ajax({
-                    url: '@Url.Action("GetTradesoftData", "Tradesoft")',
-                    type: "GET",
-                    data: { orderId: orderId }
-                }).catch(error => {
-                    if (error.status === 500) {
-                        console.error('Ошибка 500 при получении данных от Tradesoft:', error);
-                    }
-                    return null;
-                });
+    function fetchAvdData(orderId) {
+        return $.ajax({
+            url: '@Url.Action("GetAvdData", "Tradesoft")',
+            type: "GET",
+            data: {
+                orderId: orderId,
             }
+        }).catch(error => {
+            if (error.status === 500) {
+                console.error('Ошибка 500 при получении данных от AVD:', error.responseText);
+            }
+            return null;
+        });
+    }
 
-            function fetchAbcpData(orderId) {
-                return $.ajax({
-                    url: '@Url.Action("GetAbcpData", "Tradesoft")',
-                    type: "GET",
-                    data: {
-                        orderId: orderId,
-                    }
-                }).catch(error => {
-                    if (error.status === 500) {
-                        console.error('Ошибка 500 при получении данных от ABCP:', error.responseText);
-                    }
-                    return null;
-                });
+    function fetchBitrixData(orderArticle) {
+        return $.ajax({
+            url: '@Url.Action("GetBitrixData", "Bitrix")',
+            type: "GET",
+            data: {
+                article: orderArticle
             }
-            
-                
-            function fetchOneAbcpData(orderId) {
-                return $.ajax({
-                    url: '@Url.Action("GetOneAbcpData", "Tradesoft")',
-                    type: "GET",
-                    data: {
-                        orderId: orderId,
-                    }
-                }).catch(error => {
-                    if (error.status === 500 || error.status === 204) {
-                        console.error('Ошибка 500 при получении данных от ABCP:', error.responseText);
-                    }
-                    return null;
-                });
+        }).catch(error => {
+            if (error.status === 500) {
+                console.error('Ошибка 500 при получении данных из Bitrix:', error.responseText);
             }
-
-            async function fetchZzapDataWithRetry(orderId, retryCount = 0) {
-                const regionCode = $('#regionSelect').val() || 1;
-
-                try {
-                    const response = await $.ajax({
-                        url: '@Url.Action("GetZzapData", "Tradesoft")',
-                        type: "GET",
-                        data: {
-                            orderId: orderId,
-                            regionCode: regionCode
-                        }
-                    });
-                    return response;
-                } catch (error) {
-                    if (error.status === 400 && retryCount < 3) {
-                        const delay = Math.pow(2, retryCount) * 1000;
-                        await new Promise(resolve => setTimeout(resolve, delay));
-                        return fetchZzapDataWithRetry(orderId, retryCount + 1);
-                    }
-                    if (error.status === 500) {
-                        console.error('Ошибка 500 при запросе к Zzap API:', error);
-                    }
-                    return [];
-                }
-            }
-            function fetchAvdData(orderId) {
-                return $.ajax({
-                    url: '@Url.Action("GetAvdData", "Tradesoft")',
-                    type: "GET",
-                    data: {
-                        orderId: orderId,
-                    }
-                }).catch(error => {
-                    if (error.status === 500) {
-                        console.error('Ошибка 500 при получении данных от AVD:', error.responseText);
-                    }
-                    return null;
-                });
-            }
-
-            function fetchBitrixData(orderArticle) {
-                return $.ajax({
-                    url: '@Url.Action("GetBitrixData", "Bitrix")',
-                    type: "GET",
-                    data: {
-                        article: orderArticle
-                    }
-                }).catch(error => {
-                    if (error.status === 500) {
-                        console.error('Ошибка 500 при получении данных из Bitrix:', error.responseText);
-                    }
-                    return null;
-                });
-            }
+            return null;
+        });
+    }
 
 
-            function getOrderStocks(orderId) {
-                return $.ajax({
-                    url: '@Url.Action("OrderStocks", "Orders")',
-                    type: "GET",
-                    data: { orderId: orderId }
-                }).catch(error => {
-                    if (error.status === 500) {
-                        console.error('Ошибка 500 при получении остатков по заказу:', error);
-                    }
-                    return null;
-                });
+    function getOrderStocks(orderId) {
+        return $.ajax({
+            url: '@Url.Action("OrderStocks", "Orders")',
+            type: "GET",
+            data: {orderId: orderId}
+        }).catch(error => {
+            if (error.status === 500) {
+                console.error('Ошибка 500 при получении остатков по заказу:', error);
             }
+            return null;
+        });
+    }
 
-            // Функции обработки данных
+    // Функции обработки данных
     function processOrderDetails(response, orderId) {
         const images = response.detailInfo.imgUrls?.length > 0
             ? response.detailInfo.imgUrls
@@ -1140,80 +1145,81 @@
         if (preferred_tradesoft) {
             preferred_tradesoft.style.display = tradesofData.length > 0 ? 'inline' : 'none';
         }
-        
+
         if (!orderDataCache[orderId]) orderDataCache[orderId] = {};
         orderDataCache[orderId].tradesoftData = {
             tradesofData
         };
     }
-        // 5. Новая функция для обработки данных Zzap
+
+    // 5. Новая функция для обработки данных Zzap
     function processZzapData(zzapResponse, orderId) {
-            // Проверяем, что ответ успешный и содержит данные
-            const zzapData = zzapResponse && !zzapResponse.error ? zzapResponse : [];
+        // Проверяем, что ответ успешный и содержит данные
+        const zzapData = zzapResponse && !zzapResponse.error ? zzapResponse : [];
 
-            // Обновление иконки Zzap (добавьте соответствующий элемент в HTML)
-            const preferred_zzap = document.querySelector(`.preferred-zzap[data-order-id="${orderId}"]`);
-            if (preferred_zzap) {
-                preferred_zzap.style.display = zzapData.length > 0 ? 'inline' : 'none';
-            }
+        // Обновление иконки Zzap (добавьте соответствующий элемент в HTML)
+        const preferred_zzap = document.querySelector(`.preferred-zzap[data-order-id="${orderId}"]`);
+        if (preferred_zzap) {
+            preferred_zzap.style.display = zzapData.length > 0 ? 'inline' : 'none';
+        }
 
-            // Сохраняем данные в кеш
-            if (!orderDataCache[orderId]) orderDataCache[orderId] = {};
-            orderDataCache[orderId].zzapData = {
-                zzapData
-            };
+        // Сохраняем данные в кеш
+        if (!orderDataCache[orderId]) orderDataCache[orderId] = {};
+        orderDataCache[orderId].zzapData = {
+            zzapData
+        };
 
-            // Дополнительная логика обработки данных Zzap при необходимости
+        // Дополнительная логика обработки данных Zzap при необходимости
     }
 
     function processAbcpData(abcpResponse, orderId) {
-                const abcpData = abcpResponse || [];
-                const preferredAbcp = document.querySelector(`.preferred-abcp[data-order-id="${orderId}"]`);
-                if (preferredAbcp) {
-                    preferredAbcp.style.display = abcpData.length > 0 ? 'inline' : 'none';
-                    preferredAbcp.title = abcpData.length > 0
-                        ? `Найдено ${abcpData.length} позиций в ABCP`
-                        : 'Нет данных в ABCP';
-                }
+        const abcpData = abcpResponse || [];
+        const preferredAbcp = document.querySelector(`.preferred-abcp[data-order-id="${orderId}"]`);
+        if (preferredAbcp) {
+            preferredAbcp.style.display = abcpData.length > 0 ? 'inline' : 'none';
+            preferredAbcp.title = abcpData.length > 0
+                ? `Найдено ${abcpData.length} позиций в ABCP`
+                : 'Нет данных в ABCP';
+        }
 
-                if (!orderDataCache[orderId]) orderDataCache[orderId] = {};
-                orderDataCache[orderId].abcpData = {
-                    items: abcpData,
-                    lastUpdated: new Date().toISOString()
-                };
-                if (abcpData.length > 0) {
-                    updatePriceComparison(orderId, abcpData);
-                }
+        if (!orderDataCache[orderId]) orderDataCache[orderId] = {};
+        orderDataCache[orderId].abcpData = {
+            items: abcpData,
+            lastUpdated: new Date().toISOString()
+        };
+        if (abcpData.length > 0) {
+            updatePriceComparison(orderId, abcpData);
+        }
     }
 
     function processOneAbcpData(abcpOneDataResponse, orderId) {
-                if (!orderDataCache[orderId]) orderDataCache[orderId] = {};
-                orderDataCache[orderId].abcpOneData = {
-                    ...abcpOneDataResponse, // сохраняем плоско
-                    lastUpdated: new Date().toISOString()
-                };
+        if (!orderDataCache[orderId]) orderDataCache[orderId] = {};
+        orderDataCache[orderId].abcpOneData = {
+            ...abcpOneDataResponse, // сохраняем плоско
+            lastUpdated: new Date().toISOString()
+        };
     }
 
     function processAvdData(avdResponse, orderId) {
-                const avdData = avdResponse || [];
-                const preferredAvd = document.querySelector(`.preferred-avd[data-order-id="${orderId}"]`);
+        const avdData = avdResponse || [];
+        const preferredAvd = document.querySelector(`.preferred-avd[data-order-id="${orderId}"]`);
 
-                if (preferredAvd) {
-                    preferredAvd.style.display = avdData.length > 0 ? 'inline' : 'none';
-                    preferredAvd.title = avdData.length > 0
-                        ? `Найдено ${avdData.length} позиций в AVD`
-                        : 'Нет данных в AVD';
-                }
+        if (preferredAvd) {
+            preferredAvd.style.display = avdData.length > 0 ? 'inline' : 'none';
+            preferredAvd.title = avdData.length > 0
+                ? `Найдено ${avdData.length} позиций в AVD`
+                : 'Нет данных в AVD';
+        }
 
-                if (!orderDataCache[orderId]) orderDataCache[orderId] = {};
-                orderDataCache[orderId].avdData = {
-                    items: avdData,
-                    lastUpdated: new Date().toISOString()
-                };
+        if (!orderDataCache[orderId]) orderDataCache[orderId] = {};
+        orderDataCache[orderId].avdData = {
+            items: avdData,
+            lastUpdated: new Date().toISOString()
+        };
 
-                if (avdData.length > 0) {
-                    updatePriceComparison(orderId, avdData);
-                }
+        if (avdData.length > 0) {
+            updatePriceComparison(orderId, avdData);
+        }
     }
 
     function processStockData(stocks, orderId) {
@@ -1225,28 +1231,28 @@
 
         // Сохранение в кеш
         if (!orderDataCache[orderId]) orderDataCache[orderId] = {};
-        orderDataCache[orderId].stockData = { stocks };
+        orderDataCache[orderId].stockData = {stocks};
     }
 
     function processBitrixData(bitrixResponse, orderId) {
-                const bitrixData = bitrixResponse || {};
-                const stockElement = document.querySelector(`.bitrix-stock[data-order-id="${orderId}"]`);
+        const bitrixData = bitrixResponse || {};
+        const stockElement = document.querySelector(`.bitrix-stock[data-order-id="${orderId}"]`);
 
-                if (stockElement) {
-                    stockElement.style.display = Object.keys(bitrixData.stores || {}).length > 0 ? 'inline' : 'none';
-                    stockElement.title = Object.keys(bitrixData.stores || {}).length > 0
-                        ? `Цена: ${bitrixData.price} ${bitrixData.currency}, остатки: ${JSON.stringify(bitrixData.stores)}`
-                        : 'Нет данных в Bitrix';
-                }
+        if (stockElement) {
+            stockElement.style.display = Object.keys(bitrixData.stores || {}).length > 0 ? 'inline' : 'none';
+            stockElement.title = Object.keys(bitrixData.stores || {}).length > 0
+                ? `Цена: ${bitrixData.price} ${bitrixData.currency}, остатки: ${JSON.stringify(bitrixData.stores)}`
+                : 'Нет данных в Bitrix';
+        }
 
-                if (!orderDataCache[orderId]) orderDataCache[orderId] = {};
-                orderDataCache[orderId].bitrixData = {
-                    data: bitrixData,
-                    lastUpdated: new Date().toISOString()
-                };
-            }
-        
-        
+        if (!orderDataCache[orderId]) orderDataCache[orderId] = {};
+        orderDataCache[orderId].bitrixData = {
+            data: bitrixData,
+            lastUpdated: new Date().toISOString()
+        };
+    }
+
+
     function openImage(imageSrc) {
         const modalImage = document.getElementById('modalImage');
         if (modalImage) {
@@ -1301,11 +1307,11 @@
             productWeight.value = productWeightValue;
         }
 
-        var event = new Event('input', { bubbles: true, cancelable: true });
+        var event = new Event('input', {bubbles: true, cancelable: true});
         productWeight.dispatchEvent(event);
     }
 
-    function setSupplierPrice(element){
+    function setSupplierPrice(element) {
         const orderId = element.getAttribute('data-order-id');
         const blockValue = element.textContent.trim();
 
@@ -1315,7 +1321,7 @@
             purchasePrice.value = purchasePriceValue;
         }
 
-        var event = new Event('input', { bubbles: true, cancelable: true });
+        var event = new Event('input', {bubbles: true, cancelable: true});
         purchasePrice.dispatchEvent(event);
     }
 
@@ -1396,7 +1402,7 @@
             $.ajax({
                 url: `/Studio2/Orders/OrderSubstitute`, // Укажите имя контроллера
                 type: "GET",
-                data: { orderId: orderId }, // Передаем orderId в качестве параметра
+                data: {orderId: orderId}, // Передаем orderId в качестве параметра
                 success: function (response) {
                     if (response && response.substituteSchema && response.substituteSchema.length > 0) {
                         substituteCache.set(orderId, response); // Сохраняем данные в кэш
@@ -1531,9 +1537,9 @@
         const stokId = $button.data('stok-id');
         const supplierUrl = $button.data('supplier-url');
         selectSupplierByUrl(orderId, supplierUrl);
-        
-        const $priceElement =  $(`.price[data-order-id="${orderId}"][data-index-row="${indexRow}"]`);
-        const $manufacturerElement =  $(`.manufacturer[data-order-id="${orderId}"][data-index-row="${indexRow}"]`);
+
+        const $priceElement = $(`.price[data-order-id="${orderId}"][data-index-row="${indexRow}"]`);
+        const $manufacturerElement = $(`.manufacturer[data-order-id="${orderId}"][data-index-row="${indexRow}"]`);
         const $shortName = $(`.short-name[data-order-id="${orderId}"][data-index-row="${indexRow}"]`);
         const $supplier = $(`.supplier[data-order-id="${orderId}"][data-index-row="${indexRow}"]`);
         const $quantityElement = document.getElementById('Quantity_' + orderId);
@@ -1558,10 +1564,21 @@
         console.log("Цена:", priceValue);
         console.log("Валюта:", currencyCode);
 
-        const item = { orderId, stokId, produser, priceValue, currencyCode, manufacturer, itemName, quantity, article, indexRow};
+        const item = {
+            orderId,
+            stokId,
+            produser,
+            priceValue,
+            currencyCode,
+            manufacturer,
+            itemName,
+            quantity,
+            article,
+            indexRow
+        };
 
         // Получаем текущий список из sessionStorage
-        let list = JSON.parse(sessionStorage.getItem('selectedStockList'+ids) || '[]');
+        let list = JSON.parse(sessionStorage.getItem('selectedStockList' + ids) || '[]');
 
         // Проверяем, выбрана ли уже эта кнопка
         const isAlreadySelected = list.some(x => x.orderId === orderId && x.stokId === stokId);
@@ -1621,7 +1638,7 @@
         `);
             $button.removeClass('checked');
         }
-        sessionStorage.setItem('selectedStockList'+ids, JSON.stringify(list));
+        sessionStorage.setItem('selectedStockList' + ids, JSON.stringify(list));
     });
 
     // Основная функция для выбора поставщика по URL
@@ -1650,7 +1667,7 @@
         const $options = $select.find('option[data-site]');
         let foundMatch = null;
 
-        $options.each(function() {
+        $options.each(function () {
             const optionUrl = $(this).data('site') || '';
             if (optionUrl.trim().toLowerCase() === supplierUrl.trim().toLowerCase()) {
                 foundMatch = $(this);
@@ -1672,8 +1689,8 @@
 
 
     $('#createOrderForm').on('submit', function (e) {
-        const listJson = sessionStorage.getItem('selectedStockList'+ids) || '[]';
-        sessionStorage.removeItem('selectedStockList'+ids);
+        const listJson = sessionStorage.getItem('selectedStockList' + ids) || '[]';
+        sessionStorage.removeItem('selectedStockList' + ids);
         try {
             const parsedList = JSON.parse(listJson);
             if (Array.isArray(parsedList) && parsedList.length > 0) {
@@ -1722,7 +1739,7 @@
     });
 
     function printGroupedCartToModal() {
-        const data = JSON.parse(sessionStorage.getItem('selectedStockList'+ids) || '[]');
+        const data = JSON.parse(sessionStorage.getItem('selectedStockList' + ids) || '[]');
         const body = document.getElementById('cartModalBody');
 
         let html = '';
@@ -1877,7 +1894,7 @@
             if (input) {
                 const formattedPrice = price.toString().replace(',', '.');
                 input.value = formattedPrice;
-                const inputEvent = new Event('input', { bubbles: true });
+                const inputEvent = new Event('input', {bubbles: true});
                 input.dispatchEvent(inputEvent);
             }
             updateAllPricesForOrder(orderId)
@@ -1891,7 +1908,7 @@
             // Снимаем подсветку со всех строк и элементов для данного orderId
             const allRowsWithSameOrderId = document.querySelectorAll(`tr[data-order-id="${orderId}"]`);
             allRowsWithSameOrderId.forEach(row => row.classList.remove('table-warning'));
-            
+
             const allButtonsWithSameOrderId = document.querySelectorAll(`
                 .stok-order[data-order-id="${orderId}"],
                 .price[data-order-id="${orderId}"]
@@ -1978,7 +1995,7 @@
                     // Триггерим события
                     const eventsToTrigger = ['input', 'change', 'blur'];
                     eventsToTrigger.forEach(eventType => {
-                        const event = new Event(eventType, { bubbles: true, cancelable: true });
+                        const event = new Event(eventType, {bubbles: true, cancelable: true});
                         weightInput.dispatchEvent(event);
                     });
 
@@ -2019,10 +2036,10 @@
         const $weightInput = $(`#ProductWeight_${orderId}`);
         const $supplierSelect = $(`#SupplierId_${orderId}`);
         const selectedSupplier = $supplierSelect.find('option:selected');
-        
-        
+
+
         const weight = parseFloat(($weightInput.val() || '0').replace(',', '.')) || 0;
-        
+
         const priceSite = $priceLink.data('site');
         const supplierOptionBySite = $supplierSelect.find(`option[data-site="${priceSite}"]`);
         const weightFactor = parseFloat((supplierOptionBySite.data('weight-factor') || '0').toString().replace(',', '.')) || 0;
@@ -2034,12 +2051,12 @@
 
         const ratePrice = rates[priceCurrency] || 1;
         const rateWeight = rates[weightCurrency] || 1;
-        
+
         const pricePerKgRUB = weightFactor * rateWeight;
         const totalWeightCost = weight * pricePerKgRUB;
         const purchasePriceRUB = rawPrice * costFactor * ratePrice;
         const totalRUB = Math.round(totalWeightCost + purchasePriceRUB);
-        
+
         const originalDisplay = `${rawPrice.toFixed(2)} ${priceCurrency}`;
         const formattedTotalRUB = totalRUB.toLocaleString('ru-RU');
         const displayText = `${formattedTotalRUB} ₽`;
@@ -2134,12 +2151,51 @@
 </script>
 
 <script>
-$(document).ready(function(){
-    $('[data-bs-toggle="tooltip"]').tooltip({
-        placement: 'right', // Показывать справа от элемента
-        trigger: 'hover',   // Показывать при наведении
-        container: 'body'   // Чтобы tooltip не обрезался контейнером
+    $(document).ready(function () {
+        $('[data-bs-toggle="tooltip"]').tooltip({
+            placement: 'right', // Показывать справа от элемента
+            trigger: 'hover',   // Показывать при наведении
+            container: 'body'   // Чтобы tooltip не обрезался контейнером
+        });
     });
-});
 
+</script>
+
+<script>
+    $(document).ready(function () {
+        var deletedOrders = [];
+        $(document).on('click', '.delete-order', function () {
+            var orderId = $(this).data('order-id');
+
+            // Удаляем основную строку
+            $('#orderRow_' + orderId).remove();
+
+            // Удаляем строку с информацией
+            $('.info-row[data-order-id="' + orderId + '"]').remove();
+
+            // Добавляем ID удалённого заказа в массив
+            deletedOrders.push(orderId);
+            $('#deletedOrders').val(deletedOrders.join(','));
+
+            // Обновление нумерации строк, если необходимо
+            updateRowNumbers();
+
+            // Перерасчет стоимости и других данных
+            calculateSumAndDisplay();
+            calculateTotalPurchasePriceRub();
+            let list = JSON.parse(sessionStorage.getItem('selectedStockList' + params.get("ids")) || '[]');
+            list = list.filter(item => String(item.orderId) !== String(orderId));
+            sessionStorage.setItem('selectedStockList' + params.get("ids"), JSON.stringify(list));
+
+            // Обновление списка поставщиков
+            window.updateSupplierList();
+
+        });
+
+        function updateRowNumbers() {
+            $('#shipmentTable tbody tr').each(function (index) {
+                $(this).find('.row-number').text(index + 1);
+            });
+        }
+    });
 </script>
