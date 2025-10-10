@@ -1015,6 +1015,7 @@
             <td>
                 @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Цена закупки"))
                 {
+                    var price = Model.Orders[i].OriginalPurchasePrice ?? Model.Orders[i].PurchasePrice;
                     <div class="column-content">
                         <input asp-for="Orders[i].OriginalPurchasePrice"
                                type="text"
@@ -1022,9 +1023,8 @@
                                id="PurchasePrice_@Model.Orders[i].Id"
                                data-order-id="@Model.Orders[i].Id"
                                style="width: 70px; max-width: 70px;"
-                               value="@(Model.Orders[i].OriginalPurchasePrice == 0 ? "" : Model.Orders[i].OriginalPurchasePrice.ToString())"
+                               value="@(price != 0 ? price : "")"
                                oninput="this.value = this.value.replace(',', '.').replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');"/>
-
 
                         <div class="form-group" style="font-size: 13px;">
                             <input type="hidden" asp-for="Orders[i].PurchasePrice"
