@@ -15,7 +15,9 @@ public class OneCApiClient : IApiClient
         _base64Auth = Convert.ToBase64String(Encoding.UTF8.GetBytes(authString));
     }
 
-    public OneCApiClient() { }
+    public OneCApiClient()
+    {
+    }
 
     public JObject MakeRequestPost<T>(T requestModel, string requestUri) where T : IRequestModel
     {
@@ -26,7 +28,7 @@ public class OneCApiClient : IApiClient
             var request = (HttpWebRequest)WebRequest.Create(requestUri);
             request.Method = "POST";
             request.ContentType = "application/json";
-            
+
             if (!string.IsNullOrEmpty(_base64Auth))
             {
                 request.Headers.Add("Authorization", $"Basic {_base64Auth}");
@@ -44,6 +46,7 @@ public class OneCApiClient : IApiClient
                     jsonResponse = streamReader.ReadToEnd();
                 }
             }
+
             return JObject.Parse(jsonResponse);
         }
         catch (WebException ex) when (ex.Response is HttpWebResponse httpResponse)
@@ -51,7 +54,8 @@ public class OneCApiClient : IApiClient
             using (var streamReader = new StreamReader(ex.Response.GetResponseStream()))
             {
                 var errorResponse = streamReader.ReadToEnd();
-                throw new Exception($"1C API request failed. Status code: {httpResponse.StatusCode}. Response: {errorResponse}");
+                throw new Exception(
+                    $"1C API request failed. Status code: {httpResponse.StatusCode}. Response: {errorResponse}");
             }
         }
         catch (Exception ex)
@@ -59,15 +63,15 @@ public class OneCApiClient : IApiClient
             throw new Exception("An error occurred while processing the 1C API request.", ex);
         }
     }
-    
+
     public async Task<string> MakeRequestPostAsync<T>(T requestModel, string requestUri) where T : IRequestModel
     {
         try
         {
-            using var httpClient = new HttpClient(); 
+            using var httpClient = new HttpClient();
             if (!string.IsNullOrEmpty(_base64Auth))
             {
-                httpClient.DefaultRequestHeaders.Authorization = 
+                httpClient.DefaultRequestHeaders.Authorization =
                     new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", _base64Auth);
             }
 
@@ -79,33 +83,34 @@ public class OneCApiClient : IApiClient
 
             if (!httpResponse.IsSuccessStatusCode)
             {
-                throw new Exception($"Ошибка запроса к API 1C. Код статуса: {httpResponse.StatusCode}. Ответ: {jsonResponse}");
+                throw new Exception(
+                    $"Ошибка запроса к API 1C. Код статуса: {httpResponse.StatusCode}. Ответ: {jsonResponse}");
             }
 
             return jsonResponse;
         }
         catch (HttpRequestException ex)
         {
-            throw new Exception("Произошла HTTP ошибка при выполнении запроса к API 1C.", ex);
+            throw new Exception($"Произошла HTTP ошибка при выполнении запроса к API 1C ({ex.Message}).", ex);
         }
         catch (TaskCanceledException ex)
         {
-            throw new Exception("Превышено время ожидания ответа от API 1C.", ex);
+            throw new Exception($"Превышено время ожидания ответа от API 1C ({ex.Message}).", ex);
         }
         catch (JsonException ex)
         {
-            throw new Exception("Ошибка сериализации/десериализации JSON при работе с API 1C.", ex);
+            throw new Exception($"Ошибка сериализации/десериализации JSON при работе с API 1C ({ex.Message})..", ex);
         }
         catch (UriFormatException ex)
         {
-            throw new Exception("Неверный формат URL адреса API 1C.", ex);
+            throw new Exception($"Неверный формат URL адреса API 1C ({ex.Message})..", ex);
         }
         catch (Exception ex)
         {
-            throw new Exception("Произошла непредвиденная ошибка при обработке запроса к API 1C.", ex);
+            throw new Exception($"Произошла непредвиденная ошибка при обработке запроса к API 1C ({ex.Message}).", ex);
         }
     }
-    
+
     public async Task<bool> GetTestRequest(string username, string password)
     {
         try
@@ -124,7 +129,7 @@ public class OneCApiClient : IApiClient
                     new MovementProduct { Article = "TEST", Quantity = 1 }
                 }
             };
-            
+
             var response = await testClient.MakeRequestPostAsync(testRequest, OneCApiUrl.MOVEMENT_OF_GOODS_URL);
             return !string.IsNullOrEmpty(response);
         }

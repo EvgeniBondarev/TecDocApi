@@ -11,7 +11,7 @@
 
 <meta charset="UTF-8">
 
-<link rel="stylesheet" href="~/css/table.css" />
+<link rel="stylesheet" href="~/css/table.css"/>
 
 @{
     ViewData["Title"] = "IndexV2";
@@ -33,14 +33,14 @@
     .container .custom-width-large {
         width: 400px; /* Устанавливаем фиксированную ширину для поля "Наименование товара" */
     }
-    
+
     .product-cell {
         font-size: 11px;
     }
 
-        .product-cell:hover .product-popup {
-            display: block;
-        }
+    .product-cell:hover .product-popup {
+        display: block;
+    }
 
     #processingDateFilter,
     #shippingDateFilter {
@@ -54,13 +54,12 @@
 
     #statusFilter,
     #appStatusFilterInput,
-    #supplierFilter
-    {
+    #supplierFilter {
         width: 103px;
     }
 
     #ozonClientFilterInput,
-    #deliveryCityFilter{
+    #deliveryCityFilter {
         width: 125px;
     }
 
@@ -109,9 +108,9 @@
         align-items: center;
     }
 
-        .horizontal-inputs > div {
-            margin-right: 10px; /* Отступ между элементами */
-        }
+    .horizontal-inputs > div {
+        margin-right: 10px; /* Отступ между элементами */
+    }
 
     .vertical-align {
         display: flex;
@@ -121,9 +120,9 @@
         height: 100%;
     }
 
-        .vertical-align > * {
-            margin: 2px 0; /* Минимальный отступ между элементами */
-        }
+    .vertical-align > * {
+        margin: 2px 0; /* Минимальный отступ между элементами */
+    }
 
     .checkbox-column {
         display: flex;
@@ -157,13 +156,13 @@
         border: solid 1px;
     }
 
-        /* Показываем кнопку при наведении на основную или на саму кнопку очистки */
-        .btn-container:hover .clear-btn,
-        .clear-btn:hover {
-            display: block;
-            opacity: 1; /* Увеличиваем непрозрачность при наведении */
-            border: solid 1px;
-        }
+    /* Показываем кнопку при наведении на основную или на саму кнопку очистки */
+    .btn-container:hover .clear-btn,
+    .clear-btn:hover {
+        display: block;
+        opacity: 1; /* Увеличиваем непрозрачность при наведении */
+        border: solid 1px;
+    }
 
     /* Обёртка для кнопок */
     .btn-container {
@@ -183,6 +182,7 @@
         outline: none !important;
         box-shadow: none !important;
     }
+
     .custom-product-link {
         color: black;
         text-decoration: none;
@@ -199,14 +199,14 @@
     string transactionResult = (string)ViewData["TransactionResult"];
     string erorrResult = (string)ViewData["ErorrResult"];
     string ordersNotFoundInOzone = (string)ViewData["OrdersNotFoundInOzone"];
-
 }
 
 @if (uploadResult != null)
 {
     <div class="alert alert-dismissible alert-success">
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        <p>Файл успешно загружен! <br />Результат: <br />Добавлено @uploadResult[0] строк.<br />Обновлено @uploadResult[1] строк.</p>
+        <p>Файл успешно загружен! <br/>Результат:
+            <br/>Добавлено @uploadResult[0] строк.<br/>Обновлено @uploadResult[1] строк.</p>
         @if (uploadResultPeriod != null)
         {
             <p>Период @Html.Raw(@uploadResultPeriod)</p>
@@ -251,7 +251,7 @@
 
                     var listItem3 = document.createElement('li');
                     listItem3.className = 'dropdown-item';
-                    listItem3.innerHTML = '<a href="#" onclick="createShippedBySupplierTransaction()" class="btn btn-link link-info">Отгружен поставщику</a>';
+                    listItem3.innerHTML = '<a href="#" onclick="createShippedBySupplierTransaction()" class="btn btn-link link-info">Отгружен поставщиком</a>';
 
                     var listItem4 = document.createElement('li');
                     listItem4.className = 'dropdown-item';
@@ -259,7 +259,7 @@
 
                     var listItem5 = document.createElement('li');
                     listItem5.className = 'dropdown-item';
-                    listItem5.innerHTML = '<a href="#" onclick="createShippedToClientTransaction()" class="btn btn-link link-success">Отгружен клиентом</a>';
+                    listItem5.innerHTML = '<a href="#" onclick="createShippedToClientTransaction()" class="btn btn-link link-success">Отгружен клиенту</a>';
 
                     var listItem6 = document.createElement('li');
                     listItem6.className = 'dropdown-item';
@@ -268,7 +268,7 @@
                     var listItem7 = document.createElement('li');
                     listItem7.className = 'dropdown-item';
                     listItem7.innerHTML = '<a href="/Studio2/Percentage/UploadFile"  class="btn btn-link">Загрузить из файла</a><br/>';
-                    
+
                     dropdownMenu.appendChild(listItem1);
                     dropdownMenu.appendChild(listItem2);
                     dropdownMenu.appendChild(listItem3);
@@ -334,7 +334,7 @@
         });
     }
 
-    function cancellationOrders(){
+    function cancellationOrders() {
         getSelectedIdsFromSession(function (selectedIds) {
             var url = '/Studio2/Orders/CancellationOrders?ids=' + selectedIds.join(',') + '&page=' + @Model.PageNumber;
             window.location.href = url;
@@ -372,7 +372,7 @@
             });
         });
     });
-    
+
     function printLableForm() {
         getSelectedIdsFromSession(function (selectedIds) {
             var url = '/Studio2/Orders/PrintOrdersLableV2?ids=' + selectedIds + '&page=' + @Model.PageNumber;
@@ -395,580 +395,648 @@
 </script>
 
 <div class="table-container">
-<table class="table table-responsive" id="shipmentTable">
-    <form id="filterForm" asp-action="Index" method="post">
-          <div class="button-container">
-            <label class="d-flex align-items-center me-2">
-                <small class="me-1">Фильтрация:</small>
-                <select asp-for="@Model.FilterModel.LastMonths"
-                        id="lastMonthsFilter"
-                        name="LastMonths"
-                        class="form-control form-control-sm"
-                        style="width: auto;">
-                    <option value="">Все время</option>
-                    <option value="1">1 месяц</option>
-                    <option value="2">2 месяца</option>
-                    <option value="3">3 месяца</option>
-                    <option value="6">Полгода</option>
-                    <option value="12">Год</option>
-                </select>
-            </label>
+    <table class="table table-responsive" id="shipmentTable">
+        <form id="filterForm" asp-action="Index" method="post">
+            <div class="button-container">
+                <label class="d-flex align-items-center me-2">
+                    <small class="me-1">Фильтрация:</small>
+                    <select asp-for="@Model.FilterModel.LastMonths"
+                            id="lastMonthsFilter"
+                            name="LastMonths"
+                            class="form-control form-control-sm"
+                            style="width: auto;">
+                        <option value="">Все время</option>
+                        <option value="1">1 месяц</option>
+                        <option value="2">2 месяца</option>
+                        <option value="3">3 месяца</option>
+                        <option value="6">Полгода</option>
+                        <option value="12">Год</option>
+                    </select>
+                </label>
 
-            <label>
-                <div class="dropdown">
-                    <button id="uniqueDropdownToggle" 
-                            class="btn btn-primary dropdown-toggle" 
-                            type="button" 
-                            data-bs-toggle="dropdown" 
-                            aria-expanded="false">
-                        Провести документ
-                    </button>
-                    <ul class="dropdown-menu" aria-labelledby="uniqueDropdownToggle">
-                    </ul>
-                </div>
-            </label>
-            <label>
-                <div class="dropdown">
-                    <button id="printLableDropdownToggle" 
-                            class="btn btn-primary dropdown-toggle" 
-                            type="button" 
-                            data-bs-toggle="dropdown" 
-                            aria-expanded="false" 
-                            title="Печать этикеток заказов">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-printer" viewBox="0 0 16 16">
-                            <path d="M2.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1" />
-                            <path d="M5 1a2 2 0 0 0-2 2v2H2a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1v1a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-1h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1V3a2 2 0 0 0-2-2zM4 3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2H4zm1 5a2 2 0 0 0-2 2v1H2a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v-1a2 2 0 0 0-2-2zm7 2v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1" />
-                        </svg>
-                    </button>
-                    <ul class="dropdown-menu" aria-labelledby="printLableDropdownToggle">
-                    </ul>
-                </div>
-            </label>
-        </div>
-        <thead>
-        <tr>
-            @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Номер заказа"))
-            {
-                <th id="thShipmentNumber">
-                    <div id="thShipmentNumberSort">
-                        <a class="text-dark" asp-action="Index" asp-route-sortOrder="@ViewBag.ShipmentNumberSort">
-                            <small>@(ViewBag.ShipmentNumberSort == OrderSortState.ShipmentNumberAsc ? "Номер заказа↑" : "Номер заказа↓")</small>
-                        </a>
-                        <input asp-for="@Model.FilterModel.ShipmentNumber" id="shipmentNumberFilter" name="ShipmentNumber" class="form-control form-control-sm"/>
+                <label>
+                    <div class="dropdown">
+                        <button id="uniqueDropdownToggle"
+                                class="btn btn-primary dropdown-toggle"
+                                type="button"
+                                data-bs-toggle="dropdown"
+                                aria-expanded="false">
+                            Провести документ
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="uniqueDropdownToggle">
+                        </ul>
                     </div>
-                    <div id="thDeliverySort">
-                        <a class="text-muted" asp-action="Index" asp-route-sortOrder="@ViewBag.DeliverySort" title="Доставка">
-                            <small>@(ViewBag.DeliverySort == OrderSortState.DeliveryAsc ? "Доставка↑" : "Доставка↓")</small>
-                        </a>
-                        <div class="position-relative">
-                            <input asp-for="@Model.FilterModel.Provider"
-                                   id="deliveryFilter"
-                                   name="Provider"
-                                   class="form-control form-control-sm"
-                                   autocomplete="off"/>
+                </label>
+                <label>
+                    <div class="dropdown">
+                        <button id="printLableDropdownToggle"
+                                class="btn btn-primary dropdown-toggle"
+                                type="button"
+                                data-bs-toggle="dropdown"
+                                aria-expanded="false"
+                                title="Печать этикеток заказов">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                                 class="bi bi-printer" viewBox="0 0 16 16">
+                                <path d="M2.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1"/>
+                                <path
+                                    d="M5 1a2 2 0 0 0-2 2v2H2a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1v1a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-1h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1V3a2 2 0 0 0-2-2zM4 3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2H4zm1 5a2 2 0 0 0-2 2v1H2a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v-1a2 2 0 0 0-2-2zm7 2v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1"/>
+                            </svg>
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="printLableDropdownToggle">
+                        </ul>
+                    </div>
+                </label>
+            </div>
+            <thead>
+            <tr>
+                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Номер заказа"))
+                {
+                    <th id="thShipmentNumber">
+                        <div id="thShipmentNumberSort">
+                            <a class="text-dark" asp-action="Index" asp-route-sortOrder="@ViewBag.ShipmentNumberSort">
+                                <small>@(ViewBag.ShipmentNumberSort == OrderSortState.ShipmentNumberAsc ? "Номер заказа↑" : "Номер заказа↓")</small>
+                            </a>
+                            <input asp-for="@Model.FilterModel.ShipmentNumber" id="shipmentNumberFilter"
+                                   name="ShipmentNumber" class="form-control form-control-sm"/>
+                        </div>
+                        <div id="thDeliverySort">
+                            <a class="text-muted" asp-action="Index" asp-route-sortOrder="@ViewBag.DeliverySort"
+                               title="Доставка">
+                                <small>@(ViewBag.DeliverySort == OrderSortState.DeliveryAsc ? "Доставка↑" : "Доставка↓")</small>
+                            </a>
+                            <div class="position-relative">
+                                <input asp-for="@Model.FilterModel.Provider"
+                                       id="deliveryFilter"
+                                       name="Provider"
+                                       class="form-control form-control-sm"
+                                       autocomplete="off"/>
 
-                            <ul id="deliveryDropdown" class="dropdown-menu" style="display: none; max-height: 200px; overflow-y: auto;">
+                                <ul id="deliveryDropdown" class="dropdown-menu"
+                                    style="display: none; max-height: 200px; overflow-y: auto;">
+                                    <li><a href="#" data-value="Все" style="font-weight: normal;">&nbsp;Все</a></li>
+                                    @foreach (var wh in ViewBag.Providers)
+                                    {
+                                        <li><a href="#" data-value="@wh.Text"
+                                               style="font-weight: normal;">&nbsp;@wh.Text</a></li>
+                                    }
+                                </ul>
+                            </div>
+                            <script>
+                                $(document).ready(function () {
+                                    $('#deliveryFilter').focus(function () {
+                                        $('#deliveryDropdown').show();
+                                    });
+
+                                    $('#deliveryDropdown').on('click', 'a', function (e) {
+                                        e.preventDefault();
+                                        var selectedValue = $(this).data('value');
+                                        $('#deliveryFilter').val(selectedValue);
+                                        $('#deliveryFilter').focus();
+                                        $('#deliveryDropdown').hide();
+                                    });
+
+                                    // Авто-скрытие при клике вне поля
+                                    $(document).on('click', function (e) {
+                                        if (!$(e.target).closest('#deliveryFilter').length && !$(e.target).closest('#deliveryDropdown').length) {
+                                            $('#deliveryDropdown').hide();
+                                        }
+                                    });
+
+                                    // Фильтрация по вводу
+                                    $('#deliveryFilter').on('input', function () {
+                                        var inputVal = $(this).val().toLowerCase();
+                                        $('#deliveryDropdown li').each(function () {
+                                            var text = $(this).text().toLowerCase();
+                                            $(this).toggle(text.includes(inputVal));
+                                        });
+                                        $('#deliveryDropdown').show();
+                                    });
+                                });
+                            </script>
+                        </div>
+                    </th>
+                }
+                <th>
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Клиент"))
+                    {
+                        <div id="thOzonClient">
+                            <a class="text-dark" asp-action="Index" asp-route-sortOrder="@ViewBag.OzonClient">
+                                <small>@(ViewBag.OzonClient == OrderSortState.OzonClientAsc ? "Клиент↑" : "Клиент↓")</small>
+                            </a>
+                            <input asp-for="@Model.FilterModel.OzonClient" id="ozonClientFilterInput" name="OzonClient"
+                                   class="form-control form-control-sm" autocomplete="off"/>
+                            <ul id="ozonClientDropdown" class="dropdown-menu" style="display: none;">
                                 <li><a href="#" data-value="Все" style="font-weight: normal;">&nbsp;Все</a></li>
-                                @foreach (var wh in ViewBag.Providers)
+                                @foreach (var client in ViewBag.Clients)
                                 {
-                                    <li><a href="#" data-value="@wh.Text" style="font-weight: normal;">&nbsp;@wh.Text</a></li>
+                                    <li><a href="#" data-value="@client.Value"
+                                           style="font-weight: normal;">&nbsp;@client.Text</a></li>
                                 }
                             </ul>
                         </div>
-                        <script>
-                            $(document).ready(function () {
-                                $('#deliveryFilter').focus(function () {
-                                    $('#deliveryDropdown').show();
-                                });
-                        
-                                $('#deliveryDropdown').on('click', 'a', function (e) {
-                                    e.preventDefault();
-                                    var selectedValue = $(this).data('value');
-                                    $('#deliveryFilter').val(selectedValue);
-                                    $('#deliveryFilter').focus();
-                                    $('#deliveryDropdown').hide();
-                                });
-                        
-                                // Авто-скрытие при клике вне поля
-                                $(document).on('click', function (e) {
-                                    if (!$(e.target).closest('#deliveryFilter').length && !$(e.target).closest('#deliveryDropdown').length) {
-                                        $('#deliveryDropdown').hide();
+                    }
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Город доставки"))
+                    {
+                        <div id="thDeliveryCity">
+                            <a class="text-muted" asp-action="Index" asp-route-sortOrder="@ViewBag.DeliveryCitySort">
+                                <small>@(ViewBag.DeliveryCitySort == OrderSortState.DeliveryCityAsc ? "Город доставки↑" : "Город доставки↓")</small>
+                            </a>
+                        </div>
+                        <input asp-for="@Model.FilterModel.DeliveryCity" id="deliveryCityFilter" name="DeliveryCity"
+                               class="form-control form-control-sm"/>
+                    }
+                </th>
+                <th>
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Принят в обработку"))
+                    {
+                        <div id="thProcessingDate">
+                            <a class="text-dark" asp-action="Index" asp-route-sortOrder="@ViewBag.ProcessingDateSort">
+                                <small>@(ViewBag.ProcessingDateSort == OrderSortState.ProcessingDateAsc ? "Принят↑" : "Принят↓")</small>
+                            </a>
+                            <input asp-for="@Model.FilterModel.ProcessingDate" id="processingDateFilter"
+                                   name="ProcessingDate" class="form-control form-control-sm" type="date"/>
+                        </div>
+                    }
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Дата отгрузки"))
+                    {
+                        <div id="thShippingDate">
+                            <a class="text-muted" asp-action="Index" asp-route-sortOrder="@ViewBag.ShippingDateSort"
+                               title="Дата отгрузки">
+                                <small>@(ViewBag.ShippingDateSort == OrderSortState.ShippingDateAsc ? "Дата отгр.↑" : "Дата отгр.↓")</small>
+                            </a>
+                            <input asp-for="@Model.FilterModel.ShippingDate" id="shippingDateFilter" name="ShippingDate"
+                                   class="form-control form-control-sm" type="date"/>
+                        </div>
+                    }
+                </th>
+
+                <th style="width: 20px">
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Срок доставки"))
+                    {
+                        <div id="thDeliveryPeriod">
+                            <a class="text-dark" asp-action="Index" asp-route-sortOrder="@ViewBag.DeliveryPeriodSort"
+                               title="Срок доставки">
+                                <small>@(ViewBag.DeliveryPeriodSort == OrderSortState.DeliveryPeriodAsc ? "Срок.↑" : "Срок.↓")</small>
+                            </a>
+                            <input asp-for="@Model.FilterModel.DeliveryPeriod" name="DeliveryPeriod"
+                                   id="deliveryPeriodInput" class="form-control form-control-sm" type="text"
+                                   placeholder="1 д. 1 ч."/>
+                            <script>
+                                document.getElementById('deliveryPeriodInput').addEventListener('input', function (e) {
+                                    let input = e.target.value;
+
+                                    // Проверка и добавление "д." после первой цифры и пробела
+                                    if (input.length > 0 && !input.includes('д.') && input.match(/^\d+ $/)) {
+                                        e.target.value = input.trim() + ' д. ';
+                                    }
+
+                                    // Проверка и добавление "ч." после второй цифры и пробела
+                                    const regexDay = /^\d+ д\. \d+ $/;
+                                    if (regexDay.test(input) && !input.includes('ч.')) {
+                                        e.target.value = input.trim() + ' ч.';
+                                    }
+
+                                    // Валидация формата
+                                    const pattern = /^\d+ д\. \d+ ч\.$/;
+                                    if (!pattern.test(e.target.value)) {
+                                        e.target.setCustomValidity('Неверный формат. Используйте формат: X д. Y ч.');
+                                    } else {
+                                        e.target.setCustomValidity('');
                                     }
                                 });
-                        
-                                // Фильтрация по вводу
-                                $('#deliveryFilter').on('input', function () {
-                                    var inputVal = $(this).val().toLowerCase();
-                                    $('#deliveryDropdown li').each(function () {
-                                        var text = $(this).text().toLowerCase();
-                                        $(this).toggle(text.includes(inputVal));
-                                    });
-                                    $('#deliveryDropdown').show();
-                                });
-                            });
-                        </script>
+                            </script>
+                        </div>
+                    }
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Срок доставки"))
+                    {
+                        <div id="thDeliveryPeriod">
+                            <a class="text-muted" asp-action="Index" asp-route-sortOrder="@ViewBag.TimeLeftSort"
+                               title="Осталось времени">
+                                <small>@(ViewBag.TimeLeftSort == OrderSortState.TimeLeftDesc ? "Остал.↑" : "Остал.↓")</small>
+                            </a>
+                            <input asp-for="@Model.FilterModel.TimeLeftDay" name="TimeLeftDay" id="timeLeftDayInput"
+                                   class="form-control form-control-sm" type="number" placeholder="1 д."/>
+                        </div>
+                    }
+                </th>
+                <th>
+                    <div class="container-fluid">
+                        <div class="row mb-0 justify-content-between">
+                            <div id="thArticle" class="col-md-4 d-flex flex-column">
+                                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Key"))
+                                {
+                                    <a class="text-dark w-100" asp-action="Index"
+                                       asp-route-sortOrder="@ViewBag.ArticleSort">
+                                        <small>@(ViewBag.ArticleSort == OrderSortState.ArticleAsc ? "Key↑" : "Key↓")</small>
+                                    </a>
+                                    <input asp-for="@Model.FilterModel.Article" id="articleFilter" name="Article"
+                                           class="form-control form-control-sm"/>
+                                }
+                            </div>
+                            <div id="thManufacturer" class="col-md-4 d-flex flex-column">
+                                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Производитель"))
+                                {
+                                    <a class="text-dark w-100" asp-action="Index"
+                                       asp-route-sortOrder="@ViewBag.ManufacturerSort">
+                                        <small>@(ViewBag.ManufacturerSort == OrderSortState.ManufacturerAsc ? "Производитель↑" : "Производитель↓")</small>
+                                    </a>
+                                    <input asp-for="@Model.FilterModel.Manufacturer" id="manufacturerFilter"
+                                           name="Manufacturer" class="form-control form-control-sm"/>
+                                }
+                            </div>
+                            <div id="thArticle2" class="col-md-4 d-flex flex-column">
+                                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Артикул"))
+                                {
+                                    <a class="text-dark w-100" asp-action="Index"
+                                       asp-route-sortOrder="@ViewBag.ArticleSort">
+                                        <small>@(ViewBag.ArticleSort == OrderSortState.ArticleAsc ? "Код товара↑" : "Код товара↓")</small>
+                                    </a>
+                                    <input asp-for="@Model.FilterModel.Article" id="articleFilter2" name="Article"
+                                           class="form-control form-control-sm"/>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="row mt-0">
+                            <div id="thProductName" class="col-12 d-flex flex-column">
+                                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Наименование товара"))
+                                {
+                                    <a class="text-muted w-100" asp-action="Index"
+                                       asp-route-sortOrder="@ViewBag.ProductNameSort">
+                                        <small>@(ViewBag.ProductNameSort == OrderSortState.ProductNameAsc ? "Наименование товара↑" : "Наименование товара↓")</small>
+                                    </a>
+                                    <input asp-for="@Model.FilterModel.ProductName" id="productNameFilter"
+                                           name="ProductName" class="form-control form-control-sm"/>
+                                }
+                            </div>
+                        </div>
                     </div>
                 </th>
-
-            }
-            <th>
-                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Клиент"))
-                {
-                    <div id="thOzonClient">
-                        <a class="text-dark" asp-action="Index" asp-route-sortOrder="@ViewBag.OzonClient">
-                            <small>@(ViewBag.OzonClient == OrderSortState.OzonClientAsc ? "Клиент↑" : "Клиент↓")</small>
-                        </a>
-                        <input asp-for="@Model.FilterModel.OzonClient" id="ozonClientFilterInput" name="OzonClient" class="form-control form-control-sm" autocomplete="off"/>
-                        <ul id="ozonClientDropdown" class="dropdown-menu" style="display: none;">
-                            <li><a href="#" data-value="Все" style="font-weight: normal;">&nbsp;Все</a></li>
-                            @foreach (var client in ViewBag.Clients)
-                            {
-                                <li><a href="#" data-value="@client.Value" style="font-weight: normal;">&nbsp;@client.Text</a></li>
-                            }
-                        </ul>
-                    </div>
-                }
-                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Город доставки"))
-                {
-                    <div id="thDeliveryCity">
-                        <a class="text-muted" asp-action="Index" asp-route-sortOrder="@ViewBag.DeliveryCitySort">
-                            <small>@(ViewBag.DeliveryCitySort == OrderSortState.DeliveryCityAsc ? "Город доставки↑" : "Город доставки↓")</small>
-                        </a>
-                    </div>
-                    <input asp-for="@Model.FilterModel.DeliveryCity" id="deliveryCityFilter" name="DeliveryCity" class="form-control form-control-sm"/>
-                }
-            </th>
-            <th>
-                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Принят в обработку"))
-                {
-                    <div id="thProcessingDate">
-                        <a class="text-dark" asp-action="Index" asp-route-sortOrder="@ViewBag.ProcessingDateSort">
-                            <small>@(ViewBag.ProcessingDateSort == OrderSortState.ProcessingDateAsc ? "Принят↑" : "Принят↓")</small>
-                        </a>
-                        <input asp-for="@Model.FilterModel.ProcessingDate" id="processingDateFilter" name="ProcessingDate" class="form-control form-control-sm" type="date"/>
-                    </div>
-                }
-                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Дата отгрузки"))
-                {
-                    <div id="thShippingDate">
-                        <a class="text-muted" asp-action="Index" asp-route-sortOrder="@ViewBag.ShippingDateSort" title="Дата отгрузки">
-                            <small>@(ViewBag.ShippingDateSort == OrderSortState.ShippingDateAsc ? "Дата отгр.↑" : "Дата отгр.↓")</small>
-                        </a>
-                        <input asp-for="@Model.FilterModel.ShippingDate" id="shippingDateFilter" name="ShippingDate" class="form-control form-control-sm" type="date"/>
-                    </div>
-                }
-            </th>
-
-            <th style="width: 20px">
-                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Срок доставки"))
-                {
-                    <div id="thDeliveryPeriod">
-                        <a class="text-dark" asp-action="Index" asp-route-sortOrder="@ViewBag.DeliveryPeriodSort" title="Срок доставки">
-                            <small>@(ViewBag.DeliveryPeriodSort == OrderSortState.DeliveryPeriodAsc ? "Срок.↑" : "Срок.↓")</small>
-                        </a>
-                        <input asp-for="@Model.FilterModel.DeliveryPeriod" name="DeliveryPeriod" id="deliveryPeriodInput" class="form-control form-control-sm" type="text" placeholder="1 д. 1 ч."/>
-                        <script>
-                            document.getElementById('deliveryPeriodInput').addEventListener('input', function (e) {
-                                let input = e.target.value;
-
-                                // Проверка и добавление "д." после первой цифры и пробела
-                                if (input.length > 0 && !input.includes('д.') && input.match(/^\d+ $/)) {
-                                    e.target.value = input.trim() + ' д. ';
-                                }
-
-                                // Проверка и добавление "ч." после второй цифры и пробела
-                                const regexDay = /^\d+ д\. \d+ $/;
-                                if (regexDay.test(input) && !input.includes('ч.')) {
-                                    e.target.value = input.trim() + ' ч.';
-                                }
-
-                                // Валидация формата
-                                const pattern = /^\d+ д\. \d+ ч\.$/;
-                                if (!pattern.test(e.target.value)) {
-                                    e.target.setCustomValidity('Неверный формат. Используйте формат: X д. Y ч.');
-                                } else {
-                                    e.target.setCustomValidity('');
-                                }
-                            });
-                        </script>
-                    </div>
-                }
-                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Срок доставки"))
-                {
-                    <div id="thDeliveryPeriod">
-                        <a class="text-muted" asp-action="Index" asp-route-sortOrder="@ViewBag.TimeLeftSort" title="Осталось времени">
-                            <small>@(ViewBag.TimeLeftSort == OrderSortState.TimeLeftDesc ? "Остал.↑" : "Остал.↓")</small>
-                        </a>
-                        <input asp-for="@Model.FilterModel.TimeLeftDay" name="TimeLeftDay" id="timeLeftDayInput" class="form-control form-control-sm" type="number" placeholder="1 д."/>
-                    </div>
-                }
-            </th>
-            <th>
-                <div class="container-fluid">
-                    <div class="row mb-0 justify-content-between">
-                        <div id="thArticle" class="col-md-4 d-flex flex-column">
-                            @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Key"))
-                            {
-                                <a class="text-dark w-100" asp-action="Index" asp-route-sortOrder="@ViewBag.ArticleSort">
-                                    <small>@(ViewBag.ArticleSort == OrderSortState.ArticleAsc ? "Key↑" : "Key↓")</small>
-                                </a>
-                                <input asp-for="@Model.FilterModel.Article" id="articleFilter" name="Article" class="form-control form-control-sm"/>
-                            }
-                        </div>
-                        <div id="thManufacturer" class="col-md-4 d-flex flex-column">
-                            @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Производитель"))
-                            {
-                                <a class="text-dark w-100" asp-action="Index" asp-route-sortOrder="@ViewBag.ManufacturerSort">
-                                    <small>@(ViewBag.ManufacturerSort == OrderSortState.ManufacturerAsc ? "Производитель↑" : "Производитель↓")</small>
-                                </a>
-                                <input asp-for="@Model.FilterModel.Manufacturer" id="manufacturerFilter" name="Manufacturer" class="form-control form-control-sm"/>
-                            }
-                        </div>
-                        <div id="thArticle2" class="col-md-4 d-flex flex-column">
-                            @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Артикул"))
-                            {
-                                <a class="text-dark w-100" asp-action="Index" asp-route-sortOrder="@ViewBag.ArticleSort">
-                                    <small>@(ViewBag.ArticleSort == OrderSortState.ArticleAsc ? "Код товара↑" : "Код товара↓")</small>
-                                </a>
-                                <input asp-for="@Model.FilterModel.Article" id="articleFilter2" name="Article" class="form-control form-control-sm"/>
-                            }
-                        </div>
-                    </div>
-
-                    <div class="row mt-0">
-                        <div id="thProductName" class="col-12 d-flex flex-column">
-                            @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Наименование товара"))
-                            {
-                                <a class="text-muted w-100" asp-action="Index" asp-route-sortOrder="@ViewBag.ProductNameSort">
-                                    <small>@(ViewBag.ProductNameSort == OrderSortState.ProductNameAsc ? "Наименование товара↑" : "Наименование товара↓")</small>
-                                </a>
-                                <input asp-for="@Model.FilterModel.ProductName" id="productNameFilter" name="ProductName" class="form-control form-control-sm"/>
-                            }
-                        </div>
-                    </div>
-                </div>
-            </th>
-            <th>
-                <div class="d-flex flex-column align-items-center justify-content-center checkbox-column">
-                    <a href="@Url.Action("DelSortStateCookieForV2")" class="btn btn-link" title="Очисть поля сортировки">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-sort-alpha-up" viewBox="0 0 16 16">
-                            <path fill-rule="evenodd" d="M10.082 5.629 9.664 7H8.598l1.789-5.332h1.234L13.402 7h-1.12l-.419-1.371zm1.57-.785L11 2.687h-.047l-.652 2.157z"/>
-                            <path d="M12.96 14H9.028v-.691l2.579-3.72v-.054H9.098v-.867h3.785v.691l-2.567 3.72v.054h2.645zm-8.46-.5a.5.5 0 0 1-1 0V3.707L2.354 4.854a.5.5 0 1 1-.708-.708l2-1.999.007-.007a.5.5 0 0 1 .7.006l2 2a.5.5 0 1 1-.707.708L4.5 3.707z"/>
-                        </svg>
-                        <span class="visually-hidden">Button</span>
-                    </a>
-
-                    <div class="btn-container d-flex flex-column align-items-center">
-                        <button type="button" class="btn btn-link hover-btn" onclick="clearForm()" title="Очисть поля фильтрации">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-funnel" viewBox="0 0 16 16">
-                                <path d="M1.5 1.5A.5.5 0 0 1 2 1h12a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.128.334L10 8.692V13.5a.5.5 0 0 1-.342.474l-3 1A.5.5 0 0 1 6 14.5V8.692L1.628 3.834A.5.5 0 0 1 1.5 3.5zm1 .5v1.308l4.372 4.858A.5.5 0 0 1 7 8.5v5.306l2-.666V8.5a.5.5 0 0 1 .128-.334L13.5 3.308V2z"/>
+                <th>
+                    <div class="d-flex flex-column align-items-center justify-content-center checkbox-column">
+                        <a href="@Url.Action("DelSortStateCookieForV2")" class="btn btn-link"
+                           title="Очисть поля сортировки">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
+                                 class="bi bi-sort-alpha-up" viewBox="0 0 16 16">
+                                <path fill-rule="evenodd"
+                                      d="M10.082 5.629 9.664 7H8.598l1.789-5.332h1.234L13.402 7h-1.12l-.419-1.371zm1.57-.785L11 2.687h-.047l-.652 2.157z"/>
+                                <path
+                                    d="M12.96 14H9.028v-.691l2.579-3.72v-.054H9.098v-.867h3.785v.691l-2.567 3.72v.054h2.645zm-8.46-.5a.5.5 0 0 1-1 0V3.707L2.354 4.854a.5.5 0 1 1-.708-.708l2-1.999.007-.007a.5.5 0 0 1 .7.006l2 2a.5.5 0 1 1-.707.708L4.5 3.707z"/>
                             </svg>
                             <span class="visually-hidden">Button</span>
-                        </button>
-                        <button class="btn btn-light clear-btn" onclick="clearSelectedIdsSession()">Очистить выбор</button>
-                    </div>
+                        </a>
 
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="select-all">
-                    </div>
-                </div>
-            </th>
-            <th>
-                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Статус клиента"))
-                {
-                    <div id="thStatusOzon">
-                        <a class="text-dark" asp-action="Index" asp-route-sortOrder="@ViewBag.StatusSort">
-                            <small>@(ViewBag.StatusSort == OrderSortState.StatusAsc ? "Статус клиента↑" : "Статус клиента↓")</small>
-                        </a>
-                        <input asp-for="@Model.FilterModel.Status" id="statusFilter" name="Status" class="form-control form-control-sm" autocomplete="off"/>
-                        <ul id="statusDropdown" class="dropdown-menu" style="display: none;">
-                            <li><a href="#" data-value="Все" style="font-weight: normal;">&nbsp;Все</a></li>
-                            @foreach (var stat in ViewBag.Statuses)
-                            {
-                                <li><a href="#" data-value="@stat.Value" style="font-weight: normal;">&nbsp;@stat.Text</a></li>
-                            }
-                        </ul>
-                        <script>
-                        $(document).ready(function () {
-                            $('#statusFilter').focus(function () {
-                                $('#statusDropdown').show();
-                            });
-
-                            $('#statusDropdown').on('click', 'a', function (e) {
-                                e.preventDefault();
-                                var selectedValue = $(this).data('value');
-                                $('#statusFilter').val(selectedValue);
-                                $('#statusFilter').focus();
-                                $('#statusDropdown').hide();
-                            });
-
-                            $(document).on('click', function (e) {
-                                if (!$(e.target).closest('#statusFilter').length && !$(e.target).closest('#statusDropdown').length) {
-                                    $('#statusDropdown').hide();
-                                }
-                            });
-                        });
-                    </script>
-                    </div>
-                }
-                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Статус"))
-                {
-                    <div id="thStatus">
-                        <a class="text-muted" asp-action="Index" asp-route-sortOrder="@ViewBag.AppStatusIdSort">
-                            <small>@(ViewBag.AppStatusIdSort == OrderSortState.AppStatusIdAsc ? "Статус↑" : "Статус↓")</small>
-                        </a>
-                        <input asp-for="@Model.FilterModel.AppStatus" id="appStatusFilterInput" name="AppStatus" class="form-control form-control-sm" autocomplete="off"/>
-
-                        <ul id="appStatusDropdown" class="dropdown-menu" style="display: none;">
-                            <li><a href="#" data-value="Все" style="font-weight: normal;">&nbsp;Все</a></li>
-                            @foreach (var status in ViewBag.AppStatuses)
-                            {
-                                var style = status.Text == "Не указан" ? "color: red;" : "font-weight: normal;";
-                                <li><a href="#" data-value="@status.Value" style="@style">&nbsp;@status.Text</a></li>
-                            }
-                        </ul>
-                    </div>
-                }
-            </th>
-            <th>
-                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Склад отгрузки"))
-                {
-                    <div id="thShipmentWarehouse">
-                        <a class="text-dark" asp-action="Index" asp-route-sortOrder="@ViewBag.ShipmentWarehouseSort">
-                            <small>@(ViewBag.ShipmentWarehouseSort == OrderSortState.ShipmentWarehouseIdAsc ? "Склад отгрузки↑" : "Склад отгрузки↓")</small>
-                        </a>
-                        <input asp-for="@Model.FilterModel.ShipmentWarehouse" id="shipmentWarehouseFilter" name="ShipmentWarehouse" class="form-control form-control-sm" autocomplete="off"/>
-                        <ul id="shipmentWarehouseDropdown" class="dropdown-menu" style="display: none;">
-                            <li><a href="#" data-value="Все" style="font-weight: normal;">&nbsp;Все</a></li>
-                            @foreach (var warehous in ViewBag.Warehouses)
-                            {
-                                <li><a href="#" data-value="@warehous.Value" style="font-weight: normal;">&nbsp;@warehous.Text</a></li>
-                            }
-                        </ul>
-                        <script>
-                        $(document).ready(function () {
-                            $('#shipmentWarehouseFilter').focus(function () {
-                                $('#shipmentWarehouseDropdown').show();
-                            });
-
-                            $('#shipmentWarehouseDropdown').on('click', 'a', function (e) {
-                                e.preventDefault();
-                                var selectedValue = $(this).data('value');
-                                $('#shipmentWarehouseFilter').val(selectedValue);
-                                $('#shipmentWarehouseFilter').focus();
-                                $('#shipmentWarehouseDropdown').hide();
-                            });
-
-                            $(document).on('click', function (e) {
-                                if (!$(e.target).closest('#shipmentWarehouseFilter').length && !$(e.target).closest('#shipmentWarehouseDropdown').length) {
-                                    $('#shipmentWarehouseDropdown').hide();
-                                }
-                            });
-                        });
-                    </script>
-                    </div>
-                }
-                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Срок доставки"))
-                {
-                    <div id="thDeliveryPeriod">
-                        <a class="text-muted" asp-action="Index" asp-route-sortOrder="@ViewBag.LastStatusChangeDateSort" title="Дата изменения статуса">
-                            <small>@(ViewBag.LastStatusChangeDateSort == OrderSortState.LastStatusChangeDateAsc ? "Дата изм. статуса↑" : "Дата изм. статуса↓")</small>
-                        </a>
-                        <input asp-for="@Model.FilterModel.LastStatusChangeDate" id="lastStatusChangeDateFilter" name="LastStatusChangeDate" class="form-control form-control-sm" type="date"/>
-                    </div>
-                }
-            </th>
-            <th>
-                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Поставщик"))
-                {
-                    <div id="thSupplier">
-                        <a class="text-info" asp-action="Index" asp-route-sortOrder="@ViewBag.SupplierSort">
-                            <small>@(ViewBag.SupplierSort == OrderSortState.SupplierAsc ? "Поставщик↑" : "Поставщик↓")</small>
-                        </a>
-                        <input asp-for="@Model.FilterModel.Supplier" id="supplierFilter" name="Supplier" class="form-control form-control-sm" autocomplete="off"/>
-                        <ul id="supplierDropdown" class="dropdown-menu" style="display: none;">
-                            <li><a href="#" data-value="Все" style="font-weight: normal;">&nbsp;Все</a></li>
-                            @foreach (var supplier in ViewBag.Suppliers)
-                            {
-                                <li><a href="#" data-value="@supplier.Value" style="font-weight: normal;">&nbsp;@supplier.Text</a></li>
-                            }
-                        </ul>
-
-                        <script>
-                        $(document).ready(function () {
-                            $('#supplierFilter').focus(function () {
-                                $('#supplierDropdown').show();
-                            });
-
-                            $('#supplierDropdown').on('click', 'a', function (e) {
-                                e.preventDefault();
-                                var selectedValue = $(this).data('value');
-                                $('#supplierFilter').val(selectedValue);
-                                $('#supplierFilter').focus();
-                                $('#supplierDropdown').hide();
-                            });
-
-                            $(document).on('click', function (e) {
-                                if (!$(e.target).closest('#supplierFilter').length && !$(e.target).closest('#supplierDropdown').length) {
-                                    $('#supplierDropdown').hide();
-                                }
-                            });
-                        });
-                    </script>
-                    </div>
-                }
-                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Номер заказа поставщику"))
-                {
-                    <div id="thOrderNumberToSupplierSort">
-                        <a class="text-info" asp-action="Index" asp-route-sortOrder="@ViewBag.OrderNumberToSupplierSort" title="Номер заказа поставщику">
-                            <small>@(ViewBag.OrderNumberToSupplierSort == OrderSortState.OrderNumberToSupplierAsc ? "Номер заказа п.↑" : "Номер заказа п.↓")</small>
-                        </a>
-                        <input asp-for="@Model.FilterModel.OrderNumberToSupplier" id="orderNumberToSupplierFilter" name="OrderNumberToSupplier" class="form-control form-control-sm"/>
-                    </div>
-                }
-            </th>
-            <th>
-                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Категория"))
-                {
-                    <div id="thCategory">
-                        <a class="text-dark" asp-action="Index" asp-route-sortOrder="@ViewBag.CategorySort">
-                            <small>@(ViewBag.CategorySort == OrderSortState.CategoryAsc ? "Категория↑" : "Категория↓")</small>
-                        </a>
-                        <input asp-for="@Model.FilterModel.CommercialCategory" id="commercialCategoryFilter" name="CommercialCategory" class="form-control form-control-sm"/>
-                    </div>
-                }
-                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Объемный вес"))
-                {
-                    <div id="thVolume" title="Объемный вес">
-                        <a class="text-muted" asp-action="Index" asp-route-sortOrder="@ViewBag.VolumeSort">
-                            <small>@(ViewBag.VolumeSort == OrderSortState.VolumeAsc ? "Вес V↑" : "Вес V↓")</small>
-                        </a>
-                        <input asp-for="@Model.FilterModel.VolumetricWeight" id="volumetricWeightFilter" name="VolumetricWeight" class="form-control form-control-sm"/>
-                    </div>
-                }
-            </th>
-            <th>
-                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Цена сайта"))
-                {
-                    <div id="thPurchasePrice">
-                        <a class="text-dark" asp-action="Index" asp-route-sortOrder="@ViewBag.CurrentPriceSort" title="Цена сайта">
-                            <small>@(ViewBag.CurrentPriceSort == OrderSortState.CurrentPriceAsc ? "Цена с.↑" : "Цена с.↓")</small>
-                        </a>
-                        <input asp-for="@Model.FilterModel.CurrentPriceWithDiscount" id="currentPriceWithDiscountFilter" name="CurrentPriceWithDiscount" class="form-control form-control-sm"/>
-                    </div>
-                }
-                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Количество"))
-                {
-                    <div id="thQuantity">
-                        <a class="text-muted" asp-action="Index" asp-route-sortOrder="@ViewBag.QuantitySort">
-                            <small>@(ViewBag.QuantitySort == OrderSortState.QuantityAsc ? "Кол.↑" : "Кол.↓")</small>
-                        </a>
-                        <input asp-for="@Model.FilterModel.Quantity" id="quantityFilter" name="Quantity" class="form-control form-control-sm"/>
-                    </div>
-                }
-            </th>
-            <th>
-                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Цена"))
-                {
-                    <div id="thPrice">
-                        <a class="text-dark" asp-action="Index" asp-route-sortOrder="@ViewBag.PriceSort">
-                            <small>@(ViewBag.PriceSort == OrderSortState.PriceAsc ? "Цена↑" : "Цена↓")</small>
-                        </a>
-                        <input asp-for="@Model.FilterModel.Price" id="priceFilter" name="Price" class="form-control form-control-sm"/>
-                    </div>
-                }
-
-                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Сумма отправления"))
-                {
-                    <div id="thShipmentAmount">
-                        <a class="text-muted" asp-action="Index" asp-route-sortOrder="@ViewBag.ShipmentAmountSort" title="Сумма отправления">
-                            <small>@(ViewBag.ShipmentAmountSort == OrderSortState.ShipmentAmountAsc ? "Сумма о.↑" : "Сумма о.↓")</small>
-                        </a>
-                        <input asp-for="@Model.FilterModel.ShipmentAmount" id="shipmentAmountFilter" name="ShipmentAmount" class="form-control form-control-sm"/>
-                    </div>
-                }
-            </th>
-            <th>
-                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Цена закупки"))
-                {
-                    <div id="thCurrentPrice">
-                        <a class="text-info" asp-action="Index" asp-route-sortOrder="@ViewBag.PurchasePriceSort" title="Цена закупки">
-                            <small>@(ViewBag.PurchasePriceSort == OrderSortState.PurchasePriceAsc ? "Цена зак.↑" : "Цена зак.↓")</small>
-                        </a>
-                        <input asp-for="@Model.FilterModel.PurchasePrice" id="purchasePriceFilter" name="PurchasePrice" class="form-control form-control-sm"/>
-                    </div>
-                }
-                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Себестоимость"))
-                {
-                    <div id="thCostPriceсе">
-                        <a class="text-muted" asp-action="Index" asp-route-sortOrder="@ViewBag.CostPriceсеSort" title="Себестоимость">
-                            <small>@(ViewBag.CostPriceсеSort == OrderSortState.CostPriceAsc ? "Себест.↑" : "Себес.↓")</small>
-                        </a>
-                        <input asp-for="@Model.FilterModel.CostPrice" id="costPriceFilter" name="CostPrice" class="form-control form-control-sm"/>
-                    </div>
-                }
-            </th>
-            @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Комиссия ОЗОН"))
-            {
-                <th id="thOzonCommission">
-                    <a class="text-dark" asp-action="Index" asp-route-sortOrder="@ViewBag.OzonCommissionSort" title="Комиссия ОЗОН">
-                        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                            <div>
-                                <small>@(ViewBag.OzonCommissionSort == OrderSortState.MinOzonCommissionAsc ? "Комис.↑" : "Комис.↓")</small>
-                            </div>
-                            <div style="text-align: center; font-size: 10px;" class="text-muted">
-                                <div><small>min</small></div>
-                                <div><small>max</small></div>
-                            </div>
+                        <div class="btn-container d-flex flex-column align-items-center">
+                            <button type="button" class="btn btn-link hover-btn" onclick="clearForm()"
+                                    title="Очисть поля фильтрации">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
+                                     class="bi bi-funnel" viewBox="0 0 16 16">
+                                    <path
+                                        d="M1.5 1.5A.5.5 0 0 1 2 1h12a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.128.334L10 8.692V13.5a.5.5 0 0 1-.342.474l-3 1A.5.5 0 0 1 6 14.5V8.692L1.628 3.834A.5.5 0 0 1 1.5 3.5zm1 .5v1.308l4.372 4.858A.5.5 0 0 1 7 8.5v5.306l2-.666V8.5a.5.5 0 0 1 .128-.334L13.5 3.308V2z"/>
+                                </svg>
+                                <span class="visually-hidden">Button</span>
+                            </button>
+                            <button class="btn btn-light clear-btn" onclick="clearSelectedIdsSession()">Очистить выбор
+                            </button>
                         </div>
-                    </a>
 
-                    <input asp-for="@Model.FilterModel.OzonCommission" id="ozonCommissionFilter" name="OzonCommission" class="form-control form-control-sm"/>
-                </th>
-            }
-            @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Прибыль"))
-            {
-                <th id="thProfit">
-                    <a class="text-dark" asp-action="Index" asp-route-sortOrder="@ViewBag.ProfitSort" title="Прибыль">
-                        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                            <div>
-                                <small>@(ViewBag.ProfitSort == OrderSortState.ProfitAsc ? "Приб.↑" : "Приб.↓")</small>
-                            </div>
-                            <div style="text-align: center; font-size: 10px;" class="text-muted">
-                                <div><small>min</small></div>
-                                <div><small>max</small></div>
-                            </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="select-all">
                         </div>
-                    </a>
-
-                    <input asp-for="@Model.FilterModel.Profit" id="profitFilter" name="Profit" class="form-control form-control-sm"/>
+                    </div>
                 </th>
-            }
-            @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Наценка %"))
-            {
-                <th id="thDiscount">
-                    <a class="text-dark" asp-action="Index" asp-route-sortOrder="@ViewBag.DiscountSort" title="Наценка %↑">
-                        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                            <div>
-                                <small>@(ViewBag.DiscountSort == OrderSortState.DiscountAsc ? "Нацен.%↑" : "Нацен.%↓")</small>
-                            </div>
-                            <div style="text-align: center; font-size: 10px;" class="text-muted">
-                                <div><small>min</small></div>
-                                <div><small>max</small></div>
-                            </div>
+                <th>
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Статус клиента"))
+                    {
+                        <div id="thStatusOzon">
+                            <a class="text-dark" asp-action="Index" asp-route-sortOrder="@ViewBag.StatusSort">
+                                <small>@(ViewBag.StatusSort == OrderSortState.StatusAsc ? "Статус клиента↑" : "Статус клиента↓")</small>
+                            </a>
+                            <input asp-for="@Model.FilterModel.Status" id="statusFilter" name="Status"
+                                   class="form-control form-control-sm" autocomplete="off"/>
+                            <ul id="statusDropdown" class="dropdown-menu" style="display: none;">
+                                <li><a href="#" data-value="Все" style="font-weight: normal;">&nbsp;Все</a></li>
+                                @foreach (var stat in ViewBag.Statuses)
+                                {
+                                    <li><a href="#" data-value="@stat.Value"
+                                           style="font-weight: normal;">&nbsp;@stat.Text</a></li>
+                                }
+                            </ul>
+                            <script>
+                                $(document).ready(function () {
+                                    $('#statusFilter').focus(function () {
+                                        $('#statusDropdown').show();
+                                    });
+
+                                    $('#statusDropdown').on('click', 'a', function (e) {
+                                        e.preventDefault();
+                                        var selectedValue = $(this).data('value');
+                                        $('#statusFilter').val(selectedValue);
+                                        $('#statusFilter').focus();
+                                        $('#statusDropdown').hide();
+                                    });
+
+                                    $(document).on('click', function (e) {
+                                        if (!$(e.target).closest('#statusFilter').length && !$(e.target).closest('#statusDropdown').length) {
+                                            $('#statusDropdown').hide();
+                                        }
+                                    });
+                                });
+                            </script>
                         </div>
-                    </a>
+                    }
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Статус"))
+                    {
+                        <div id="thStatus">
+                            <a class="text-muted" asp-action="Index" asp-route-sortOrder="@ViewBag.AppStatusIdSort">
+                                <small>@(ViewBag.AppStatusIdSort == OrderSortState.AppStatusIdAsc ? "Статус↑" : "Статус↓")</small>
+                            </a>
+                            <input asp-for="@Model.FilterModel.AppStatus" id="appStatusFilterInput" name="AppStatus"
+                                   class="form-control form-control-sm" autocomplete="off"/>
 
-                    <input asp-for="@Model.FilterModel.Discount" id="discountFilter" name="Discount" class="form-control form-control-sm"/>
+                            <ul id="appStatusDropdown" class="dropdown-menu" style="display: none;">
+                                <li><a href="#" data-value="Все" style="font-weight: normal;">&nbsp;Все</a></li>
+                                @foreach (var status in ViewBag.AppStatuses)
+                                {
+                                    var style = status.Text == "Не указан" ? "color: red;" : "font-weight: normal;";
+                                    <li><a href="#" data-value="@status.Value" style="@style">&nbsp;@status.Text</a>
+                                    </li>
+                                }
+                            </ul>
+                        </div>
+                    }
                 </th>
-            }
+                <th>
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Склад отгрузки"))
+                    {
+                        <div id="thShipmentWarehouse">
+                            <a class="text-dark" asp-action="Index"
+                               asp-route-sortOrder="@ViewBag.ShipmentWarehouseSort">
+                                <small>@(ViewBag.ShipmentWarehouseSort == OrderSortState.ShipmentWarehouseIdAsc ? "Склад отгрузки↑" : "Склад отгрузки↓")</small>
+                            </a>
+                            <input asp-for="@Model.FilterModel.ShipmentWarehouse" id="shipmentWarehouseFilter"
+                                   name="ShipmentWarehouse" class="form-control form-control-sm" autocomplete="off"/>
+                            <ul id="shipmentWarehouseDropdown" class="dropdown-menu" style="display: none;">
+                                <li><a href="#" data-value="Все" style="font-weight: normal;">&nbsp;Все</a></li>
+                                @foreach (var warehous in ViewBag.Warehouses)
+                                {
+                                    <li><a href="#" data-value="@warehous.Value"
+                                           style="font-weight: normal;">&nbsp;@warehous.Text</a></li>
+                                }
+                            </ul>
+                            <script>
+                                $(document).ready(function () {
+                                    $('#shipmentWarehouseFilter').focus(function () {
+                                        $('#shipmentWarehouseDropdown').show();
+                                    });
+
+                                    $('#shipmentWarehouseDropdown').on('click', 'a', function (e) {
+                                        e.preventDefault();
+                                        var selectedValue = $(this).data('value');
+                                        $('#shipmentWarehouseFilter').val(selectedValue);
+                                        $('#shipmentWarehouseFilter').focus();
+                                        $('#shipmentWarehouseDropdown').hide();
+                                    });
+
+                                    $(document).on('click', function (e) {
+                                        if (!$(e.target).closest('#shipmentWarehouseFilter').length && !$(e.target).closest('#shipmentWarehouseDropdown').length) {
+                                            $('#shipmentWarehouseDropdown').hide();
+                                        }
+                                    });
+                                });
+                            </script>
+                        </div>
+                    }
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Срок доставки"))
+                    {
+                        <div id="thDeliveryPeriod">
+                            <a class="text-muted" asp-action="Index"
+                               asp-route-sortOrder="@ViewBag.LastStatusChangeDateSort" title="Дата изменения статуса">
+                                <small>@(ViewBag.LastStatusChangeDateSort == OrderSortState.LastStatusChangeDateAsc ? "Дата изм. статуса↑" : "Дата изм. статуса↓")</small>
+                            </a>
+                            <input asp-for="@Model.FilterModel.LastStatusChangeDate" id="lastStatusChangeDateFilter"
+                                   name="LastStatusChangeDate" class="form-control form-control-sm" type="date"/>
+                        </div>
+                    }
+                </th>
+                <th>
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Поставщик"))
+                    {
+                        <div id="thSupplier">
+                            <a class="text-info" asp-action="Index" asp-route-sortOrder="@ViewBag.SupplierSort">
+                                <small>@(ViewBag.SupplierSort == OrderSortState.SupplierAsc ? "Поставщик↑" : "Поставщик↓")</small>
+                            </a>
+                            <input asp-for="@Model.FilterModel.Supplier" id="supplierFilter" name="Supplier"
+                                   class="form-control form-control-sm" autocomplete="off"/>
+                            <ul id="supplierDropdown" class="dropdown-menu" style="display: none;">
+                                <li><a href="#" data-value="Все" style="font-weight: normal;">&nbsp;Все</a></li>
+                                @foreach (var supplier in ViewBag.Suppliers)
+                                {
+                                    <li><a href="#" data-value="@supplier.Value"
+                                           style="font-weight: normal;">&nbsp;@supplier.Text</a></li>
+                                }
+                            </ul>
+
+                            <script>
+                                $(document).ready(function () {
+                                    $('#supplierFilter').focus(function () {
+                                        $('#supplierDropdown').show();
+                                    });
+
+                                    $('#supplierDropdown').on('click', 'a', function (e) {
+                                        e.preventDefault();
+                                        var selectedValue = $(this).data('value');
+                                        $('#supplierFilter').val(selectedValue);
+                                        $('#supplierFilter').focus();
+                                        $('#supplierDropdown').hide();
+                                    });
+
+                                    $(document).on('click', function (e) {
+                                        if (!$(e.target).closest('#supplierFilter').length && !$(e.target).closest('#supplierDropdown').length) {
+                                            $('#supplierDropdown').hide();
+                                        }
+                                    });
+                                });
+                            </script>
+                        </div>
+                    }
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Номер заказа поставщику"))
+                    {
+                        <div id="thOrderNumberToSupplierSort">
+                            <a class="text-info" asp-action="Index"
+                               asp-route-sortOrder="@ViewBag.OrderNumberToSupplierSort" title="Номер заказа поставщику">
+                                <small>@(ViewBag.OrderNumberToSupplierSort == OrderSortState.OrderNumberToSupplierAsc ? "Номер заказа п.↑" : "Номер заказа п.↓")</small>
+                            </a>
+                            <input asp-for="@Model.FilterModel.OrderNumberToSupplier" id="orderNumberToSupplierFilter"
+                                   name="OrderNumberToSupplier" class="form-control form-control-sm"/>
+                        </div>
+                    }
+                </th>
+                <th>
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Категория"))
+                    {
+                        <div id="thCategory">
+                            <a class="text-dark" asp-action="Index" asp-route-sortOrder="@ViewBag.CategorySort">
+                                <small>@(ViewBag.CategorySort == OrderSortState.CategoryAsc ? "Категория↑" : "Категория↓")</small>
+                            </a>
+                            <input asp-for="@Model.FilterModel.CommercialCategory" id="commercialCategoryFilter"
+                                   name="CommercialCategory" class="form-control form-control-sm"/>
+                        </div>
+                    }
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Объемный вес"))
+                    {
+                        <div id="thVolume" title="Объемный вес">
+                            <a class="text-muted" asp-action="Index" asp-route-sortOrder="@ViewBag.VolumeSort">
+                                <small>@(ViewBag.VolumeSort == OrderSortState.VolumeAsc ? "Вес V↑" : "Вес V↓")</small>
+                            </a>
+                            <input asp-for="@Model.FilterModel.VolumetricWeight" id="volumetricWeightFilter"
+                                   name="VolumetricWeight" class="form-control form-control-sm"/>
+                        </div>
+                    }
+                </th>
+                <th>
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Цена сайта"))
+                    {
+                        <div id="thPurchasePrice">
+                            <a class="text-dark" asp-action="Index" asp-route-sortOrder="@ViewBag.CurrentPriceSort"
+                               title="Цена сайта">
+                                <small>@(ViewBag.CurrentPriceSort == OrderSortState.CurrentPriceAsc ? "Цена с.↑" : "Цена с.↓")</small>
+                            </a>
+                            <input asp-for="@Model.FilterModel.CurrentPriceWithDiscount"
+                                   id="currentPriceWithDiscountFilter" name="CurrentPriceWithDiscount"
+                                   class="form-control form-control-sm"/>
+                        </div>
+                    }
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Количество"))
+                    {
+                        <div id="thQuantity">
+                            <a class="text-muted" asp-action="Index" asp-route-sortOrder="@ViewBag.QuantitySort">
+                                <small>@(ViewBag.QuantitySort == OrderSortState.QuantityAsc ? "Кол.↑" : "Кол.↓")</small>
+                            </a>
+                            <input asp-for="@Model.FilterModel.Quantity" id="quantityFilter" name="Quantity"
+                                   class="form-control form-control-sm"/>
+                        </div>
+                    }
+                </th>
+                <th>
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Цена"))
+                    {
+                        <div id="thPrice">
+                            <a class="text-dark" asp-action="Index" asp-route-sortOrder="@ViewBag.PriceSort">
+                                <small>@(ViewBag.PriceSort == OrderSortState.PriceAsc ? "Цена↑" : "Цена↓")</small>
+                            </a>
+                            <input asp-for="@Model.FilterModel.Price" id="priceFilter" name="Price"
+                                   class="form-control form-control-sm"/>
+                        </div>
+                    }
+
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Сумма отправления"))
+                    {
+                        <div id="thShipmentAmount">
+                            <a class="text-muted" asp-action="Index" asp-route-sortOrder="@ViewBag.ShipmentAmountSort"
+                               title="Сумма отправления">
+                                <small>@(ViewBag.ShipmentAmountSort == OrderSortState.ShipmentAmountAsc ? "Сумма о.↑" : "Сумма о.↓")</small>
+                            </a>
+                            <input asp-for="@Model.FilterModel.ShipmentAmount" id="shipmentAmountFilter"
+                                   name="ShipmentAmount" class="form-control form-control-sm"/>
+                        </div>
+                    }
+                </th>
+                <th>
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Цена закупки"))
+                    {
+                        <div id="thCurrentPrice">
+                            <a class="text-info" asp-action="Index" asp-route-sortOrder="@ViewBag.PurchasePriceSort"
+                               title="Цена закупки">
+                                <small>@(ViewBag.PurchasePriceSort == OrderSortState.PurchasePriceAsc ? "Цена зак.↑" : "Цена зак.↓")</small>
+                            </a>
+                            <input asp-for="@Model.FilterModel.PurchasePrice" id="purchasePriceFilter"
+                                   name="PurchasePrice" class="form-control form-control-sm"/>
+                        </div>
+                    }
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Себестоимость"))
+                    {
+                        <div id="thCostPriceсе">
+                            <a class="text-muted" asp-action="Index" asp-route-sortOrder="@ViewBag.CostPriceсеSort"
+                               title="Себестоимость">
+                                <small>@(ViewBag.CostPriceсеSort == OrderSortState.CostPriceAsc ? "Себест.↑" : "Себес.↓")</small>
+                            </a>
+                            <input asp-for="@Model.FilterModel.CostPrice" id="costPriceFilter" name="CostPrice"
+                                   class="form-control form-control-sm"/>
+                        </div>
+                    }
+                </th>
+                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Комиссия ОЗОН"))
+                {
+                    <th id="thOzonCommission">
+                        <a class="text-dark" asp-action="Index" asp-route-sortOrder="@ViewBag.OzonCommissionSort"
+                           title="Комиссия ОЗОН">
+                            <div
+                                style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                                <div>
+                                    <small>@(ViewBag.OzonCommissionSort == OrderSortState.MinOzonCommissionAsc ? "Комис.↑" : "Комис.↓")</small>
+                                </div>
+                                <div style="text-align: center; font-size: 10px;" class="text-muted">
+                                    <div><small>min</small></div>
+                                    <div><small>max</small></div>
+                                </div>
+                            </div>
+                        </a>
+
+                        <input asp-for="@Model.FilterModel.OzonCommission" id="ozonCommissionFilter"
+                               name="OzonCommission" class="form-control form-control-sm"/>
+                    </th>
+                }
+                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Прибыль"))
+                {
+                    <th id="thProfit">
+                        <a class="text-dark" asp-action="Index" asp-route-sortOrder="@ViewBag.ProfitSort"
+                           title="Прибыль">
+                            <div
+                                style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                                <div>
+                                    <small>@(ViewBag.ProfitSort == OrderSortState.ProfitAsc ? "Приб.↑" : "Приб.↓")</small>
+                                </div>
+                                <div style="text-align: center; font-size: 10px;" class="text-muted">
+                                    <div><small>min</small></div>
+                                    <div><small>max</small></div>
+                                </div>
+                            </div>
+                        </a>
+
+                        <input asp-for="@Model.FilterModel.Profit" id="profitFilter" name="Profit"
+                               class="form-control form-control-sm"/>
+                    </th>
+                }
+                @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Наценка %"))
+                {
+                    <th id="thDiscount">
+                        <a class="text-dark" asp-action="Index" asp-route-sortOrder="@ViewBag.DiscountSort"
+                           title="Наценка %↑">
+                            <div
+                                style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                                <div>
+                                    <small>@(ViewBag.DiscountSort == OrderSortState.DiscountAsc ? "Нацен.%↑" : "Нацен.%↓")</small>
+                                </div>
+                                <div style="text-align: center; font-size: 10px;" class="text-muted">
+                                    <div><small>min</small></div>
+                                    <div><small>max</small></div>
+                                </div>
+                            </div>
+                        </a>
+
+                        <input asp-for="@Model.FilterModel.Discount" id="discountFilter" name="Discount"
+                               class="form-control form-control-sm"/>
+                    </th>
+                }
 
 
-        </tr>
-        </thead>
-        <button type="submit" id="submitFilterButton" style="display:none;"></button> <!-- Скрытая кнопка для отправки формы -->
-    </form>
-    <tbody>
+            </tr>
+            </thead>
+            <button type="submit" id="submitFilterButton" style="display:none;"></button>
+            <!-- Скрытая кнопка для отправки формы -->
+        </form>
+        <tbody>
         @foreach (var item in Model.Items)
         {
             string rowClass = "custom-white";
@@ -985,14 +1053,14 @@
             {
                 rowClass = item.AppStatus?.Name switch
                 {
-                    "Заказан поставщику"   => "table-success",
+                    "Заказан поставщику" => "table-success",
                     "Отгружен поставщиком" => "table-info",
                     "Отгружен реализатору" => "table-warning",
-                    "Заказан реализатору"  => "table-secondary",
+                    "Заказан реализатору" => "table-secondary",
                     _ => rowClass
                 };
             }
-            
+
             <tr class=@rowClass oncontextmenu="showInfoAtCursor('@item.Id', '@item.CartItemId', event); return false;">
                 @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Номер заказа"))
                 {
@@ -1000,9 +1068,13 @@
                         <div class="d-flex align-items-center">
                             @if (item.ExcelFileData != null)
                             {
-                                <a href="@Url.Action("ViewFile", new { filePath = item.OzonClient.Name, fileName = item.ExcelFileData.FileName })" target="_blank" onclick="return validateLink('@item.ExcelFileData.FolderName', '@item.ExcelFileData.FileName')">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-filetype-xlsx" viewBox="0 0 16 16">
-                                        <path fill-rule="evenodd" d="M14 4.5V11h-1V4.5h-2A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v9H2V2a2 2 0 0 1 2-2h5.5zM7.86 14.841a1.13 1.13 0 0 0 .401.823q.195.162.479.252.284.091.665.091.507 0 .858-.158.355-.158.54-.44a1.17 1.17 0 0 0 .187-.656q0-.336-.135-.56a1 1 0 0 0-.375-.357 2 2 0 0 0-.565-.21l-.621-.144a1 1 0 0 1-.405-.176.37.37 0 0 1-.143-.299q0-.234.184-.384.188-.152.513-.152.214 0 .37.068a.6.6 0 0 1 .245.181.56.56 0 0 1 .12.258h.75a1.1 1.1 0 0 0-.199-.566 1.2 1.2 0 0 0-.5-.41 1.8 1.8 0 0 0-.78-.152q-.44 0-.777.15-.336.149-.527.421-.19.273-.19.639 0 .302.123.524t.351.367q.229.143.54.213l.618.144q.31.073.462.193a.39.39 0 0 1 .153.326.5.5 0 0 1-.085.29.56.56 0 0 1-.255.193q-.168.07-.413.07-.176 0-.32-.04a.8.8 0 0 1-.249-.115.58.58 0 0 1-.255-.384zm-3.726-2.909h.893l-1.274 2.007 1.254 1.992h-.908l-.85-1.415h-.035l-.853 1.415H1.5l1.24-2.016-1.228-1.983h.931l.832 1.438h.036zm1.923 3.325h1.697v.674H5.266v-3.999h.791zm7.636-3.325h.893l-1.274 2.007 1.254 1.992h-.908l-.85-1.415h-.035l-.853 1.415h-.861l1.24-2.016-1.228-1.983h.931l.832 1.438h.036z" />
+                                <a href="@Url.Action("ViewFile", new { filePath = item.OzonClient.Name, fileName = item.ExcelFileData.FileName })"
+                                   target="_blank"
+                                   onclick="return validateLink('@item.ExcelFileData.FolderName', '@item.ExcelFileData.FileName')">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
+                                         class="bi bi-filetype-xlsx" viewBox="0 0 16 16">
+                                        <path fill-rule="evenodd"
+                                              d="M14 4.5V11h-1V4.5h-2A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v9H2V2a2 2 0 0 1 2-2h5.5zM7.86 14.841a1.13 1.13 0 0 0 .401.823q.195.162.479.252.284.091.665.091.507 0 .858-.158.355-.158.54-.44a1.17 1.17 0 0 0 .187-.656q0-.336-.135-.56a1 1 0 0 0-.375-.357 2 2 0 0 0-.565-.21l-.621-.144a1 1 0 0 1-.405-.176.37.37 0 0 1-.143-.299q0-.234.184-.384.188-.152.513-.152.214 0 .37.068a.6.6 0 0 1 .245.181.56.56 0 0 1 .12.258h.75a1.1 1.1 0 0 0-.199-.566 1.2 1.2 0 0 0-.5-.41 1.8 1.8 0 0 0-.78-.152q-.44 0-.777.15-.336.149-.527.421-.19.273-.19.639 0 .302.123.524t.351.367q.229.143.54.213l.618.144q.31.073.462.193a.39.39 0 0 1 .153.326.5.5 0 0 1-.085.29.56.56 0 0 1-.255.193q-.168.07-.413.07-.176 0-.32-.04a.8.8 0 0 1-.249-.115.58.58 0 0 1-.255-.384zm-3.726-2.909h.893l-1.274 2.007 1.254 1.992h-.908l-.85-1.415h-.035l-.853 1.415H1.5l1.24-2.016-1.228-1.983h.931l.832 1.438h.036zm1.923 3.325h1.697v.674H5.266v-3.999h.791zm7.636-3.325h.893l-1.274 2.007 1.254 1.992h-.908l-.85-1.415h-.035l-.853 1.415h-.861l1.24-2.016-1.228-1.983h.931l.832 1.438h.036z"/>
                                     </svg>
                                 </a>
                             }
@@ -1017,13 +1089,16 @@
                                         var key = shipmentNumberParts[0];
                                         if (@Model.UniqueNumbers.TryGetValue(key, out int count) && count != 1)
                                         {
-                                            <a href="javascript:void(0);" onclick="setShipmentNumberFilter('@key')">@count</a>
+                                            <a href="javascript:void(0);"
+                                               onclick="setShipmentNumberFilter('@key')">@count</a>
                                         }
                                     }
                                 }
                             </span>
                         </div>
-                        <div class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("Delivery") ? "bg-warning" : "") text-muted d-flex" style="white-space: nowrap;" title="@item.DeliveryCity">
+                        <div
+                            class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("Delivery") ? "bg-warning" : "") text-muted d-flex"
+                            style="white-space: nowrap;" title="@item.DeliveryCity">
                             @{
                                 string delivery = item.Delivery?.Provider?.Name;
 
@@ -1031,6 +1106,7 @@
                                 {
                                     delivery = delivery.Substring(0, 20) + "...";
                                 }
+
                                 <span title="@item.Delivery?.Name">@delivery</span>
                             }
                         </div>
@@ -1039,14 +1115,17 @@
                 <td>
                     @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Клиент"))
                     {
-                        <div class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("OzonClient") ? "bg-warning" : "")" title="@item.OzonClient">
+                        <div
+                            class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("OzonClient") ? "bg-warning" : "")"
+                            title="@item.OzonClient">
                             @if (item.OzonClient != null)
                             {
                                 string ozonClient = item.OzonClient.Name;
                                 if (ozonClient.Length > 18)
                                 {
-                                    ozonClient = ozonClient.Substring(0,18) + "...";
+                                    ozonClient = ozonClient.Substring(0, 18) + "...";
                                 }
+
                                 @ozonClient
                             }
                         </div>
@@ -1055,37 +1134,47 @@
                     {
                         @if (item.DeliveryCity != null && item.DeliveryCity != "")
                         {
-                            <div class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("DeliveryCity") ? "bg-warning" : "") text-muted d-flex align-items-center" style="white-space: nowrap;" title="@item.DeliveryCity">
-                            @{
+                            <div
+                                class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("DeliveryCity") ? "bg-warning" : "") text-muted d-flex align-items-center"
+                                style="white-space: nowrap;" title="@item.DeliveryCity">
+                                @{
                                     string deliveryCity = item.DeliveryCity;
                                     if (deliveryCity.Length > 11)
                                     {
                                         deliveryCity = deliveryCity.Substring(0, 11) + "...";
                                     }
+
                                     @deliveryCity
-                            }
-                                    @if (Model.UniqueDeliveryCitys.ContainsKey(item.DeliveryCity) && Model.UniqueDeliveryCitys[item.DeliveryCity] != 1)
-                                    {
-                                        <a href="javascript:void(0);" onclick="setDeliveryCityFilter('@item.DeliveryCity')" style="margin-left: 2px;">(@Model.UniqueDeliveryCitys[item.DeliveryCity])</a>
-                                    }
+                                }
+                                @if (Model.UniqueDeliveryCitys.ContainsKey(item.DeliveryCity) && Model.UniqueDeliveryCitys[item.DeliveryCity] != 1)
+                                {
+                                    <a href="javascript:void(0);" onclick="setDeliveryCityFilter('@item.DeliveryCity')"
+                                       style="margin-left: 2px;">(@Model.UniqueDeliveryCitys[item.DeliveryCity])</a>
+                                }
 
 
                             </div>
                         }
                     }
                 </td>
-                
+
                 <td>
                     @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Принят в обработку"))
                     {
-                        <div class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("ProcessingDate") ? "bg-warning" : "")" style="max-width: 150px;" id="td2ProcessingDate" title="@Html.DisplayFor(modelItem => item.FormattedProcessingDate) @Html.DisplayFor(modelItem => item.FormattedProcessingTime)">
+                        <div
+                            class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("ProcessingDate") ? "bg-warning" : "")"
+                            style="max-width: 150px;" id="td2ProcessingDate"
+                            title="@Html.DisplayFor(modelItem => item.FormattedProcessingDate) @Html.DisplayFor(modelItem => item.FormattedProcessingTime)">
                             @Html.DisplayFor(modelItem => item.FormattedProcessingDate)
                         </div>
                     }
 
                     @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Дата отгрузки"))
                     {
-                        <div class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("ShippingDate") ? "bg-warning" : "") text-muted" style="max-width: 150px;" title="@Html.DisplayFor(modelItem => item.FormattedShippingDate) @Html.DisplayFor(modelItem => item.FormattedShippingTime)">
+                        <div
+                            class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("ShippingDate") ? "bg-warning" : "") text-muted"
+                            style="max-width: 150px;"
+                            title="@Html.DisplayFor(modelItem => item.FormattedShippingDate) @Html.DisplayFor(modelItem => item.FormattedShippingTime)">
                             @Html.DisplayFor(modelItem => item.FormattedShippingDate)
                         </div>
                     }
@@ -1095,7 +1184,8 @@
                     @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Срок доставки"))
                     {
                         <div style="white-space: nowrap; text-align: right;">
-                            <div title="@Html.DisplayFor(modelItem => item.FormattedDeliveryDay) @Html.DisplayFor(modelItem => item.FormattedDeliveryHours)">@Html.DisplayFor(modelItem => item.FormattedDeliveryDay)</div>
+                            <div
+                                title="@Html.DisplayFor(modelItem => item.FormattedDeliveryDay) @Html.DisplayFor(modelItem => item.FormattedDeliveryHours)">@Html.DisplayFor(modelItem => item.FormattedDeliveryDay)</div>
                         </div>
                     }
                     @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Срок доставки"))
@@ -1111,61 +1201,67 @@
                         <div class="row mb-0 justify-content-between">
                             @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Key"))
                             {
-                                    <div id="thArticle" title="@item.ProductKey" class="col-md-4 d-flex align-items-center mb-1 @(item.UpdatedColumns != null && item.UpdatedColumns.Contains("ProductKey") ? "bg-warning" : "")" style="white-space: nowrap;">
-                                        @{
-                                            string productKey = item.ProductKey;
-                                            string displayText = productKey;
-                                            
-                                            if (!string.IsNullOrEmpty(productKey))
+                                <div id="thArticle" title="@item.ProductKey"
+                                     class="col-md-4 d-flex align-items-center mb-1 @(item.UpdatedColumns != null && item.UpdatedColumns.Contains("ProductKey") ? "bg-warning" : "")"
+                                     style="white-space: nowrap;">
+                                    @{
+                                        string productKey = item.ProductKey;
+                                        string displayText = productKey;
+
+                                        if (!string.IsNullOrEmpty(productKey))
+                                        {
+                                            // Регулярное выражение для поиска [число] в конце строки
+                                            var match = System.Text.RegularExpressions.Regex.Match(productKey, @"\[(\d+)\]$");
+
+                                            if (match.Success)
                                             {
-                                                // Регулярное выражение для поиска [число] в конце строки
-                                                var match = System.Text.RegularExpressions.Regex.Match(productKey, @"\[(\d+)\]$");
-                                                
-                                                if (match.Success)
+                                                // Разделяем строку на основную часть и числовую часть в скобках
+                                                string mainPart = productKey.Substring(0, match.Index);
+                                                string numberPart = match.Value; // [число]
+
+                                                // Обрезаем основную часть если нужно
+                                                if (mainPart.Length > 17)
                                                 {
-                                                    // Разделяем строку на основную часть и числовую часть в скобках
-                                                    string mainPart = productKey.Substring(0, match.Index);
-                                                    string numberPart = match.Value; // [число]
-                                                    
-                                                    // Обрезаем основную часть если нужно
-                                                    if (mainPart.Length > 17)
-                                                    {
-                                                        mainPart = mainPart.Substring(0, 17) + "...";
-                                                    }
-                                                    
-                                                    // Формируем текст с подсветкой
-                                                    displayText = $"{mainPart}<span class='text-success fw-bold'>{numberPart}</span>";
+                                                    mainPart = mainPart.Substring(0, 17) + "...";
                                                 }
-                                                else
+
+                                                // Формируем текст с подсветкой
+                                                displayText = $"{mainPart}<span class='text-success fw-bold'>{numberPart}</span>";
+                                            }
+                                            else
+                                            {
+                                                // Старая логика обрезки если нет [числа] в конце
+                                                if (productKey.Length > 17)
                                                 {
-                                                    // Старая логика обрезки если нет [числа] в конце
-                                                    if (productKey.Length > 17)
-                                                    {
-                                                        displayText = productKey.Substring(0, 17) + "...";
-                                                    }
+                                                    displayText = productKey.Substring(0, 17) + "...";
                                                 }
                                             }
                                         }
-                                        
-                                        <a href="@Url.Action("Info", "FullData", new { area = "PartsInfo", code = item.Article, supplier = item.EtProducer?.Name })" target="_blank" class="custom-product-link">
-                                            @Html.Raw(displayText)
-                                        </a>
-                                        
-                                        @if (item.ProductKey != null && item.ProductKey != "" && @Model.UniqueArticles.ContainsKey(item.ProductKey) && @Model.UniqueArticles[item.ProductKey] != 1)
-                                        {
-                                            <a href="javascript:void(0);" onclick="setArticleFilter('@item.ProductKey')" style="margin-left: 5px;">(@Model.UniqueArticles[item.ProductKey])</a>
-                                        }
-                                    </div>
+                                    }
+
+                                    <a href="@Url.Action("Info", "FullData", new { area = "PartsInfo", code = item.Article, supplier = item.EtProducer?.Name })"
+                                       target="_blank" class="custom-product-link">
+                                        @Html.Raw(displayText)
+                                    </a>
+
+                                    @if (item.ProductKey != null && item.ProductKey != "" && @Model.UniqueArticles.ContainsKey(item.ProductKey) && @Model.UniqueArticles[item.ProductKey] != 1)
+                                    {
+                                        <a href="javascript:void(0);" onclick="setArticleFilter('@item.ProductKey')"
+                                           style="margin-left: 5px;">(@Model.UniqueArticles[item.ProductKey])</a>
+                                    }
+                                </div>
                             }
                             @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Производитель"))
                             {
                                 <div id="thManufacturer" class="col-md-4 d-flex flex-column mb-1 nowrap text-center">
-                                    @if(item.EtProducer != null && item.EtProducer.Name == null)
+                                    @if (item.EtProducer != null && item.EtProducer.Name == null)
                                     {
-                                       <form  asp-area="Studio2" asp-action="Index" asp-controller="Producers" method="post">
-                                            <input type="hidden" name="MarketPrefix" value="@item.EtProducer.MarketPrefix"/>
+                                        <form asp-area="Studio2" asp-action="Index" asp-controller="Producers"
+                                              method="post">
+                                            <input type="hidden" name="MarketPrefix"
+                                                   value="@item.EtProducer.MarketPrefix"/>
                                             <button type="submit" class="btn btn-link">Указать</button>
-                                       </form>
+                                        </form>
                                     }
                                     else
                                     {
@@ -1176,8 +1272,9 @@
                             @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Артикул"))
                             {
                                 <div id="thArticle2" class="col-md-4 d-flex flex-column mb-1 nowrap text-end">
-                                    @if(item.Article != null){
-                                       @Html.DisplayFor(modelItem => item.Article)
+                                    @if (item.Article != null)
+                                    {
+                                        @Html.DisplayFor(modelItem => item.Article)
                                     }
                                 </div>
                             }
@@ -1186,8 +1283,10 @@
                             @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Наименование товара"))
                             {
                                 <div id="thProductName" class="custom-width-large d-flex flex-column text-muted">
-                                    <div class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("ProductName") ? "bg-warning" : "")">
-                                        <div class="product-cell" title="@Html.DisplayFor(modelItem => item.ProductName)">
+                                    <div
+                                        class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("ProductName") ? "bg-warning" : "")">
+                                        <div class="product-cell"
+                                             title="@Html.DisplayFor(modelItem => item.ProductName)">
                                             @Html.DisplayFor(modelItem => item.ProductName)
                                         </div>
                                     </div>
@@ -1206,33 +1305,41 @@
                 <td>
                     @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Статус клиента"))
                     {
-                            <div class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("Status") ? "bg-warning" : "") nowrap" title="item.Status">
-                            @if(item.Status != null){
+                        <div
+                            class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("Status") ? "bg-warning" : "") nowrap"
+                            title="item.Status">
+                            @if (item.Status != null)
+                            {
                                 string status = item.Status;
                                 if (status.Length > 14)
                                 {
                                     status = status.Substring(0, 14) + "...";
                                 }
+
                                 @status
                             }
-                            else{
+                            else
+                            {
                                 <br/>
                             }
 
-                    </div>
+                        </div>
                     }
 
                     @if (Model.User?.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Статус"))
                     {
-                        <div class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("AppStatusId") ? "bg-warning" : "") text-muted nowrap" title="@item.AppStatus?.Name">
+                        <div
+                            class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("AppStatusId") ? "bg-warning" : "") text-muted nowrap"
+                            title="@item.AppStatus?.Name">
                             @{
                                 string appStatus = item.AppStatus?.Name;
                                 if (appStatus != null && appStatus?.Length > 14)
                                 {
                                     appStatus = appStatus.Substring(0, 14) + "...";
                                 }
+
                                 var bgAppStatusColor = item.AppStatus?.StatusColor?.ColorCode ?? "transparent";
-                                <div class="text-info text-muted nowrap" 
+                                <div class="text-info text-muted nowrap"
                                      style="font-size: 13px; background-color:@bgAppStatusColor; padding: 2px 5px; border-radius: 4px;">
                                     @appStatus
                                 </div>
@@ -1249,133 +1356,149 @@
 
                         var bgColor = item.CartItemStatusColor?.ColorCode ?? "transparent";
 
-                        <a href="@Url.Action("CartStatuses", "OrderCartItemStatus", new { area = "Studio2", highlightId = item.CartItemStatus.Id })" 
-                           class="text-muted nowrap custom-product-link" 
-                           style="display: inline-block; font-size: 13px; background-color:@bgColor; padding: 2px 5px; border-radius: 4px; text-decoration: none;"  
+                        <a href="@Url.Action("CartStatuses", "OrderCartItemStatus", new { area = "Studio2", highlightId = item.CartItemStatus.Id })"
+                           class="text-muted nowrap custom-product-link"
+                           style="display: inline-block; font-size: 13px; background-color:@bgColor; padding: 2px 5px; border-radius: 4px; text-decoration: none;"
                            title="@item.CartItemStatus.Name">
                             @cartStatus
                         </a>
                     }
                 </td>
-                
+
                 <td>
-                        @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Склад отгрузки"))
-                        {
-                            <div class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("ShipmentWarehouseId") ? "bg-warning" : "")">
-                                    @Html.DisplayFor(modelItem => item.ShipmentWarehouse.Name)
-                            </div>
-                        }
-                        @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Склад отгрузки"))
-                        {
-                            <div class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("AppStatusId") ? "bg-warning" : "")  text-muted">
-                                @Html.DisplayFor(modelItem => item.FormattedLastStatusChangeDate)
-                            </div>
-                        }
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Склад отгрузки"))
+                    {
+                        <div
+                            class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("ShipmentWarehouseId") ? "bg-warning" : "")">
+                            @Html.DisplayFor(modelItem => item.ShipmentWarehouse.Name)
+                        </div>
+                    }
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Склад отгрузки"))
+                    {
+                        <div
+                            class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("AppStatusId") ? "bg-warning" : "")  text-muted">
+                            @Html.DisplayFor(modelItem => item.FormattedLastStatusChangeDate)
+                        </div>
+                    }
                 </td>
                 <td>
                     @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Поставщик"))
                     {
-                    <div class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("SupplierId") ? "bg-warning" : "")">
+                        <div
+                            class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("SupplierId") ? "bg-warning" : "")">
                             @Html.DisplayFor(modelItem => item.Supplier.Name)
-                    </div>
+                        </div>
                     }
 
                     @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Номер заказа поставщику"))
                     {
-                        <div class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("OrderNumberToSupplier") ? "bg-warning" : "") text-muted">
+                        <div
+                            class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("OrderNumberToSupplier") ? "bg-warning" : "") text-muted">
                             @Html.DisplayFor(modelItem => item.OrderNumberToSupplier)
-                    </div>
+                        </div>
                     }
                 </td>
 
-                    <td>
-                        @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Категория"))
-                        {
-                            <div class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("ProductInfoId") ? "bg-warning" : "")">
-                                @if (item.ProductInfo.CommercialCategory != null)
+                <td>
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Категория"))
+                    {
+                        <div
+                            class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("ProductInfoId") ? "bg-warning" : "")">
+                            @if (item.ProductInfo.CommercialCategory != null)
+                            {
+                                string сommercialCategory = item.ProductInfo.CommercialCategory;
+                                if (сommercialCategory.Length > 10)
                                 {
-                                    string сommercialCategory = item.ProductInfo.CommercialCategory;
-                                    if (сommercialCategory.Length > 10)
-                                    {
-                                        сommercialCategory = сommercialCategory.Substring(0, 10) + "...";
-                                    }
-                                    @сommercialCategory
+                                    сommercialCategory = сommercialCategory.Substring(0, 10) + "...";
                                 }
 
-                            </div>
-                        }
+                                @сommercialCategory
+                            }
 
-                        @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Объемный вес"))
-                        {
-                            <div class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("ProductInfoId") ? "bg-warning" : "") text-muted">
-                                @Html.DisplayFor(modelItem => item.ProductInfo.VolumetricWeight)
-                                @if (item.ProductInfo.Weight != 0)
-                                {
-                                    <div style="white-space: nowrap; margin: 0; font-size: 10px; text-align: right">
-                                        @Html.DisplayFor(modelItem => item.ProductInfo.Weight)
-                                    </div>
-                                }
+                        </div>
+                    }
+
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Объемный вес"))
+                    {
+                        <div
+                            class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("ProductInfoId") ? "bg-warning" : "") text-muted">
+                            @Html.DisplayFor(modelItem => item.ProductInfo.VolumetricWeight)
+                            @if (item.ProductInfo.Weight != 0)
+                            {
+                                <div style="white-space: nowrap; margin: 0; font-size: 10px; text-align: right">
+                                    @Html.DisplayFor(modelItem => item.ProductInfo.Weight)
                                 </div>
-                        }
-                    </td>
+                            }
+                        </div>
+                    }
+                </td>
 
                 <td>
                     @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Цена сайта"))
                     {
-                            <div class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("ProductInfoId") ? "bg-warning" : "")" style="text-align: right;">
-                                @Html.Raw(string.Format("{0:N0}", item.ProductInfo.CurrentPriceWithDiscount).Replace(",", " "))
-                            </div>
+                        <div
+                            class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("ProductInfoId") ? "bg-warning" : "")"
+                            style="text-align: right;">
+                            @Html.Raw(string.Format("{0:N0}", item.ProductInfo.CurrentPriceWithDiscount).Replace(",", " "))
+                        </div>
                     }
 
                     @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Количество"))
                     {
-                        <div class="@(item.Quantity > 1 ? "bg-green-300" : "") text-muted" style="text-align: right;" id="quantity_@item.Id">
-                                    @{
-                                        if (item.Quantity > 1)
-                                        {
-                                            @Html.DisplayFor(modelItem => item.Quantity)
-                                        }
-                                        else
-                                        {
-                                            @Html.DisplayFor(modelItem => item.Quantity)
-                                        }
-                                    }
-                       </div>
+                        <div class="@(item.Quantity > 1 ? "bg-green-300" : "") text-muted" style="text-align: right;"
+                             id="quantity_@item.Id">
+                            @{
+                                if (item.Quantity > 1)
+                                {
+                                    @Html.DisplayFor(modelItem => item.Quantity)
+                                }
+                                else
+                                {
+                                    @Html.DisplayFor(modelItem => item.Quantity)
+                                }
+                            }
+                        </div>
                     }
                 </td>
-                
+
                 <td>
                     @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Цена"))
                     {
-                        <div class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("Price") ? "bg-warning" : "")" style="text-align: right;">
+                        <div
+                            class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("Price") ? "bg-warning" : "")"
+                            style="text-align: right;">
                             @Html.Raw(string.Format("{0:N0}", item.Price).Replace(",", " "))
                         </div>
                     }
 
                     @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Сумма отправления"))
                     {
-                        <div class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("ShipmentAmount") ? "bg-warning" : "") text-muted" style="text-align: right;">
+                        <div
+                            class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("ShipmentAmount") ? "bg-warning" : "") text-muted"
+                            style="text-align: right;">
                             @Html.Raw(string.Format("{0:N0}", item.ShipmentAmount).Replace(",", " "))
                         </div>
                     }
                 </td>
-                
-               
-                
+
+
+
                 <td>
                     @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Цена закупки"))
                     {
-                        <div class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("PurchasePrice") ? "bg-warning" : "")" style="text-align: right;  white-space: nowrap;">
+                        <div
+                            class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("PurchasePrice") ? "bg-warning" : "")"
+                            style="text-align: right;  white-space: nowrap;">
                             @if (item.Supplier?.CurrencyCode != CurrencyCode.RUB)
                             {
-                                    <div style="white-space: nowrap; margin: 0; font-size: 10px;">
-                                        <div style="display: inline;">
-                                            @Html.Raw(string.Format("{0:N2}", item.OriginalPurchasePrice))
-                                        </div>
-                                        <div style="display: inline; margin-left: 5px;">
-                                            @Html.DisplayFor(modelItem => item.Supplier.CurrencyCode)
-                                        </div>
+                                <div style="white-space: nowrap; margin: 0; font-size: 10px;">
+                                    <div style="display: inline;">
+                                        @Html.Raw(string.Format("{0:N2}", item.OriginalPurchasePrice))
                                     </div>
+                                    <div style="display: inline; margin-left: 5px;">
+                                        @Html.DisplayFor(modelItem => item.Supplier.CurrencyCode)
+                                    </div>
+                                </div>
                             }
                             <p style="display: inline; white-space: nowrap; margin: 0;">
                                 @Html.Raw(string.Format("{0:N0}", item.PurchasePrice).Replace(",", " "))
@@ -1383,28 +1506,33 @@
                         </div>
                     }
 
-                        @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Себестоимость"))
-                        {
-                            <div class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("CostPrice") ? "bg-warning" : "")" style="text-align: right;">
-                                @Html.Raw(string.Format("{0:N0}", item.CostPrice).Replace(",", " "))
-                            </div>
-                        }
+                    @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Себестоимость"))
+                    {
+                        <div
+                            class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("CostPrice") ? "bg-warning" : "")"
+                            style="text-align: right;">
+                            @Html.Raw(string.Format("{0:N0}", item.CostPrice).Replace(",", " "))
+                        </div>
+                    }
 
                 </td>
                 @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Комиссия ОЗОН"))
                 {
-                    <td class="@(item.UpdatedColumns != null && (item.UpdatedColumns.Contains("MinOzonCommission") || item.UpdatedColumns.Contains("MaxOzonCommission")) ? "bg-warning" : "")" style="text-align: right;">
-                        @Html.Raw(string.Format("{0:N0}", item.MinOzonCommission).Replace(",", " ")) <br />
+                    <td class="@(item.UpdatedColumns != null && (item.UpdatedColumns.Contains("MinOzonCommission") || item.UpdatedColumns.Contains("MaxOzonCommission")) ? "bg-warning" : "")"
+                        style="text-align: right;">
+                        @Html.Raw(string.Format("{0:N0}", item.MinOzonCommission).Replace(",", " ")) <br/>
                         @Html.Raw(string.Format("{0:N0}", item.MaxOzonCommission).Replace(",", " "))
                     </td>
                 }
 
                 @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Прибыль"))
                 {
-                    <td class="@(item.UpdatedColumns != null && (item.UpdatedColumns.Contains("MinProfit") || item.UpdatedColumns.Contains("MaxProfit")) ? "bg-warning" : "")" style="text-align: right;">
+                    <td class="@(item.UpdatedColumns != null && (item.UpdatedColumns.Contains("MinProfit") || item.UpdatedColumns.Contains("MaxProfit")) ? "bg-warning" : "")"
+                        style="text-align: right;">
                         @if (item.MaxProfit < 0)
                         {
-                            <span style="color:red">@Html.Raw(string.Format("{0:N0}", item.MaxProfit).Replace(",", " "))</span>
+                            <span
+                                style="color:red">@Html.Raw(string.Format("{0:N0}", item.MaxProfit).Replace(",", " "))</span>
                         }
                         else
                         {
@@ -1413,7 +1541,8 @@
                         <br>
                         @if (item.MinProfit < 0)
                         {
-                            <span style="color:red">@Html.Raw(string.Format("{0:N0}", item.MinProfit).Replace(",", " "))</span>
+                            <span
+                                style="color:red">@Html.Raw(string.Format("{0:N0}", item.MinProfit).Replace(",", " "))</span>
                         }
                         else
                         {
@@ -1424,10 +1553,12 @@
 
                 @if (Model.User.UserAccessId != null && Model.User.UserAccess.AvailableOrderColumns.Contains("Наценка %"))
                 {
-                    <td class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("MinDiscount") ? "bg-warning" : "")" style="text-align: right;">
+                    <td class="@(item.UpdatedColumns != null && item.UpdatedColumns.Contains("MinDiscount") ? "bg-warning" : "")"
+                        style="text-align: right;">
                         @if (item.MaxDiscount < 0)
                         {
-                            <span style="color:red">@Html.Raw(string.Format("{0:N0}", item.MaxDiscount).Replace(",", " "))</span>
+                            <span
+                                style="color:red">@Html.Raw(string.Format("{0:N0}", item.MaxDiscount).Replace(",", " "))</span>
                         }
                         else
                         {
@@ -1436,7 +1567,8 @@
                         <br>
                         @if (item.MinDiscount < 0)
                         {
-                            <span style="color:red">@Html.Raw(string.Format("{0:N0}", item.MinDiscount).Replace(",", " "))</span>
+                            <span
+                                style="color:red">@Html.Raw(string.Format("{0:N0}", item.MinDiscount).Replace(",", " "))</span>
                         }
                         else
                         {
@@ -1446,8 +1578,8 @@
                 }
             </tr>
         }
-    </tbody>
-</table>
+        </tbody>
+    </table>
 </div>
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
@@ -1542,132 +1674,133 @@
 </div>
 
 <script>
-     document.addEventListener('DOMContentLoaded', function () {
+    document.addEventListener('DOMContentLoaded', function () {
 
-         // Функция для отображения окна с информацией по координатам курсора при нажатии на правую кнопку мыши
-         window.showInfoAtCursor = function (itemId, cartItemId, event) {
-             if (event.button === 2) { // Проверяем, что нажата правая кнопка мыши
-                 // Создаем или получаем окно
-                 var infoWindow = document.getElementById("infoWindow");
+        // Функция для отображения окна с информацией по координатам курсора при нажатии на правую кнопку мыши
+        window.showInfoAtCursor = function (itemId, cartItemId, event) {
+            if (event.button === 2) { // Проверяем, что нажата правая кнопка мыши
+                // Создаем или получаем окно
+                var infoWindow = document.getElementById("infoWindow");
 
-                 // Задаем позицию окна в соответствии с положением курсора
-                 infoWindow.style.left = (event.clientX + 10) + "px"; // +10 для отступа от курсора по горизонтали
-                 infoWindow.style.top = (event.clientY + 10) + "px"; // +10 для отступа от курсора по вертикали
+                // Задаем позицию окна в соответствии с положением курсора
+                infoWindow.style.left = (event.clientX + 10) + "px"; // +10 для отступа от курсора по горизонтали
+                infoWindow.style.top = (event.clientY + 10) + "px"; // +10 для отступа от курсора по вертикали
 
-                 // Заполняем окно информацией
-                 infoWindow.innerHTML = '';
-                 infoWindow.innerHTML += '<a href="/Studio2/OrderHistory/GetOrderHistory?orderId=' + itemId + '" target="_blank" class="btn btn-link" onclick="hideInfo()">История</a><br>';
-                 infoWindow.innerHTML += '<a href="/Studio2/Orders/MultiplayEditV2?ids=' + itemId + '&page=' + @Model.PageNumber + '" class="btn btn-link" onclick="hideInfo()">Изменить</a><br>';
-                 infoWindow.innerHTML += '<a href="/Studio2/Orders/MultiplayUpdateOrdersStatusV2?ids=' + itemId + '&page=' + @Model.PageNumber + '" class="btn btn-link" onclick="hideInfo()">Обновить</a><br>';
-                 infoWindow.innerHTML += '<a href="#" onclick="showSplitOptions(' + itemId + ', parseInt(document.getElementById(\'quantity_' + itemId + '\').innerText.trim())); hideInfo(); return false;" class="btn btn-link">Разделить</a><br>';
-                 infoWindow.innerHTML += '<a href="/Studio2/ExcludedArticles/Create?orderId=' + itemId + '" class="btn btn-link" onclick="hideInfo()">Исключить</a><br>';
-                 if(cartItemId){
-                     infoWindow.innerHTML += '<a href="/Studio2/Tradesoft/UpdateItemsStatusAndRedirect?itemId=' + cartItemId + '&page=' + @Model.PageNumber + '" class="btn btn-link" onclick="hideInfo()">Обновить из API</a><br>';
-                 }
-                 
-                 getSelectedIdsFromSession(function (selectedIds) {
-                     if (selectedIds.length > 0) {
-                         infoWindow.innerHTML += '<a href="/Studio2/Orders/MultiplayEditV2?ids=' + selectedIds + '&page=' + @Model.PageNumber + '" class="btn btn-link" onclick="hideInfo()">Изменить выделенные</a><br>';
-                         infoWindow.innerHTML += '<a href="/Studio2/Orders/MultiplayUpdateOrdersStatusV2?ids=' + selectedIds + '&page=' + @Model.PageNumber + '" class="btn btn-link" onclick="hideInfo()">Обновить выделенные</a><br>';
-                     }
+                // Заполняем окно информацией
+                infoWindow.innerHTML = '';
+                infoWindow.innerHTML += '<a href="/Studio2/OrderHistory/GetOrderHistory?orderId=' + itemId + '" target="_blank" class="btn btn-link" onclick="hideInfo()">История</a><br>';
+                infoWindow.innerHTML += '<a href="/Studio2/Orders/MultiplayEditV2?ids=' + itemId + '&page=' + @Model.PageNumber + '" class="btn btn-link" onclick="hideInfo()">Изменить</a><br>';
+                infoWindow.innerHTML += '<a href="/Studio2/Orders/MultiplayUpdateOrdersStatusV2?ids=' + itemId + '&page=' + @Model.PageNumber + '" class="btn btn-link" onclick="hideInfo()">Обновить</a><br>';
+                infoWindow.innerHTML += '<a href="#" onclick="showSplitOptions(' + itemId + ', parseInt(document.getElementById(\'quantity_' + itemId + '\').innerText.trim())); hideInfo(); return false;" class="btn btn-link">Разделить</a><br>';
+                infoWindow.innerHTML += '<a href="/Studio2/ExcludedArticles/Create?orderId=' + itemId + '" class="btn btn-link" onclick="hideInfo()">Исключить</a><br>';
+                if (cartItemId) {
+                    infoWindow.innerHTML += '<a href="/Studio2/Tradesoft/UpdateItemsStatusAndRedirect?itemId=' + cartItemId + '&page=' + @Model.PageNumber + '" class="btn btn-link" onclick="hideInfo()">Обновить из API</a><br>';
+                }
 
-                     infoWindow.innerHTML += '<a href="#" class="btn btn-link text-danger" onclick="confirmDelete(' + itemId + ')">Удалить</a><br>';
+                getSelectedIdsFromSession(function (selectedIds) {
+                    if (selectedIds.length > 0) {
+                        infoWindow.innerHTML += '<a href="/Studio2/Orders/MultiplayEditV2?ids=' + selectedIds + '&page=' + @Model.PageNumber + '" class="btn btn-link" onclick="hideInfo()">Изменить выделенные</a><br>';
+                        infoWindow.innerHTML += '<a href="/Studio2/Orders/MultiplayUpdateOrdersStatusV2?ids=' + selectedIds + '&page=' + @Model.PageNumber + '" class="btn btn-link" onclick="hideInfo()">Обновить выделенные</a><br>';
+                    }
 
-                     if (selectedIds.length > 0) {
-                         infoWindow.innerHTML += '<a href="#" class="btn btn-link text-danger" onclick="confirmMultiDelete()">Удалить выделенные</a><br>';
-                     }
+                    infoWindow.innerHTML += '<a href="#" class="btn btn-link text-danger" onclick="confirmDelete(' + itemId + ')">Удалить</a><br>';
 
-                     if (selectedIds.length === 2) {
-                         infoWindow.innerHTML += '<a href="#" class="btn btn-link" onclick="swapStudioOrderIds(\'' + selectedIds.join(',') + '\', ' + @Model.PageNumber + ')">Обменять заказы</a><br>';
-                     }
+                    if (selectedIds.length > 0) {
+                        infoWindow.innerHTML += '<a href="#" class="btn btn-link text-danger" onclick="confirmMultiDelete()">Удалить выделенные</a><br>';
+                    }
 
-                     // Показываем окно
-                     infoWindow.style.display = "block";
+                    if (selectedIds.length === 2) {
+                        infoWindow.innerHTML += '<a href="#" class="btn btn-link" onclick="swapStudioOrderIds(\'' + selectedIds.join(',') + '\', ' + @Model.PageNumber + ')">Обменять заказы</a><br>';
+                    }
 
-                     // Предотвращаем стандартное контекстное меню браузера
-                     event.preventDefault();
+                    // Показываем окно
+                    infoWindow.style.display = "block";
 
-                     // Скрытие окна при клике вне его
-                     document.addEventListener("click", function (event) {
-                         if (!infoWindow.contains(event.target)) {
-                             hideInfo();
-                         }
-                     });
-                 });
-             }
-         }
+                    // Предотвращаем стандартное контекстное меню браузера
+                    event.preventDefault();
 
-         // Функция для скрытия окна с информацией
-         window.hideInfo = function () {
-             var infoWindow = document.getElementById("infoWindow");
-             infoWindow.style.display = "none";
-         }
+                    // Скрытие окна при клике вне его
+                    document.addEventListener("click", function (event) {
+                        if (!infoWindow.contains(event.target)) {
+                            hideInfo();
+                        }
+                    });
+                });
+            }
+        }
 
-         // Чтение значения куки 'PageSize'
-         var pageSize = getCookie('PageSize');
-         if (pageSize) {
-             // Установка значения куки в поле ввода
-             document.getElementById('pageSize').value = parseInt(pageSize);
-         }
-     });
+        // Функция для скрытия окна с информацией
+        window.hideInfo = function () {
+            var infoWindow = document.getElementById("infoWindow");
+            infoWindow.style.display = "none";
+        }
 
-     // Функция для чтения значения куки
-     function getCookie(name) {
-         var match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
-         if (match) return match[2];
-     }
+        // Чтение значения куки 'PageSize'
+        var pageSize = getCookie('PageSize');
+        if (pageSize) {
+            // Установка значения куки в поле ввода
+            document.getElementById('pageSize').value = parseInt(pageSize);
+        }
+    });
 
-     // Функция для получения выбранных ID из сессии
-     function getSelectedIdsFromSession(callback) {
-         $.get('/YourController/GetSelectedIdsFromSession', function (data) {
-             callback(data);
-         });
-     }
+    // Функция для чтения значения куки
+    function getCookie(name) {
+        var match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+        if (match) return match[2];
+    }
 
-     // Функция для подтверждения удаления выделенных
-     function confirmMultiDelete() {
-         getSelectedIdsFromSession(function (selectedIds) {
-             if (confirm("Вы уверены, что хотите удалить выделенные заказы?")) {
-                 window.location.href = '/Studio2/Orders/MultiplayDeleteOrdersV2?ids=' + selectedIds + '&page=' + @Model.PageNumber;
-             }
-         });
-     }
+    // Функция для получения выбранных ID из сессии
+    function getSelectedIdsFromSession(callback) {
+        $.get('/YourController/GetSelectedIdsFromSession', function (data) {
+            callback(data);
+        });
+    }
 
-     // Функция для подтверждения удаления одного заказа
-     function confirmDelete(itemId) {
-         if (confirm("Вы уверены, что хотите удалить этот заказ?")) {
-             window.location.href = '/Studio2/Orders/DeleteV2/' + itemId + '?page=' + @Model.PageNumber;
-         }
-     }
+    // Функция для подтверждения удаления выделенных
+    function confirmMultiDelete() {
+        getSelectedIdsFromSession(function (selectedIds) {
+            if (confirm("Вы уверены, что хотите удалить выделенные заказы?")) {
+                window.location.href = '/Studio2/Orders/MultiplayDeleteOrdersV2?ids=' + selectedIds + '&page=' + @Model.PageNumber;
+            }
+        });
+    }
 
-     function swapStudioOrderIds(selectedIds, page) {
-         var token = $('input[name="__RequestVerificationToken"]').val();
+    // Функция для подтверждения удаления одного заказа
+    function confirmDelete(itemId) {
+        if (confirm("Вы уверены, что хотите удалить этот заказ?")) {
+            window.location.href = '/Studio2/Orders/DeleteV2/' + itemId + '?page=' + @Model.PageNumber;
+        }
+    }
 
-         $.ajax({
-             url: '/Studio2/OrderItem/SwapStudioOrderIds',
-             type: 'POST',
-             data: {
-                 ids: selectedIds,
-                 page: page,
-                 __RequestVerificationToken: token
-             },
-             success: function (response) {
-                 if (response && response.success) {
-                     location.reload(); // перезагрузка страницы
-                 }
-             },
-             error: function () {
-                 alert('Произошла ошибка при обмене заказов');
-             }
-         });
-     }
+    function swapStudioOrderIds(selectedIds, page) {
+        var token = $('input[name="__RequestVerificationToken"]').val();
+
+        $.ajax({
+            url: '/Studio2/OrderItem/SwapStudioOrderIds',
+            type: 'POST',
+            data: {
+                ids: selectedIds,
+                page: page,
+                __RequestVerificationToken: token
+            },
+            success: function (response) {
+                if (response && response.success) {
+                    location.reload(); // перезагрузка страницы
+                }
+            },
+            error: function () {
+                alert('Произошла ошибка при обмене заказов');
+            }
+        });
+    }
 </script>
 
 
 <div id="infoWindow"></div>
-<br />
+<br/>
 <form method="post" action="Studio2/Orders/SetPageSizeForV2" class="input-group mb-3">
-    <input type="number" id="pageSize" name="size" class="form-control" placeholder="Размер страницы" aria-label="Размер страницы" aria-describedby="button-addon2" style="max-width: 170px;" required>
+    <input type="number" id="pageSize" name="size" class="form-control" placeholder="Размер страницы"
+           aria-label="Размер страницы" aria-describedby="button-addon2" style="max-width: 170px;" required>
     <button class="btn btn-primary" type="submit" id="button-addon1" style="max-width: 160px;">Ввод</button>
 </form>
 
@@ -1679,8 +1812,10 @@
             {
                 @for (int i = 1; i <= 10; i++)
                 {
-                    <a asp-action="Index" asp-route-page="@(i)" class="btn btn-primary @(i == Model.PageNumber ? "active" : "")">@i</a>
+                    <a asp-action="Index" asp-route-page="@(i)"
+                       class="btn btn-primary @(i == Model.PageNumber ? "active" : "")">@i</a>
                 }
+
                 <span>...</span>
                 <a asp-action="Index" asp-route-page="@Model.TotalPages" class="btn btn-primary">@(Model.TotalPages)</a>
             }
@@ -1690,7 +1825,8 @@
                 <span>...</span>
                 @for (int i = Model.TotalPages - 9; i <= Model.TotalPages; i++)
                 {
-                    <a asp-action="Index" asp-route-page="@(i)" class="btn btn-primary @(i == Model.PageNumber ? "active" : "")">@i</a>
+                    <a asp-action="Index" asp-route-page="@(i)"
+                       class="btn btn-primary @(i == Model.PageNumber ? "active" : "")">@i</a>
                 }
             }
             else
@@ -1699,8 +1835,10 @@
                 <span>...</span>
                 @for (int i = Model.PageNumber - 5; i <= Model.PageNumber + 5; i++)
                 {
-                    <a asp-action="Index" asp-route-page="@(i)" class="btn btn-primary @(i == Model.PageNumber ? "active" : "")">@i</a>
+                    <a asp-action="Index" asp-route-page="@(i)"
+                       class="btn btn-primary @(i == Model.PageNumber ? "active" : "")">@i</a>
                 }
+
                 <span>...</span>
                 <a asp-action="Index" asp-route-page="@Model.TotalPages" class="btn btn-primary">@(Model.TotalPages)</a>
             }
@@ -1709,8 +1847,10 @@
         {
             @for (int i = 1; i <= Model.TotalPages; i++)
             {
-                <a asp-action="Index" asp-route-page="@(i)" class="btn btn-primary @(i == Model.PageNumber ? "active" : "")">@i</a>
+                <a asp-action="Index" asp-route-page="@(i)"
+                   class="btn btn-primary @(i == Model.PageNumber ? "active" : "")">@i</a>
             }
+
             <span>...</span>
         }
     </div>
@@ -1758,13 +1898,13 @@
     });
 
     function addIdToSession(id) {
-        $.post('/Studio2/Orders/AddIdToSession', { id: id }, function () {
+        $.post('/Studio2/Orders/AddIdToSession', {id: id}, function () {
             console.log("ID added to session: " + id);
         });
     }
 
     function removeIdFromSession(id) {
-        $.post('/Studio2/Orders/RemoveIdFromSession', { id: id }, function () {
+        $.post('/Studio2/Orders/RemoveIdFromSession', {id: id}, function () {
             console.log("ID removed from session: " + id);
         });
     }
@@ -1999,18 +2139,18 @@
             option.style.flexDirection = 'column';
 
             // Подсветка при наведении
-            option.onmouseover = function() {
+            option.onmouseover = function () {
                 this.style.backgroundColor = '#007bff';
                 this.style.color = 'white'; // Белый текст только при наведении
             };
-            option.onmouseout = function() {
+            option.onmouseout = function () {
                 this.style.backgroundColor = 'transparent';
                 this.style.color = '#007bff'; // Возвращаем исходный цвет текста
             };
 
-            option.onclick = function() {
+            option.onclick = function () {
                 let page = @Model.PageNumber;
-                window.location.href = `/Studio2/Orders/SplitOrder?ids=${itemId}&page=${page}&splitOption=${i}+${quantity-i}`;
+                window.location.href = `/Studio2/Orders/SplitOrder?ids=${itemId}&page=${page}&splitOption=${i}+${quantity - i}`;
             };
 
             optionsDiv.appendChild(option);
@@ -2035,22 +2175,22 @@
         customBtn.style.color = '#6c757d';
         customBtn.style.cursor = 'pointer';
         customBtn.style.transition = 'all 0.2s';
-        customBtn.onmouseover = function() {
+        customBtn.onmouseover = function () {
             this.style.backgroundColor = '#6c757d';
             this.style.color = 'white';
         };
-        customBtn.onmouseout = function() {
+        customBtn.onmouseout = function () {
             this.style.backgroundColor = 'transparent';
             this.style.color = '#6c757d';
         };
-        customBtn.onclick = function() {
+        customBtn.onclick = function () {
             let customValue = prompt(`Введите количество для первой части (всего ${quantity} шт.):`);
             if (customValue && !isNaN(customValue) && customValue > 0 && customValue < quantity) {
                 let firstPart = parseInt(customValue);
                 let page = @Model.PageNumber;
-                window.location.href = `/Studio2/Orders/SplitOrder?ids=${itemId}&page=${page}&splitOption=${firstPart}+${quantity-firstPart}`;
+                window.location.href = `/Studio2/Orders/SplitOrder?ids=${itemId}&page=${page}&splitOption=${firstPart}+${quantity - firstPart}`;
             } else if (customValue !== null) {
-                alert('Пожалуйста, введите корректное число между 1 и ' + (quantity-1));
+                alert('Пожалуйста, введите корректное число между 1 и ' + (quantity - 1));
             }
         };
         buttonGroup.appendChild(customBtn);
@@ -2065,15 +2205,15 @@
         cancelBtn.style.color = '#6c757d';
         cancelBtn.style.cursor = 'pointer';
         cancelBtn.style.transition = 'all 0.2s';
-        cancelBtn.onmouseover = function() {
+        cancelBtn.onmouseover = function () {
             this.style.backgroundColor = '#6c757d';
             this.style.color = 'white';
         };
-        cancelBtn.onmouseout = function() {
+        cancelBtn.onmouseout = function () {
             this.style.backgroundColor = 'transparent';
             this.style.color = '#6c757d';
         };
-        cancelBtn.onclick = function() {
+        cancelBtn.onclick = function () {
             document.body.removeChild(modal);
         };
         buttonGroup.appendChild(cancelBtn);
@@ -2084,7 +2224,7 @@
         document.body.appendChild(modal);
 
         // Закрытие по клику вне окна
-        modal.onclick = function(e) {
+        modal.onclick = function (e) {
             if (e.target === modal) {
                 document.body.removeChild(modal);
             }
