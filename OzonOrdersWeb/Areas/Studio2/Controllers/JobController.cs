@@ -46,22 +46,23 @@ namespace OzonOrdersWeb.Controllers
         private readonly MaxiPartsConfig _maxiPartsConfig;
         private readonly TradesoftDataManager _tradesoftDataManager;
         private readonly OrderItemRepository _orderItemRepository;
+
         public JobController(OrdersDataServcies ordersDataServcies,
-                              OrderCaster orderCaster,
-                              OzonJsonDataBuilder jsonDataBuilder,
-                              ReleaseManager releaseManager,
-                              DuplicateOrdersServcies duplicateOrdersServcies,
-                              OzonClientServcies ozonClientServcies,
-                              YandexDataManager yandexDataManager,
-                              DropboxApiClient dropboxApiClient,
-                              ExcelParser excelParser,
-                              ColumnMappingDataServcies columnMappingDataServcies,
-                              OzonOrderContext context,
-                              OrdersDataServcies orderDataServcies,
-                              FileUploadRecordDataService fileUploadRecordDataService,
-                              MaxiPartsConfig maxiPartsConfig,
-                              TradesoftDataManager tradesoftDataManager,
-                              OrderItemRepository orderItemRepository)
+            OrderCaster orderCaster,
+            OzonJsonDataBuilder jsonDataBuilder,
+            ReleaseManager releaseManager,
+            DuplicateOrdersServcies duplicateOrdersServcies,
+            OzonClientServcies ozonClientServcies,
+            YandexDataManager yandexDataManager,
+            DropboxApiClient dropboxApiClient,
+            ExcelParser excelParser,
+            ColumnMappingDataServcies columnMappingDataServcies,
+            OzonOrderContext context,
+            OrdersDataServcies orderDataServcies,
+            FileUploadRecordDataService fileUploadRecordDataService,
+            MaxiPartsConfig maxiPartsConfig,
+            TradesoftDataManager tradesoftDataManager,
+            OrderItemRepository orderItemRepository)
         {
             _orderRepository = ordersDataServcies;
             _orderCaster = orderCaster;
@@ -126,7 +127,7 @@ namespace OzonOrdersWeb.Controllers
 
             return View(jobResult);
         }
-        
+
         [HttpPost]
         public IActionResult SetOzonRecurring(int delay)
         {
@@ -135,7 +136,7 @@ namespace OzonOrdersWeb.Controllers
 
             return Redirect("/Hangfire");
         }
-        
+
 
         [HttpPost]
         public IActionResult SetYandexRecurring(int delay)
@@ -154,27 +155,27 @@ namespace OzonOrdersWeb.Controllers
 
             return Redirect("/Hangfire");
         }
-        
+
         [HttpPost]
         public IActionResult SetOzonFileUploadRecurring(int delay)
         {
-            string cronExp = $"*/{delay} * * * *"; 
+            string cronExp = $"*/{delay} * * * *";
             RecurringJob.AddOrUpdate("FileUpload", () => FileUpload(), cronExp, queue: "upload-queue-new");
 
             return Redirect("/Hangfire");
         }
-        
+
         [HttpPost]
         public IActionResult SetStatusUpdateRecurring(int delay, int count)
         {
             string cronExp = $"*/{delay} * * * *";
             RecurringJob.AddOrUpdate(
-                "StatusUpdateJob", 
-                () => UpdateCartItemsStatusAsync(count), 
-                cronExp, 
+                "StatusUpdateJob",
+                () => UpdateCartItemsStatusAsync(count),
+                cronExp,
                 queue: "upload-queue-new"
             );
-        
+
             TempData["Message"] = $"Фоновое обновление статусов установлено с периодом {delay} минут";
             return Redirect("/Hangfire");
         }
@@ -183,7 +184,8 @@ namespace OzonOrdersWeb.Controllers
         public async Task<Dictionary<string, int[]>> EverydayUpdate(int monthsCount)
         {
             var periods = GetDateRanges(monthsCount);
-            List<OzonClient> ozonClients = (await _ozonClientServcies.GetOzonClients()).Where(c => c.ClientType == ClientType.OZON).ToList();
+            List<OzonClient> ozonClients = (await _ozonClientServcies.GetOzonClients())
+                .Where(c => c.ClientType == ClientType.OZON).ToList();
             Dictionary<string, int[]> result = new Dictionary<string, int[]>();
 
             foreach (var period in periods)
@@ -198,7 +200,11 @@ namespace OzonOrdersWeb.Controllers
                         _jsonDataBuilder.SetClient(client.DecryptClientId, client.DecryptApiKey);
                         var jsonData = await _jsonDataBuilder.BuildData(period.Item1, period.Item2);
                         var orders = await _orderCaster.JsonToOrders(jsonData);
-                        orders = orders.Select(order => { order.OzonClient = client; return order; }).ToList();
+                        orders = orders.Select(order =>
+                        {
+                            order.OzonClient = client;
+                            return order;
+                        }).ToList();
                         var uploadResult = await _orderRepository.AddOrders(orders);
                         result.Add(client.Name, uploadResult);
                     }
@@ -234,7 +240,11 @@ namespace OzonOrdersWeb.Controllers
                     _jsonDataBuilder.SetClient(client.DecryptClientId, client.DecryptApiKey);
                     var jsonData = await _jsonDataBuilder.BuildData(start, end);
                     var orders = await _orderCaster.JsonToOrders(jsonData);
-                    orders = orders.Select(order => { order.OzonClient = client; return order; }).ToList();
+                    orders = orders.Select(order =>
+                    {
+                        order.OzonClient = client;
+                        return order;
+                    }).ToList();
 
                     var updatingStatusCount = await ProcessOrdersForStatusUpdate(orders);
                     var uploadResult = await _orderRepository.AddOrders(orders);
@@ -243,7 +253,8 @@ namespace OzonOrdersWeb.Controllers
                     totalUploaded += uploadResult[0];
                     totalUpdated += uploadResult[1];
 
-                    clientStatus += $"&nbsp;&nbsp;&nbsp;&nbsp;{client.Name}: отчёт успешно создан (обновлено {updatingStatusCount} статусов)<br>";
+                    clientStatus +=
+                        $"&nbsp;&nbsp;&nbsp;&nbsp;{client.Name}: отчёт успешно создан (обновлено {updatingStatusCount} статусов)<br>";
                 }
                 catch (Exception ex)
                 {
@@ -261,10 +272,11 @@ namespace OzonOrdersWeb.Controllers
             return GetJobResultString(result, start, end, clientStatus, duplicateCount, deletedRowsCount);
         }
 
-        
+
         private async Task<int> ProcessOrdersForStatusUpdate(List<Order> orders)
         {
             int updatingCount = 0;
+
             async Task ProcessOrder(Order order)
             {
                 order.OzonClient ??= await _ozonClientServcies.GetOzonClientAsync(order.OzonClient?.Id ?? 0);
@@ -281,11 +293,12 @@ namespace OzonOrdersWeb.Controllers
                     }
                 }
             }
+
             var tasks = orders.Select(order => ProcessOrder(order));
             await Task.WhenAll(tasks);
             return updatingCount;
         }
-        
+
 
         public async Task<string> UploadingYandex(int period)
         {
@@ -309,7 +322,11 @@ namespace OzonOrdersWeb.Controllers
                     _yandexDataManager.SetClient(client.DecryptClientId, client.DecryptApiKey);
                     var jsonData = await _yandexDataManager.GetOrders(start, end);
                     var orders = await _orderCaster.YandexToOrders(jsonData);
-                    orders = orders.Select(order => { order.OzonClient = client; return order; }).ToList();
+                    orders = orders.Select(order =>
+                    {
+                        order.OzonClient = client;
+                        return order;
+                    }).ToList();
 
                     var uploadResult = await _orderRepository.AddOrders(orders);
                     result.Add(client.Name, uploadResult);
@@ -337,27 +354,31 @@ namespace OzonOrdersWeb.Controllers
         }
 
 
-        private string GetJobResultString(Dictionary<string, int[]> result, DateTime start, DateTime end, string clientStatus, int? duplicateCount, int? deletedRowsCount)
+        private string GetJobResultString(Dictionary<string, int[]> result, DateTime start, DateTime end,
+            string clientStatus, int? duplicateCount, int? deletedRowsCount)
         {
             string jobResult = "";
 
-            jobResult += $"Период: {start.ToString("dd.MM.yyyy HH:mm:ss")} - {end.ToString("dd.MM.yyyy HH:mm:ss")}<br/>";
-            foreach(var kvp in result)
+            jobResult +=
+                $"Период: {start.ToString("dd.MM.yyyy HH:mm:ss")} - {end.ToString("dd.MM.yyyy HH:mm:ss")}<br/>";
+            foreach (var kvp in result)
             {
-                jobResult += $"&nbsp;&nbsp;&nbsp;&nbsp;Клиент: {kvp.Key} - загружено {kvp.Value[0]}, обновлено {kvp.Value[1]}<br/>";
+                jobResult +=
+                    $"&nbsp;&nbsp;&nbsp;&nbsp;Клиент: {kvp.Key} - загружено {kvp.Value[0]}, обновлено {kvp.Value[1]}<br/>";
             }
+
             jobResult += clientStatus;
 
             jobResult += $"Удалено дублей {deletedRowsCount} из {duplicateCount}";
 
-            
+
             return jobResult;
         }
 
-        public  List<(DateTime, DateTime)> GetDateRanges(int months)
+        public List<(DateTime, DateTime)> GetDateRanges(int months)
         {
             List<(DateTime, DateTime)> dateRanges = new List<(DateTime, DateTime)>();
-            
+
             DateTime endDate = DateTime.Today;
 
             DateTime startDate = endDate.AddMonths(-months);
@@ -370,17 +391,18 @@ namespace OzonOrdersWeb.Controllers
                 {
                     weekEnd = endDate;
                 }
+
                 dateRanges.Add((weekStart, weekEnd));
                 startDate = startDate.AddDays(7);
             }
 
             return dateRanges;
         }
-        
+
         public async Task<string> FileUpload()
         {
             string resultTxt = string.Empty;
-            
+
             var files = await _dropboxApiClient.GetFolderContentsAsync("/Orders");
             foreach (var file in files)
             {
@@ -388,19 +410,27 @@ namespace OzonOrdersWeb.Controllers
                 {
                     DateTime selectedShippingDate = DateTime.Now;
                     DateTime selectedProcessingDate = DateTime.Now;
-                    
-                    (var mappingName, selectedShippingDate) = ParseFileFieldAndAdjustDate(file.Key, selectedProcessingDate);
-                    
-                    var mapping = await _columnMappingDataServcies.GetColumnMappingAsync(new ColumnMapping { MappingName = mappingName });
+                    string delivery = string.Empty;
+
+                    (var mappingName, selectedShippingDate, delivery) =
+                        ParseFileFieldAndAdjustDate(file.Key, selectedProcessingDate);
+
+                    var mapping =
+                        await _columnMappingDataServcies.GetColumnMappingAsync(new ColumnMapping
+                            { MappingName = mappingName });
                     if (mapping == null)
                     {
                         continue;
                     }
 
-                    var selectedClient = await _context.OzonClients.FindAsync(mapping.SelectedClientId) ?? new OzonClient { Id = 0 };
-                    var selectedManufacturer = await _context.Manufacturers.FindAsync(mapping.SelectedManufacturerId) ?? new Manufacturer { Id = 0 };
-                    var selectedWarehouse = await _context.Warehouses.FindAsync(mapping.SelectedWarehouseId) ?? new Warehouse { Id = 0 };
-                    var selectedSupplier = await _context.Suppliers.FindAsync(mapping.SelectedSupplierId) ?? new Supplier { Id = 0 };
+                    var selectedClient = await _context.OzonClients.FindAsync(mapping.SelectedClientId) ??
+                                         new OzonClient { Id = 0 };
+                    var selectedManufacturer = await _context.Manufacturers.FindAsync(mapping.SelectedManufacturerId) ??
+                                               new Manufacturer { Id = 0 };
+                    var selectedWarehouse = await _context.Warehouses.FindAsync(mapping.SelectedWarehouseId) ??
+                                            new Warehouse { Id = 0 };
+                    var selectedSupplier = await _context.Suppliers.FindAsync(mapping.SelectedSupplierId) ??
+                                           new Supplier { Id = 0 };
 
                     foreach (var fileName in file.Value)
                     {
@@ -411,9 +441,10 @@ namespace OzonOrdersWeb.Controllers
                         {
                             continue;
                         }
-                            
+
                         int[] result = [0, 0];
-                        string tempFilePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + Path.GetExtension(fileName.Key));
+                        string tempFilePath = Path.Combine(Path.GetTempPath(),
+                            Guid.NewGuid() + Path.GetExtension(fileName.Key));
 
                         try
                         {
@@ -425,6 +456,7 @@ namespace OzonOrdersWeb.Controllers
                                     await fileStream.WriteAsync(fileBytes, 0, fileBytes.Length);
                                 }
                             }
+
                             List<Dictionary<string, string>> tableData;
                             using (var memoryStream = new MemoryStream())
                             {
@@ -432,35 +464,38 @@ namespace OzonOrdersWeb.Controllers
                                 {
                                     await fileStream.CopyToAsync(memoryStream);
                                 }
+
                                 memoryStream.Position = 0;
 
                                 string contentType = Path.GetExtension(tempFilePath).ToLower();
-                                
+
                                 var startRow = 1;
                                 var startColumn = 1;
-                                
+
                                 if (mappingName == "Автопитер")
                                 {
                                     startRow = 3;
                                     startColumn = 1;
                                 }
-                                
+
                                 if (contentType == ".xlsx" || contentType == ".xls")
                                 {
-                                    tableData = await _excelParser.GetTableDataAsyncForDropbox(memoryStream, startRow: startRow, startColumn: startColumn);
+                                    tableData = await _excelParser.GetTableDataAsyncForDropbox(memoryStream,
+                                        startRow: startRow, startColumn: startColumn);
                                 }
                                 else if (contentType == ".csv")
                                 {
                                     var convertedStream = _excelParser.ConvertCsvToExcel(memoryStream, delimiter: ',');
                                     convertedStream.Position = 0;
-                                    tableData = await _excelParser.GetTableDataAsyncForDropbox(convertedStream, startRow: startRow, startColumn: startColumn);
+                                    tableData = await _excelParser.GetTableDataAsyncForDropbox(convertedStream,
+                                        startRow: startRow, startColumn: startColumn);
                                 }
                                 else
                                 {
                                     throw new Exception("Неподдерживаемый тип файла.");
                                 }
                             }
-                            
+
                             tableData = _excelParser.UpdateTableToStandartColumns(tableData, mapping.ColumnMappings);
                             List<Order> orders = await _orderCaster.ExcelToOrdersForDropbox(
                                 tableData,
@@ -471,7 +506,8 @@ namespace OzonOrdersWeb.Controllers
                                 mapping.SelectedStatus,
                                 mapping.SelectedCurrencyCode.Value,
                                 selectedShippingDate,
-                                selectedProcessingDate);
+                                selectedProcessingDate,
+                                delivery);
 
                             orders = await _orderDataServcies.SetUniqueShipmentNumberAndKey(orders);
                             orders = await _orderCaster.SetFileDataAsync(orders, mappingName, fileName.Key);
@@ -480,7 +516,8 @@ namespace OzonOrdersWeb.Controllers
                             var uploadResult = await _orderDataServcies.AddOrders(orders);
                             result[0] += uploadResult[0];
                             result[1] += uploadResult[1];
-                            resultTxt += $"{mappingName}/{fileName.Key}: Добавлено {result[0]}, обновлено {result[1]}<br>";
+                            resultTxt +=
+                                $"{mappingName}/{fileName.Key}: Добавлено {result[0]}, обновлено {result[1]}<br>";
                             await _fileUploadRecordDataService.AddFileUploadRecord(new FileUploadRecord()
                             {
                                 FileName = fileName.Key,
@@ -508,37 +545,54 @@ namespace OzonOrdersWeb.Controllers
                     // Обработка ошибок на уровне файла
                     resultTxt += $"{file.Key}: Ошибка: {e.Message}<br>";
                 }
-            };
-            
+            }
+
+            ;
+
             if (resultTxt.IsNullOrEmpty())
             {
                 resultTxt = "Новых файлов не найдено";
             }
+
             return resultTxt;
         }
-        
-        public (string Name, DateTime Date) ParseFileFieldAndAdjustDate(string file, DateTime initialDate)
+
+        public (string Name, DateTime Date, string Delivery) ParseFileFieldAndAdjustDate(string file,
+            DateTime initialDate)
         {
-            if (string.IsNullOrEmpty(file))
-                return (file, initialDate); // Если поле пустое, возвращаем исходное значение и дату
+            if (string.IsNullOrWhiteSpace(file))
+                return (file, initialDate, string.Empty);
 
-            // Используем регулярное выражение для поиска шаблона: название + пробел + знак (+/-) + число
-            var match = Regex.Match(file, @"^(.*?)\s([+-]\d+)$");
+            // 1️⃣ Проверяем наличие шаблона с числом (+/-N)
+            var match = Regex.Match(file, @"^(.*?)\s([+-]\d+)\s*(.*)$");
 
-            if (match.Success) // Если найдено соответствие шаблону
+            if (match.Success)
             {
-                string name = match.Groups[1].Value; // Название (первая часть)
-                string value = match.Groups[2].Value; // Значение со знаком и числом (например, +6 или -3)
+                string name = match.Groups[1].Value.Trim(); // Название
+                string offsetStr = match.Groups[2].Value.Trim(); // Смещение (+6 / -3 / +30)
+                string delivery = match.Groups[3].Value.Trim(); // Направление (если есть)
 
-                if (int.TryParse(value, out int days)) 
+                if (int.TryParse(offsetStr, out int days))
                 {
                     DateTime adjustedDate = initialDate.AddDays(days);
-                    return (name, adjustedDate); 
+                    return (name, adjustedDate, delivery);
                 }
             }
-            return (file, initialDate);
+
+            // 2️⃣ Если нет числа — разделяем на имя и доставку (первое слово = имя, остальное = доставка)
+            var textMatch = Regex.Match(file, @"^(\S+)\s*(.*)$");
+            if (textMatch.Success)
+            {
+                string name = textMatch.Groups[1].Value.Trim(); // Первое слово
+                string delivery = textMatch.Groups[2].Value.Trim(); // Всё остальное (направление)
+                return (name, initialDate, delivery);
+            }
+
+            // 3️⃣ В остальных случаях — просто вернуть как есть
+            return (file.Trim(), initialDate, string.Empty);
         }
-        
+
+
         public async Task<string> UpdateCartItemsStatusAsync(int count)
         {
             // Получаем последние элементы
@@ -554,8 +608,8 @@ namespace OzonOrdersWeb.Controllers
                 Login = _maxiPartsConfig.User,
                 Password = _maxiPartsConfig.Password,
                 Items = items.Where(x => !string.IsNullOrEmpty(x.OrderItemCode))
-                             .Select(x => x.OrderItemCode)
-                             .ToList()
+                    .Select(x => x.OrderItemCode)
+                    .ToList()
             };
 
             if (!request.Items.Any())
@@ -599,6 +653,7 @@ namespace OzonOrdersWeb.Controllers
                     }
                 }
             }
+
             var report = new StringBuilder();
             report.Append($"<h4>=== Отчет об обновлении статусов ===</h4>");
             report.Append($"<p>• Всего обработано: {items.Count}<br>");
@@ -610,10 +665,11 @@ namespace OzonOrdersWeb.Controllers
                 report.Append(string.Join("<br>", changes));
                 report.Append("</p>");
             }
+
             report.Append($"<p>Время обработки: {DateTime.Now:yyyy-MM-dd HH:mm:ss}</p>");
 
             await NotificationService.NotifyAllAsync($"Обновлено {updatedCount} статусов в фоне");
-            
+
             return report.ToString();
         }
     }
