@@ -13,7 +13,6 @@ public static class DatabaseExtensions
             ? configuration.GetConnectionString("MySqlConnectionProd")
             : configuration.GetConnectionString("MySqlConnectionLocal");
         string jcEtalonConnection = configuration.GetConnectionString("JcEtalonConnectionProd");
-
         string bitrixConnection = isProd
             ? configuration.GetConnectionString("BitrixConnectionProd")
             : configuration.GetConnectionString("BitrixConnectionLocal");
