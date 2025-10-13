@@ -28,8 +28,8 @@ public static class HangfireExtensions
 
         services.AddHangfireServer(options =>
         {
-            options.Queues = ["upload-queue-new"];
-            options.WorkerCount = 1;
+            options.Queues = ["main"];
+            options.WorkerCount = 3;
         });
     }
 }

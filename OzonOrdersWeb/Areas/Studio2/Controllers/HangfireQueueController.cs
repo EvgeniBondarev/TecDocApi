@@ -24,7 +24,7 @@ public class HangfireQueueController : Controller
         _hangfireService = hangfireService;
     }
 
-    public IActionResult Index(string queueName = "upload-queue-new", string tab = "enqueued")
+    public IActionResult Index(string queueName = "main", string tab = "enqueued")
     {
         var queues = _hangfireService.GetAvailableQueues();
         var model = new HangfireJobsViewModel
@@ -32,17 +32,16 @@ public class HangfireQueueController : Controller
             QueueName = queueName,
             ActiveTab = tab,
             AvailableQueues = queues.ToList(),
-            
+
             EnqueuedJobs = _hangfireService.GetEnqueuedJobs(queueName),
             ProcessingJobs = _hangfireService.GetProcessingJobs(queueName),
             SucceededJobs = _hangfireService.GetSucceededJobs(),
-            DeletedJobs = _hangfireService.GetDeletedJobs() 
-            
+            DeletedJobs = _hangfireService.GetDeletedJobs()
         };
 
         return View(model);
     }
-    
+
     [HttpPost]
     public IActionResult DeleteJob([FromBody] DeleteJobRequest request)
     {

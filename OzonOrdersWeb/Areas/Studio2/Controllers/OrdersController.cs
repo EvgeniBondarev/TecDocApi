@@ -86,7 +86,7 @@ namespace OzonOrdersWeb.Controllers
         private readonly IUserCacheService _userCacheService;
         private readonly StockDataService _stockDataService;
         private readonly OrderCartServcies _orderCartServcies;
-        private readonly CartCache _cartCache; 
+        private readonly CartCache _cartCache;
         private readonly EtProducerDataServices _etProducerDataServices;
         private readonly ProxyHttpClientService _proxyHttpClientService;
         private readonly ArticleFullModelBuilder _articleFullModelBuilder;
@@ -95,47 +95,48 @@ namespace OzonOrdersWeb.Controllers
         private readonly WarehouseMappingDataServcies _warehouseMappingDataServcies;
         private readonly OneCTransferManager _oneCTransferManager;
         private readonly BitrixStockRepository _bitrixStockRepository;
+
         public OrdersController(OzonOrderContext context,
-                                OrdersDataServcies orderRepository,
-                                AppStatusDataServcies appStatusDataServcies,
-                                SupplierDataServcies supplierDataServcies,
-                                WarehouseDataServcies warehouseDataServcies,
-                                OrderCaster orderCaster,
-                                OrderCache orderCache,
-                                OrderDataFilterManager dataFilterManager,
-                                CacheUpdater<Order> cacheUpdater,
-                                OzonJsonDataBuilder jsonDataBuilder,
-                                ReleaseManager releaseManager,
-                                TransactionDataServcies transactionDataServcies,
-                                TransactionCache transactionCache,
-                                TransactionManager transactionManager,
-                                DuplicateOrdersServcies duplicateOrdersServcies,
-                                OzonClientServcies ozonClientServcies,
-                                UserManager<CustomIdentityUser> userManager,
-                                ExcelParser excelParser,
-                                ColumnMappingDataServcies columnMappingDataServcies,
-                                CurrencyRateFetcher currencyRateFetcher,
-                                DropboxApiClient dropboxApiClient,
-                                ManufacturerDataService manufacturerDataService,
-                                ExcelExporter excelExporter,
-                                UserAccessDataServices userAccessDataServices,
-                                YandexDataManager yandexDataManager,
-                                TecDocDataManager tecDocDataManager,
-                                FullDetailInfoCaster fullDetailInfoCaster,
-                                SubstituteResultCaster substituteResultCaster,
-                                IUniqueValuesCache uniqueValuesCache,
-                                IUserCacheService userCacheService,
-                                StockDataService stockDataService,
-                                OrderCartServcies orderCartServcies,
-                                CartCache cartCache,
-                                EtProducerDataServices etProducerDataServices,
-                                ProxyHttpClientService proxyHttpClientService,
-                                ArticleFullModelBuilder articleFullModelBuilder,
-                                ProductInformationModelBuilder productInformationModelBuilder,
-                                DeliveryDataServcies deliveryDataServcies,
-                                WarehouseMappingDataServcies warehouseMappingDataServcies,
-                                OneCTransferManager oneCTransferManager,
-                                BitrixStockRepository bitrixStockRepository)
+            OrdersDataServcies orderRepository,
+            AppStatusDataServcies appStatusDataServcies,
+            SupplierDataServcies supplierDataServcies,
+            WarehouseDataServcies warehouseDataServcies,
+            OrderCaster orderCaster,
+            OrderCache orderCache,
+            OrderDataFilterManager dataFilterManager,
+            CacheUpdater<Order> cacheUpdater,
+            OzonJsonDataBuilder jsonDataBuilder,
+            ReleaseManager releaseManager,
+            TransactionDataServcies transactionDataServcies,
+            TransactionCache transactionCache,
+            TransactionManager transactionManager,
+            DuplicateOrdersServcies duplicateOrdersServcies,
+            OzonClientServcies ozonClientServcies,
+            UserManager<CustomIdentityUser> userManager,
+            ExcelParser excelParser,
+            ColumnMappingDataServcies columnMappingDataServcies,
+            CurrencyRateFetcher currencyRateFetcher,
+            DropboxApiClient dropboxApiClient,
+            ManufacturerDataService manufacturerDataService,
+            ExcelExporter excelExporter,
+            UserAccessDataServices userAccessDataServices,
+            YandexDataManager yandexDataManager,
+            TecDocDataManager tecDocDataManager,
+            FullDetailInfoCaster fullDetailInfoCaster,
+            SubstituteResultCaster substituteResultCaster,
+            IUniqueValuesCache uniqueValuesCache,
+            IUserCacheService userCacheService,
+            StockDataService stockDataService,
+            OrderCartServcies orderCartServcies,
+            CartCache cartCache,
+            EtProducerDataServices etProducerDataServices,
+            ProxyHttpClientService proxyHttpClientService,
+            ArticleFullModelBuilder articleFullModelBuilder,
+            ProductInformationModelBuilder productInformationModelBuilder,
+            DeliveryDataServcies deliveryDataServcies,
+            WarehouseMappingDataServcies warehouseMappingDataServcies,
+            OneCTransferManager oneCTransferManager,
+            BitrixStockRepository bitrixStockRepository)
         {
             _context = context;
             _orderServcies = orderRepository;
@@ -180,7 +181,7 @@ namespace OzonOrdersWeb.Controllers
             _oneCTransferManager = oneCTransferManager;
             _bitrixStockRepository = bitrixStockRepository;
         }
-        
+
         [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Any, NoStore = false)]
         public async Task<IActionResult> Index(OrderSortState sortOrder = OrderSortState.StandardState, int page = 1)
         {
@@ -213,8 +214,9 @@ namespace OzonOrdersWeb.Controllers
 
             var returnableCount = await _orderServcies.GetReturnableCount();
 
-            var pageViewModel = new OrderPageViewModel<Order, OrderFilterModel>(ordersFromCache.OrderBy(o => o.ProcessingDate).ToList(), 
-                                                                                page, pageSize, filterData, returnableCount)
+            var pageViewModel = new OrderPageViewModel<Order, OrderFilterModel>(
+                ordersFromCache.OrderBy(o => o.ProcessingDate).ToList(),
+                page, pageSize, filterData, returnableCount)
             {
                 UniqueArticles = await _uniqueValuesCache.GetUniqueArticles(),
                 UniqueDeliveryCitys = await _uniqueValuesCache.GetUniqueDeliveryCitys(),
@@ -234,7 +236,7 @@ namespace OzonOrdersWeb.Controllers
 
             return View(pageViewModel);
         }
-        
+
         [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Any, NoStore = false)]
         [HttpPost]
         public async Task<IActionResult> Index(OrderFilterModel filterData, int page = 1, string buttonState = "")
@@ -256,8 +258,9 @@ namespace OzonOrdersWeb.Controllers
 
             var returnableCount = await _orderServcies.GetReturnableCount();
 
-            var pageViewModel = new OrderPageViewModel<Order, OrderFilterModel>(ordersFromCache.OrderBy(o => o.ProcessingDate).ToList(), 
-                                                                                page, pageSize, filterData, returnableCount)
+            var pageViewModel = new OrderPageViewModel<Order, OrderFilterModel>(
+                ordersFromCache.OrderBy(o => o.ProcessingDate).ToList(),
+                page, pageSize, filterData, returnableCount)
             {
                 UniqueArticles = await _orderServcies.GetUniqueArticles(),
                 UniqueDeliveryCitys = await _orderServcies.GetUniqueDeliveryCities(),
@@ -276,24 +279,27 @@ namespace OzonOrdersWeb.Controllers
 
             return View(pageViewModel);
         }
-        
+
         public async Task<IActionResult> ViewOrders(int[] ids)
         {
             List<Order> ordereToView = [];
             var returnableCount = await _orderServcies.GetReturnableCount();
             SetInfoMessage();
-            
+
             foreach (var id in ids)
             {
                 ordereToView.Add(await _orderServcies.GetOrder(id));
             }
+
             string? filterDataString = HttpContext.Request.Cookies["FilterData"];
             var filterData = new OrderFilterModel();
             if (!string.IsNullOrEmpty(filterDataString))
             {
                 filterData = JsonConvert.DeserializeObject<OrderFilterModel>(filterDataString);
             }
-            var pageViewModel = new OrderPageViewModel<Order, OrderFilterModel>(ordereToView, 1, ordereToView.Count(), filterData, returnableCount)
+
+            var pageViewModel = new OrderPageViewModel<Order, OrderFilterModel>(ordereToView, 1, ordereToView.Count(),
+                filterData, returnableCount)
             {
                 UniqueArticles = await _uniqueValuesCache.GetUniqueArticles(),
                 UniqueDeliveryCitys = await _uniqueValuesCache.GetUniqueDeliveryCitys(),
@@ -334,6 +340,7 @@ namespace OzonOrdersWeb.Controllers
             {
                 size = 100;
             }
+
             Response.Cookies.Append("PageSize", size.ToString());
             return RedirectToAction(nameof(System.Index));
         }
@@ -345,10 +352,10 @@ namespace OzonOrdersWeb.Controllers
             {
                 size = 100;
             }
+
             Response.Cookies.Append("PageSize", size.ToString());
             return RedirectToAction(nameof(Index));
         }
-
 
 
         public async Task<IActionResult> Update()
@@ -370,6 +377,7 @@ namespace OzonOrdersWeb.Controllers
                 string result = (string)TempData["ErorrResult"];
                 ViewData["ErorrResult"] = result;
             }
+
             return View();
         }
 
@@ -379,7 +387,7 @@ namespace OzonOrdersWeb.Controllers
             BackgroundJobClient client = new BackgroundJobClient();
             client.Create(
                 () => UploadInBackground(period, clientType),
-                new EnqueuedState("upload-queue-new")
+                new EnqueuedState("main")
             );
             TempData["TransactionResult"] = "Загрузка обрабатывается в фоне.";
             ClearSelectedIdsSession();
@@ -391,11 +399,13 @@ namespace OzonOrdersWeb.Controllers
             string resultString = await UploadClientsData(period, clientType);
             await NotificationService.NotifyAllAsync($"Ручная загрузка завершена:{resultString}");
         }
-        
+
         public async Task<string> UploadClientsData(int period, ClientType clientType)
         {
-            List<OzonClient> ozonClients = (await _ozonClientServcies.GetOzonClients()).Where(c => c.ClientType == ClientType.OZON).ToList();
-            List<OzonClient> yandexClients = (await _ozonClientServcies.GetOzonClients()).Where(c => c.ClientType == ClientType.YANDEX).ToList();
+            List<OzonClient> ozonClients = (await _ozonClientServcies.GetOzonClients())
+                .Where(c => c.ClientType == ClientType.OZON).ToList();
+            List<OzonClient> yandexClients = (await _ozonClientServcies.GetOzonClients())
+                .Where(c => c.ClientType == ClientType.YANDEX).ToList();
 
             int[] result = new int[2];
             int timeZone = _releaseManager.GetTimeZone();
@@ -418,8 +428,9 @@ namespace OzonOrdersWeb.Controllers
 
             return $"{start:dd.MM.yyyy HH:mm:ss} - {end:dd.MM.yyyy HH:mm:ss}<br/>{clientStatus}";
         }
-        
-        private async Task<string> UploadOrders(List<OzonClient> clients, DateTime start, DateTime end, ClientType clientType, int[] result)
+
+        private async Task<string> UploadOrders(List<OzonClient> clients, DateTime start, DateTime end,
+            ClientType clientType, int[] result)
         {
             var clientStatus = string.Empty;
 
@@ -432,7 +443,11 @@ namespace OzonOrdersWeb.Controllers
                         _yandexDataManager.SetClient(client.DecryptClientId, client.DecryptApiKey);
                         var jsonData = await _yandexDataManager.GetOrders(start, end);
                         var orders = await _orderCaster.YandexToOrders(jsonData);
-                        orders = orders.Select(order => { order.OzonClient = client; return order; }).ToList();
+                        orders = orders.Select(order =>
+                        {
+                            order.OzonClient = client;
+                            return order;
+                        }).ToList();
                         var uploadResult = await _orderServcies.AddOrders(orders);
                         result[0] += uploadResult[0];
                         result[1] += uploadResult[1];
@@ -442,7 +457,11 @@ namespace OzonOrdersWeb.Controllers
                         _jsonDataBuilder.SetClient(client.DecryptClientId, client.DecryptApiKey);
                         var jsonData = await _jsonDataBuilder.BuildData(start, end);
                         var orders = await _orderCaster.JsonToOrders(jsonData);
-                        orders = orders.Select(order => { order.OzonClient = client; return order; }).ToList();
+                        orders = orders.Select(order =>
+                        {
+                            order.OzonClient = client;
+                            return order;
+                        }).ToList();
                         var uploadResult = await _orderServcies.AddOrders(orders);
                         result[0] += uploadResult[0];
                         result[1] += uploadResult[1];
@@ -460,14 +479,15 @@ namespace OzonOrdersWeb.Controllers
         }
 
 
-
         [HttpPost]
-        public async Task<IActionResult> UploadExcelFile(IFormFile file, int startRow = 1, int startColumn = 1, char delimiter = ';')
+        public async Task<IActionResult> UploadExcelFile(IFormFile file, int startRow = 1, int startColumn = 1,
+            char delimiter = ';')
         {
             if (file != null && file.Length > 0)
             {
                 string tempDir = Path.GetTempPath();
-                string tempFilePath = Path.Combine(tempDir, Guid.NewGuid().ToString() + Path.GetExtension(file.FileName));
+                string tempFilePath =
+                    Path.Combine(tempDir, Guid.NewGuid().ToString() + Path.GetExtension(file.FileName));
 
                 try
                 {
@@ -486,18 +506,21 @@ namespace OzonOrdersWeb.Controllers
                             {
                                 await fileStream.CopyToAsync(memoryStream);
                             }
+
                             if (file.ContentType == "text/csv")
                             {
                                 await _excelParser.ConvertCsvToExcel(fileStream, delimiter).CopyToAsync(memoryStream);
                             }
-
                         }
+
                         memoryStream.Position = 0;
 
-                        tableHeaders = await _excelParser.GetTableHeadersAsync(memoryStream, startRow: startRow, startColumn: startColumn);
-                        tableData = await _excelParser.GetTableDataAsync(memoryStream, startRow: startRow, startColumn: startColumn);
-
+                        tableHeaders = await _excelParser.GetTableHeadersAsync(memoryStream, startRow: startRow,
+                            startColumn: startColumn);
+                        tableData = await _excelParser.GetTableDataAsync(memoryStream, startRow: startRow,
+                            startColumn: startColumn);
                     }
+
                     string dropBoxFilePath = $"/ExcelFiles/{DateTime.Now.ToString("dd.MM.yyyy")}";
                     await _dropboxApiClient.UploadFileAsync(tempFilePath, dropBoxFilePath, file.FileName);
 
@@ -519,14 +542,18 @@ namespace OzonOrdersWeb.Controllers
                     return RedirectToAction(nameof(Upload));
                 }
             }
+
             TempData["ErorrResult"] = $"Файл не был выбран.";
             return RedirectToAction(nameof(Upload));
         }
 
         public async Task<IActionResult> PrepaExcelTable()
         {
-            var tableHeaders = JsonConvert.DeserializeObject<List<string>>(HttpContext.Session.GetString("TableHeaders"));
-            var tableData = JsonConvert.DeserializeObject<List<Dictionary<string, string>>>(HttpContext.Session.GetString("TableData"));
+            var tableHeaders =
+                JsonConvert.DeserializeObject<List<string>>(HttpContext.Session.GetString("TableHeaders"));
+            var tableData =
+                JsonConvert.DeserializeObject<List<Dictionary<string, string>>>(
+                    HttpContext.Session.GetString("TableData"));
             var filrPath = HttpContext.Session.GetString("FilePath")?.Trim('"');
             var fileName = HttpContext.Session.GetString("FileName")?.Trim('"');
 
@@ -538,14 +565,19 @@ namespace OzonOrdersWeb.Controllers
                 FilePath = filrPath,
                 FileName = fileName,
                 OzonClients = await _ozonClientServcies.GetOzonClients(),
-                Statuses = new SelectList((await _cache.Get()).Select(s => s.Status).Distinct().Select(s => new { Name = s }).ToList().OrderBy(a => a.Name), "Name", "Name"),
+                Statuses = new SelectList(
+                    (await _cache.Get()).Select(s => s.Status).Distinct().Select(s => new { Name = s }).ToList()
+                    .OrderBy(a => a.Name), "Name", "Name"),
                 Manufacturers = (await _manufacturerDataService.GetManufacturers()).Where(m => m.Name != null).ToList(),
                 Warehouses = await _warehouseDataServcies.GetWarehouses(),
                 Suppliers = (await _supplierDataServcies.GetSuppliers()).OrderBy(a => a.Name).ToList(),
-                CurrencyCodes = [(CurrencyCode.RUB, "RUB"),
+                CurrencyCodes =
+                [
+                    (CurrencyCode.RUB, "RUB"),
                     (CurrencyCode.USD, "USD"),
                     (CurrencyCode.EUR, "EUR"),
-                    (CurrencyCode.BYN, "BYN")],
+                    (CurrencyCode.BYN, "BYN")
+                ],
             };
             return View(model);
         }
@@ -553,10 +585,12 @@ namespace OzonOrdersWeb.Controllers
         [HttpPost]
         public async Task<IActionResult> GroupFileData(ExelDataViewModel model)
         {
-            model.TableData = JsonConvert.DeserializeObject<List<Dictionary<string, string>>>(HttpContext.Session.GetString("TableData"));
+            model.TableData =
+                JsonConvert.DeserializeObject<List<Dictionary<string, string>>>(
+                    HttpContext.Session.GetString("TableData"));
 
             model.TableData = _excelParser.UpdateTableToStandartColumns(model.TableData, model.ColumnMappings);
-            
+
             var orders = await _orderCaster.ExcelToOrders(
                 model.TableData,
                 model.SelectedClient,
@@ -567,20 +601,22 @@ namespace OzonOrdersWeb.Controllers
                 model.SelectedCurrencyCode,
                 model.SelectedShippingDate,
                 model.SelectedProcessingDate
-            ); 
+            );
             orders = _orderServcies.MergeOrders(orders);
-            
+
             orders = await _orderServcies.CalculateCostPriceForNotFullOrders(orders);
-                   
-            byte[] excelFile = _excelExporter.ExportToExcel(orders, ["Артикул", "Производитель", 
-                "Оригинальная цена", "Цена закупки", "Количество"]); 
-            return File(excelFile, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
+
+            byte[] excelFile = _excelExporter.ExportToExcel(orders, [
+                "Артикул", "Производитель",
+                "Оригинальная цена", "Цена закупки", "Количество"
+            ]);
+            return File(excelFile, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 $"GroupOrders_{DateTime.Now:dd.MM.yyyy}.xlsx");
         }
-        
+
         [HttpPost]
         public async Task<IActionResult> AppendFile(
-            ExelDataViewModel model, 
+            ExelDataViewModel model,
             List<string> compareColumnsList,
             List<string> addColumnsList)
         {
@@ -596,7 +632,7 @@ namespace OzonOrdersWeb.Controllers
             var contextOrders = await _orderServcies.GetOrders();
             var standartTableData = _excelParser.UpdateTableToStandartColumns(standartFileData, model.ColumnMappings);
             var compareColumnsSet = new HashSet<string>(compareColumnsList, StringComparer.OrdinalIgnoreCase);
-            
+
             var ordersToFile = new Dictionary<int, Order>();
             for (int i = 0; i < standartTableData.Count; i++)
             {
@@ -615,7 +651,7 @@ namespace OzonOrdersWeb.Controllers
                     ordersToFile[i] = order;
                 }
             }
-            
+
             var resultData = _excelExporter.AddOrdersToFileData(standartFileData, ordersToFile, addColumnsList);
             byte[] excelFile = _excelExporter.ExportToExcel(resultData);
 
@@ -625,7 +661,9 @@ namespace OzonOrdersWeb.Controllers
         [HttpPost]
         public async Task<IActionResult> CheckFile(ExelDataViewModel model, string saveName, bool notFull, bool isGroup)
         {
-            model.TableData = JsonConvert.DeserializeObject<List<Dictionary<string, string>>>(HttpContext.Session.GetString("TableData"));
+            model.TableData =
+                JsonConvert.DeserializeObject<List<Dictionary<string, string>>>(
+                    HttpContext.Session.GetString("TableData"));
 
             model.TableData = _excelParser.UpdateTableToStandartColumns(model.TableData, model.ColumnMappings);
 
@@ -633,25 +671,36 @@ namespace OzonOrdersWeb.Controllers
             {
                 try
                 {
-
                     ColumnMapping newMapping = new ColumnMapping()
                     {
                         MappingName = saveName,
                         ColumnMappings = model.ColumnMappings,
-                        SelectedClientId = model.SelectedClient != null && model.SelectedClient.Id != 0 ? model.SelectedClient.Id : null,
+                        SelectedClientId = model.SelectedClient != null && model.SelectedClient.Id != 0
+                            ? model.SelectedClient.Id
+                            : null,
                         SelectedCurrencyCode = model.SelectedCurrencyCode,
-                        SelectedManufacturerId = model.SelectedManufacturer != null && model.SelectedManufacturer.Id != -1 && model.SelectedManufacturer.Id != 0 ? model.SelectedManufacturer.Id : null,
-                        SelectedWarehouseId = model.SelectedWarehouse != null && model.SelectedWarehouse.Id != 0 ? model.SelectedWarehouse.Id : null,
-                        SelectedSupplierId = model.SelectedSupplier != null && model.SelectedSupplier.Id != 0 ? model.SelectedSupplier.Id : null,
+                        SelectedManufacturerId =
+                            model.SelectedManufacturer != null && model.SelectedManufacturer.Id != -1 &&
+                            model.SelectedManufacturer.Id != 0
+                                ? model.SelectedManufacturer.Id
+                                : null,
+                        SelectedWarehouseId = model.SelectedWarehouse != null && model.SelectedWarehouse.Id != 0
+                            ? model.SelectedWarehouse.Id
+                            : null,
+                        SelectedSupplierId = model.SelectedSupplier != null && model.SelectedSupplier.Id != 0
+                            ? model.SelectedSupplier.Id
+                            : null,
                         SelectedStatus = model.SelectedStatus,
-                        ManufacturerFromArticle = model.SelectedManufacturer != null && model.SelectedManufacturer.Id == -1 ? true : false,
+                        ManufacturerFromArticle =
+                            model.SelectedManufacturer != null && model.SelectedManufacturer.Id == -1 ? true : false,
                     };
 
                     await _columnMappingDataServcies.AddColumnMapping(newMapping);
                 }
                 catch (Exception ex)
                 {
-                    throw new Exception($"Произошла ошибка при cохранении состояния сопоставлений столбцов: {ex.Message}");
+                    throw new Exception(
+                        $"Произошла ошибка при cохранении состояния сопоставлений столбцов: {ex.Message}");
                 }
             }
 
@@ -676,10 +725,12 @@ namespace OzonOrdersWeb.Controllers
                         {
                             newOzonClients.Add(value);
                         }
+
                         if (key == "Статус клинта" && !allStatuses.Contains(value) && !newStatuses.Contains(value))
                         {
                             newStatuses.Add(value);
                         }
+
                         if (key == "Склад отгрузки" && !allWarehouses.Contains(value) && !newWarehouses.Contains(value))
                         {
                             newWarehouses.Add(value);
@@ -717,21 +768,23 @@ namespace OzonOrdersWeb.Controllers
 
                 foreach (var row in model.TableData)
                 {
-
                     foreach (var key in row.Keys.ToList())
                     {
                         string value = row[key];
 
-                        if (newValues.NewOzonClientsDict.TryGetValue(value, out bool isAcceptedOzonClient) && !isAcceptedOzonClient)
+                        if (newValues.NewOzonClientsDict.TryGetValue(value, out bool isAcceptedOzonClient) &&
+                            !isAcceptedOzonClient)
                         {
                             row[key] = "Не указан";
                         }
 
-                        else if (newValues.NewStatusesDict.TryGetValue(value, out bool isAcceptedStatus) && !isAcceptedStatus)
+                        else if (newValues.NewStatusesDict.TryGetValue(value, out bool isAcceptedStatus) &&
+                                 !isAcceptedStatus)
                         {
                             row[key] = "Не указан";
                         }
-                        else if (newValues.NewWarehousesDict.TryGetValue(value, out bool isAcceptedWarehouse) && !isAcceptedWarehouse)
+                        else if (newValues.NewWarehousesDict.TryGetValue(value, out bool isAcceptedWarehouse) &&
+                                 !isAcceptedWarehouse)
                         {
                             row[key] = "Не указан";
                         }
@@ -748,19 +801,18 @@ namespace OzonOrdersWeb.Controllers
 
         public async Task<IActionResult> UploadExcelOrders()
         {
-
             try
             {
                 var notFullJson = HttpContext.Session.GetString("NotFull");
                 var isGroupJson = HttpContext.Session.GetString("IsGroup");
                 var modelJson = HttpContext.Session.GetString("ExelDataViewModel");
-                
+
                 if (bool.TryParse(notFullJson, out var notFull) && notFull)
                 {
                     return RedirectToAction(nameof(SetNotFullOrdersData));
                 }
 
-                
+
                 if (modelJson != null)
                 {
                     ExelDataViewModel model = JsonConvert.DeserializeObject<ExelDataViewModel>(modelJson);
@@ -768,15 +820,15 @@ namespace OzonOrdersWeb.Controllers
                     int[] result = [0, 0];
 
                     List<Order> orders = await _orderCaster.ExcelToOrders(model.TableData,
-                                                                          model.SelectedClient,
-                                                                          model.SelectedManufacturer,
-                                                                          model.SelectedWarehouse,
-                                                                          model.SelectedSupplier,
-                                                                          model.SelectedStatus,
-                                                                          model.SelectedCurrencyCode,
-                                                                          model.SelectedShippingDate,
-                                                                          model.SelectedProcessingDate);
-                    
+                        model.SelectedClient,
+                        model.SelectedManufacturer,
+                        model.SelectedWarehouse,
+                        model.SelectedSupplier,
+                        model.SelectedStatus,
+                        model.SelectedCurrencyCode,
+                        model.SelectedShippingDate,
+                        model.SelectedProcessingDate);
+
                     if (bool.TryParse(isGroupJson, out var isGroup) && isGroup && !string.IsNullOrEmpty(modelJson))
                     {
                         orders = _orderServcies.MergeOrders(orders);
@@ -803,6 +855,7 @@ namespace OzonOrdersWeb.Controllers
             {
                 throw new Exception($"Произошла ошибка при загрузке данных: {ex.Message}");
             }
+
             return RedirectToAction(nameof(Index));
         }
 
@@ -826,7 +879,7 @@ namespace OzonOrdersWeb.Controllers
                 model.SelectedCurrencyCode,
                 model.SelectedShippingDate,
                 model.SelectedProcessingDate);
-            
+
             if (bool.TryParse(isGroupJson, out var isGroup) && isGroup && !string.IsNullOrEmpty(modelJson))
             {
                 orders = _orderServcies.MergeOrders(orders);
@@ -837,7 +890,7 @@ namespace OzonOrdersWeb.Controllers
             orders = await _orderServcies.CalculateCostPriceForNotFullOrders(orders);
 
             NotFullOrdersModel notFullOrdersModel = _orderServcies.GetNotFullOrdersModel(orders);
-            
+
             return View(new NotFullOrdersViewModel()
             {
                 UniqueOrders = notFullOrdersModel.UniqueOrders,
@@ -851,14 +904,15 @@ namespace OzonOrdersWeb.Controllers
                 SelectedAppStatus = await GetDefaultAppStatus()
             });
         }
-        
+
 
         private async Task<AppStatus> GetDefaultAppStatus()
         {
-            var defaultStatus = await _appStatusServcies.GetAppStatusAsync(new AppStatus() { Name = "Отгружен постащиком" });
+            var defaultStatus =
+                await _appStatusServcies.GetAppStatusAsync(new AppStatus() { Name = "Отгружен постащиком" });
             return defaultStatus ?? await _appStatusServcies.GetAppStatusAsync(new AppStatus() { Name = "Не указан" });
         }
-        
+
         [HttpPost]
         [AllowAnonymous]
         public async Task<IActionResult> SetNotFullOrdersData(
@@ -925,9 +979,9 @@ namespace OzonOrdersWeb.Controllers
                     BackgroundJobClient client = new BackgroundJobClient();
                     client.Create(
                         () => ProcessNotFullOrdersInBackground(NotFullOrders, userName),
-                        new EnqueuedState("upload-queue-new")
+                        new EnqueuedState("main")
                     );
-                    
+
                     TempData["TransactionResult"] = "Обработка заказов запущена в фоне";
                     return RedirectToAction("Index");
                 }
@@ -974,7 +1028,7 @@ namespace OzonOrdersWeb.Controllers
                 await _transactionDataServcies.AddTransaction(shippedBySupplierTransaction);
                 await _transactionCache.Update();
                 _duplicateOrdersServcies.DeleteDuplicateOrders();
-        
+
                 await NotificationService.NotifyAllAsync(
                     $"Отгружено поставщиком <b>{ordersToTransaction.Count}</b> заказов");
             }
@@ -986,8 +1040,7 @@ namespace OzonOrdersWeb.Controllers
 
         public async Task<IActionResult> ViewFile(string filePath, string fileName)
         {
-
-            return Redirect(await _dropboxApiClient.GetViewLinkAsync(filePath,fileName));
+            return Redirect(await _dropboxApiClient.GetViewLinkAsync(filePath, fileName));
         }
 
         public async Task<IActionResult> Details(int id)
@@ -996,6 +1049,7 @@ namespace OzonOrdersWeb.Controllers
             {
                 return NotFound();
             }
+
             var order = await _orderServcies.GetOrder(id);
             if (order == null)
             {
@@ -1010,7 +1064,10 @@ namespace OzonOrdersWeb.Controllers
 
         public async Task<IActionResult> MultiplayEdit(string ids, int page)
         {
-            ViewBag.AppStatuses = new SelectList((await _appStatusServcies.GetAppStatuses()).Where(s => s.Name != "Заказан поставщику").OrderBy(a => a.Name), "Id", "Name");
+            ViewBag.AppStatuses =
+                new SelectList(
+                    (await _appStatusServcies.GetAppStatuses()).Where(s => s.Name != "Заказан поставщику")
+                    .OrderBy(a => a.Name), "Id", "Name");
 
             int[] idArray = ids.Split(',').Select(int.Parse).ToArray();
 
@@ -1036,6 +1093,7 @@ namespace OzonOrdersWeb.Controllers
             {
                 pageViewModel.User.UserAccess = _context.UserAccess.Find(pageViewModel.User.UserAccessId);
             }
+
             return View(pageViewModel);
         }
 
@@ -1044,11 +1102,15 @@ namespace OzonOrdersWeb.Controllers
         {
             if (orders == null)
             {
-                TempData["ErorrResult"] = $"Не удалось изменить выбранные заказы.<br>Было передано слишком большое количество записей.";
+                TempData["ErorrResult"] =
+                    $"Не удалось изменить выбранные заказы.<br>Было передано слишком большое количество записей.";
                 return RedirectToAction("Index");
             }
 
-            ViewBag.AppStatuses = new SelectList((await _appStatusServcies.GetAppStatuses()).Where(s => s.Name != "Заказан поставщику").OrderBy(a => a.Name), "Id", "Name");
+            ViewBag.AppStatuses =
+                new SelectList(
+                    (await _appStatusServcies.GetAppStatuses()).Where(s => s.Name != "Заказан поставщику")
+                    .OrderBy(a => a.Name), "Id", "Name");
 
             var pageViewModel = new MultiplayEditOrderViewModel()
             {
@@ -1072,7 +1134,8 @@ namespace OzonOrdersWeb.Controllers
                 await _cache.Update();
 
                 ClearSelectedIdsSession();
-                return RedirectToAction(nameof(System.Index), new { sortOrder = GetSortStateCookie(), page = redirectPage });
+                return RedirectToAction(nameof(System.Index),
+                    new { sortOrder = GetSortStateCookie(), page = redirectPage });
             }
             catch (Exception ex)
             {
@@ -1091,6 +1154,7 @@ namespace OzonOrdersWeb.Controllers
                 appStatuses.Remove(unassignedStatus);
                 appStatuses.Insert(0, unassignedStatus);
             }
+
             // В контроллере
             ViewBag.AppStatuses = new SelectList(appStatuses, "Id", "Name");
             ViewBag.StatusColors = appStatuses.ToDictionary(s => s.Id.ToString(), s => s.GetStatusColor());
@@ -1122,6 +1186,7 @@ namespace OzonOrdersWeb.Controllers
             {
                 pageViewModel.User.UserAccess = _context.UserAccess.Find(pageViewModel.User.UserAccessId);
             }
+
             return View(pageViewModel);
         }
 
@@ -1130,9 +1195,11 @@ namespace OzonOrdersWeb.Controllers
         {
             if (orders == null)
             {
-                TempData["ErorrResult"] = $"Не удалось изменить выбранные заказы.<br>Было передано слишком большое количество записей.";
+                TempData["ErorrResult"] =
+                    $"Не удалось изменить выбранные заказы.<br>Было передано слишком большое количество записей.";
                 return RedirectToAction("Index");
             }
+
             try
             {
                 await _orderServcies.MultiplayEditOrder(orders, User.Identity?.Name);
@@ -1178,6 +1245,7 @@ namespace OzonOrdersWeb.Controllers
             {
                 TempData["ErorrResult"] = $"Ошибка при удалении заказа.";
             }
+
             return RedirectToAction(nameof(System.Index), new { sortOrder = GetSortStateCookie(), page = page });
         }
 
@@ -1212,19 +1280,20 @@ namespace OzonOrdersWeb.Controllers
             {
                 TempData["ErorrResult"] = $"Ошибка при удалении заказа.";
             }
+
             return RedirectToAction(nameof(Index), new { sortOrder = GetSortStateCookie(), page = page });
         }
 
         public async Task<IActionResult> SplitOrder(string ids, int page, string splitOption)
         {
             int[] idArray = ids.Split(',').Select(int.Parse).ToArray();
-    
+
             foreach (var id in idArray)
-            { 
+            {
                 var parts = splitOption.Split(' ').Select(int.Parse).ToArray();
-                await _orderServcies.SplitOrder(id, parts[0], parts[1]); 
+                await _orderServcies.SplitOrder(id, parts[0], parts[1]);
             }
-    
+
             await _cache.Update();
             return RedirectToAction(nameof(Index), new { sortOrder = GetSortStateCookie(), page = page });
         }
@@ -1233,7 +1302,8 @@ namespace OzonOrdersWeb.Controllers
         {
             if (ids == null)
             {
-                TempData["ErorrResult"] = $"Не удалось удалить выбранные заказы.<br>Было передано слишком большое количество записей.";
+                TempData["ErorrResult"] =
+                    $"Не удалось удалить выбранные заказы.<br>Было передано слишком большое количество записей.";
                 return RedirectToAction("Index");
             }
 
@@ -1275,13 +1345,17 @@ namespace OzonOrdersWeb.Controllers
             {
                 ordersToDelete.Add(await _orderServcies.GetOrder(id));
             }
-            return View(new DeleteOrderViewModel() { IdsToDelete = ordersIdsToDelete, OrdersToDelete = ordersToDelete });
+
+            return View(new DeleteOrderViewModel()
+                { IdsToDelete = ordersIdsToDelete, OrdersToDelete = ordersToDelete });
         }
+
         public async Task<IActionResult> MultiplayDeleteOrdersV2(string ids, int page)
         {
             if (ids == null)
             {
-                TempData["ErorrResult"] = $"Не удалось удалить выбранные заказы.<br>Было передано слишком большое количество записей.";
+                TempData["ErorrResult"] =
+                    $"Не удалось удалить выбранные заказы.<br>Было передано слишком большое количество записей.";
                 return RedirectToAction("Index");
             }
 
@@ -1314,7 +1388,7 @@ namespace OzonOrdersWeb.Controllers
 
             return RedirectToAction(nameof(Index), new { sortOrder = GetSortStateCookie(), page = page });
         }
-        
+
         public async Task<IActionResult> MultiplayUpdateOrdersStatusV2(string ids, int page)
         {
             if (string.IsNullOrEmpty(ids))
@@ -1324,22 +1398,22 @@ namespace OzonOrdersWeb.Controllers
             }
 
             int[] idArray = ids.Split(',').Select(int.Parse).ToArray();
-            
+
             if (idArray.Length > 10)
             {
                 BackgroundJobClient client = new BackgroundJobClient();
                 client.Create(
                     () => UpdateOrdersStatusInBackground(ids, page),
-                    new EnqueuedState("upload-queue-new")
+                    new EnqueuedState("main")
                 );
-                
+
                 TempData["TransactionResult"] = "Обновление статусов обрабатывается в фоне (много заказов).";
                 ClearSelectedIdsSession();
                 return RedirectToAction(nameof(Index), new { page });
             }
 
             var result = await ProcessOrdersStatusUpdate(idArray);
-            
+
             if (result.Error != null)
                 TempData["ErorrResult"] = result.Error;
             else if (result.Message != null)
@@ -1347,6 +1421,7 @@ namespace OzonOrdersWeb.Controllers
                 TempData["TransactionResult"] = result.Message;
                 await NotificationService.NotifyAllAsync(result.Message);
             }
+
             ClearSelectedIdsSession();
             return RedirectToAction(nameof(Index), new { page });
         }
@@ -1355,7 +1430,7 @@ namespace OzonOrdersWeb.Controllers
         {
             int[] idArray = ids.Split(',').Select(int.Parse).ToArray();
             var result = await ProcessOrdersStatusUpdate(idArray);
-    
+
             string notificationMessage = result.Error ?? result.Message ?? "Нет изменений в статусах заказов";
             await NotificationService.NotifyAllAsync(notificationMessage);
             return notificationMessage;
@@ -1382,39 +1457,43 @@ namespace OzonOrdersWeb.Controllers
 
                 foreach (Order order in ordersToUpdate)
                 {
-                        order.OzonClient = await _ozonClientServcies.GetOzonClientAsync(order.OzonClient?.Id ?? 0);
-                        if (order.OzonClient != null && order.OzonClient.ClientType == ClientType.OZON)
-                        {
-                            _jsonDataBuilder.SetClient(order.OzonClient.DecryptClientId, order.OzonClient.DecryptApiKey);
+                    order.OzonClient = await _ozonClientServcies.GetOzonClientAsync(order.OzonClient?.Id ?? 0);
+                    if (order.OzonClient != null && order.OzonClient.ClientType == ClientType.OZON)
+                    {
+                        _jsonDataBuilder.SetClient(order.OzonClient.DecryptClientId, order.OzonClient.DecryptApiKey);
 
-                            string newStatus = await _jsonDataBuilder.GetProductSatatus(order.ShipmentNumber);
-                            if (!string.IsNullOrEmpty(newStatus) &&
-                                !order.Status.Equals(OzonStatus.OrderStatuses[newStatus], StringComparison.OrdinalIgnoreCase))
-                            {
-                                updateInfoBuilder.AppendLine($"{order.ShipmentNumber}: {order.Status} -> {OzonStatus.OrderStatuses[newStatus]}<br/>");
-                                order.Status = OzonStatus.OrderStatuses[newStatus];
-                                updatingCount++;
-                            }
+                        string newStatus = await _jsonDataBuilder.GetProductSatatus(order.ShipmentNumber);
+                        if (!string.IsNullOrEmpty(newStatus) &&
+                            !order.Status.Equals(OzonStatus.OrderStatuses[newStatus],
+                                StringComparison.OrdinalIgnoreCase))
+                        {
+                            updateInfoBuilder.AppendLine(
+                                $"{order.ShipmentNumber}: {order.Status} -> {OzonStatus.OrderStatuses[newStatus]}<br/>");
+                            order.Status = OzonStatus.OrderStatuses[newStatus];
+                            updatingCount++;
                         }
+                    }
                 }
 
                 await _orderServcies.AddOrders(ordersToUpdate);
                 await _cache.Update();
-                return updatingCount > 0 
+                return updatingCount > 0
                     ? ($"Обновлено <b>{updatingCount}</b> статусов.<br/>{updateInfoBuilder}", null)
                     : ("Нет изменений в статусах заказов", null);
             }
             catch (Exception ex)
             {
                 return ($"Ошибка при обновлении статусов заказов: {ex.Message}",
-                        $"Ошибка при обновлении статусов заказов: {ex.Message}");
+                    $"Ошибка при обновлении статусов заказов: {ex.Message}");
             }
         }
+
         public async Task<IActionResult> CancellationOrders(string ids, int page)
         {
             if (ids == null)
             {
-                TempData["ErorrResult"] = $"Не удалось изменить выбранные заказы.<br>Было передано слишком большое количество записей.";
+                TempData["ErorrResult"] =
+                    $"Не удалось изменить выбранные заказы.<br>Было передано слишком большое количество записей.";
                 return RedirectToAction("Index");
             }
 
@@ -1455,6 +1534,7 @@ namespace OzonOrdersWeb.Controllers
             ClearSelectedIdsSession();
             return RedirectToAction("Index");
         }
+
         public async Task<IActionResult> ConfirmAccepted(int id, string ids, int page)
         {
             if (ids == null || ids.Length == 0)
@@ -1470,11 +1550,13 @@ namespace OzonOrdersWeb.Controllers
                     _orderServcies.ConfirmAccepted(concretId);
                     _cache.UpdateCacheIncrementally(concretId);
                 }
+
                 if (Request.Cookies["selectedIds"] != null)
                 {
                     Response.Cookies.Delete("selectedIds");
                 }
             }
+
             return RedirectToAction(nameof(System.Index), new { sortOrder = GetSortStateCookie(), page = page });
         }
 
@@ -1493,14 +1575,16 @@ namespace OzonOrdersWeb.Controllers
                     _orderServcies.ConfirmAccepted(concretId);
                     _cache.UpdateCacheIncrementally(concretId);
                 }
+
                 if (Request.Cookies["selectedIds"] != null)
                 {
                     Response.Cookies.Delete("selectedIds");
                 }
             }
+
             return RedirectToAction(nameof(Index), new { sortOrder = GetSortStateCookie(), page = page });
         }
-        
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SaveSelectedStockListToSession([FromBody] List<StockItem> stockItems)
@@ -1519,7 +1603,7 @@ namespace OzonOrdersWeb.Controllers
                 return Json(new { success = false, message = "Ошибка на сервере" });
             }
         }
-        
+
         public async Task<IActionResult> OrderDetailedInformation(int orderId)
         {
             Order order = await _orderServcies.GetOrder(orderId);
@@ -1530,13 +1614,14 @@ namespace OzonOrdersWeb.Controllers
 
             string supplierEncoded = Uri.EscapeDataString(order.EtProducer.Name);
             string articleEncoded = Uri.EscapeDataString(order.Article);
-            
+
             // Запрос к S3 для получения изображений
             var s3ImageUrlsTask = GetS3ImageUrls(articleEncoded, supplierEncoded);
 
-            var url = $"https://api.interparts.ru/detail-full-info/detail-full-info?supplier={supplierEncoded}&article={articleEncoded}";
+            var url =
+                $"https://api.interparts.ru/detail-full-info/detail-full-info?supplier={supplierEncoded}&article={articleEncoded}";
             var detailInfoTask = _proxyHttpClientService.GetJsonAsync(url);
-    
+
             var productInfoTask = _proxyHttpClientService.GetJsonAsync(
                 $"https://api.interparts.ru/product-information/product/?article_number={supplierEncoded}&manufacturer={articleEncoded}");
 
@@ -1549,20 +1634,23 @@ namespace OzonOrdersWeb.Controllers
             {
                 return NotFound();
             }
+
             var detailModelTask = _articleFullModelBuilder.BuildModel(detailJson, order.Article, order.EtProducer.Name);
-            var productModelTask = _productInformationModelBuilder.Build(productJson, order.Article, order.EtProducer.Name);
+            var productModelTask =
+                _productInformationModelBuilder.Build(productJson, order.Article, order.EtProducer.Name);
 
             await Task.WhenAll(detailModelTask, productModelTask);
 
             var detailModel = await detailModelTask;
             var productModel = await productModelTask;
-            
+
             if (detailModel.ArticleEan != null)
             {
                 var supplierId = detailModel.ArticleEan.SupplierId;
                 var dataSupplierArticleNumber = detailModel.ArticleEan.DataSupplierArticleNumber;
 
-                var volnaUrl = $"https://api.interparts.ru/volna-parts/part-details/{dataSupplierArticleNumber}/{supplierId}";
+                var volnaUrl =
+                    $"https://api.interparts.ru/volna-parts/part-details/{dataSupplierArticleNumber}/{supplierId}";
                 var volnaResponse = await _proxyHttpClientService.GetJsonAsync(volnaUrl);
 
                 if (volnaResponse is JsonDocument jsonDoc)
@@ -1571,7 +1659,8 @@ namespace OzonOrdersWeb.Controllers
                     if (root.ValueKind == JsonValueKind.Array && root.GetArrayLength() > 0)
                     {
                         var firstItem = root[0];
-                        if (firstItem.TryGetProperty("attributes", out JsonElement attributesElement) && attributesElement.ValueKind == JsonValueKind.Array)
+                        if (firstItem.TryGetProperty("attributes", out JsonElement attributesElement) &&
+                            attributesElement.ValueKind == JsonValueKind.Array)
                         {
                             var attributesList = new List<DetailAttributeModel>();
                             foreach (var attr in attributesElement.EnumerateArray())
@@ -1583,13 +1672,12 @@ namespace OzonOrdersWeb.Controllers
                                 {
                                     SupplierId = supplierId,
                                     DataSupplierArticleNumber = dataSupplierArticleNumber,
-                                    Id = 0, 
-                                    Description = displayTitle, 
+                                    Id = 0,
+                                    Description = displayTitle,
                                     DisplayTitle = displayTitle,
                                     DisplayValue = displayValue
                                 });
                             }
-                            
                         }
                     }
                 }
@@ -1607,15 +1695,17 @@ namespace OzonOrdersWeb.Controllers
             };
             return Json(combinedModel);
         }
-        
+
         public async Task<IActionResult> OrderDetailedInformationForBitrix(string article, string producer)
         {
             string supplierEncoded = Uri.EscapeDataString(producer);
             string articleEncoded = Uri.EscapeDataString(article);
 
             // Первый набор запросов
-            var urlDetail = $"https://api.interparts.ru/detail-full-info/detail-full-info?supplier={supplierEncoded}&article={articleEncoded}";
-            var urlProduct = $"https://api.interparts.ru/product-information/product/?article_number={supplierEncoded}&manufacturer={articleEncoded}";
+            var urlDetail =
+                $"https://api.interparts.ru/detail-full-info/detail-full-info?supplier={supplierEncoded}&article={articleEncoded}";
+            var urlProduct =
+                $"https://api.interparts.ru/product-information/product/?article_number={supplierEncoded}&manufacturer={articleEncoded}";
 
             var detailInfoTask = _proxyHttpClientService.GetJsonAsync(urlDetail);
             var productInfoTask = _proxyHttpClientService.GetJsonAsync(urlProduct);
@@ -1646,7 +1736,8 @@ namespace OzonOrdersWeb.Controllers
                 var supplierId = detailModel.ArticleEan.SupplierId;
                 var dataSupplierArticleNumber = detailModel.ArticleEan.DataSupplierArticleNumber;
 
-                var volnaUrl = $"https://api.interparts.ru/volna-parts/part-details/{dataSupplierArticleNumber}/{supplierId}";
+                var volnaUrl =
+                    $"https://api.interparts.ru/volna-parts/part-details/{dataSupplierArticleNumber}/{supplierId}";
                 var volnaResponse = await _proxyHttpClientService.GetJsonAsync(volnaUrl);
 
                 if (volnaResponse is JsonDocument jsonDoc)
@@ -1655,7 +1746,8 @@ namespace OzonOrdersWeb.Controllers
                     if (root.ValueKind == JsonValueKind.Array && root.GetArrayLength() > 0)
                     {
                         var firstItem = root[0];
-                        if (firstItem.TryGetProperty("attributes", out JsonElement attributesElement) && attributesElement.ValueKind == JsonValueKind.Array)
+                        if (firstItem.TryGetProperty("attributes", out JsonElement attributesElement) &&
+                            attributesElement.ValueKind == JsonValueKind.Array)
                         {
                             var attributesList = new List<DetailAttributeModel>();
                             foreach (var attr in attributesElement.EnumerateArray())
@@ -1667,8 +1759,8 @@ namespace OzonOrdersWeb.Controllers
                                 {
                                     SupplierId = supplierId,
                                     DataSupplierArticleNumber = dataSupplierArticleNumber,
-                                    Id = 0, 
-                                    Description = displayTitle, 
+                                    Id = 0,
+                                    Description = displayTitle,
                                     DisplayTitle = displayTitle,
                                     DisplayValue = displayValue
                                 });
@@ -1696,7 +1788,7 @@ namespace OzonOrdersWeb.Controllers
             try
             {
                 var s3Url = "https://api.interparts.ru/s3/multifinderbrands";
-                
+
                 // Подготавливаем данные для запроса
                 var requestData = new[]
                 {
@@ -1715,7 +1807,7 @@ namespace OzonOrdersWeb.Controllers
                 {
                     foreach (var item in root.EnumerateArray())
                     {
-                        if (item.TryGetProperty("url", out JsonElement urlElement) && 
+                        if (item.TryGetProperty("url", out JsonElement urlElement) &&
                             urlElement.ValueKind == JsonValueKind.String)
                         {
                             imageUrls.Add(urlElement.GetString());
@@ -1748,9 +1840,10 @@ namespace OzonOrdersWeb.Controllers
                 var substitute = await _substituteResultCaster.ParseSubstituteResultSchemaAsync(substituteJson);
                 result.Add(substitute);
             }
+
             return Json(result);
         }
-        
+
         public async Task<IActionResult> OrderStocks(int orderId)
         {
             Order order = await _orderServcies.GetOrder(orderId);
@@ -1758,10 +1851,11 @@ namespace OzonOrdersWeb.Controllers
             {
                 return NotFound();
             }
+
             var stocks = await _stockDataService.GetStocksDataByOrder(order);
             return Json(stocks);
         }
-        
+
         public async Task<IActionResult> PrintOrdersExcel(string ids, int page)
         {
             int[] idArray = ids.Split(',').Select(int.Parse).ToArray();
@@ -1781,7 +1875,8 @@ namespace OzonOrdersWeb.Controllers
                 byte[] excelFile = _excelExporter.ExportToExcel(ordersToExcel, userColumns.AvailableOrderColumns);
                 ClearSelectedIdsSession();
 
-                return File(excelFile, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"Orders_{DateTime.Now:dd.MM.yyyy}.xlsx");
+                return File(excelFile, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    $"Orders_{DateTime.Now:dd.MM.yyyy}.xlsx");
             }
             catch (Exception ex)
             {
@@ -1809,7 +1904,8 @@ namespace OzonOrdersWeb.Controllers
                 byte[] excelFile = _excelExporter.ExportToExcel(ordersToExcel, userColumns.AvailableOrderColumns);
                 ClearSelectedIdsSession();
 
-                return File(excelFile, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"Orders_{DateTime.Now:dd.MM.yyyy}.xlsx");
+                return File(excelFile, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    $"Orders_{DateTime.Now:dd.MM.yyyy}.xlsx");
             }
             catch (Exception ex)
             {
@@ -1853,10 +1949,13 @@ namespace OzonOrdersWeb.Controllers
                 {
                     Response.Cookies.Delete("selectedIds");
                 }
-                TempData["ErorrResult"] = $"Не удалось распечатать этикетку для заказов: {string.Join(", ", ordersLables.Select(o => o.ShipmentNumber))}<br/>" +
-                                          $"Печать этикетки возможна только для заказов со статусом <b>'Ожидает отгрузки'</b>";
+
+                TempData["ErorrResult"] =
+                    $"Не удалось распечатать этикетку для заказов: {string.Join(", ", ordersLables.Select(o => o.ShipmentNumber))}<br/>" +
+                    $"Печать этикетки возможна только для заказов со статусом <b>'Ожидает отгрузки'</b>";
                 return RedirectToAction(nameof(System.Index), new { sortOrder = GetSortStateCookie(), page = page });
             }
+
             ClearSelectedIdsSession();
             return result;
         }
@@ -1896,10 +1995,13 @@ namespace OzonOrdersWeb.Controllers
                 {
                     Response.Cookies.Delete("selectedIds");
                 }
-                TempData["ErorrResult"] = $"Не удалось распечатать этикетку для заказов: {string.Join(", ", ordersLables.Select(o => o.ShipmentNumber))}<br/>" +
-                                          $"Печать этикетки возможна только для заказов со статусом <b>'Ожидает отгрузки'</b>";
+
+                TempData["ErorrResult"] =
+                    $"Не удалось распечатать этикетку для заказов: {string.Join(", ", ordersLables.Select(o => o.ShipmentNumber))}<br/>" +
+                    $"Печать этикетки возможна только для заказов со статусом <b>'Ожидает отгрузки'</b>";
                 return RedirectToAction(nameof(Index), new { sortOrder = GetSortStateCookie(), page = page });
             }
+
             ClearSelectedIdsSession();
             return result;
         }
@@ -1962,36 +2064,95 @@ namespace OzonOrdersWeb.Controllers
 
         public void SetSortOrderViewData(OrderSortState sortOrder)
         {
-            ViewData["ShipmentNumberSort"] = sortOrder == OrderSortState.ShipmentNumberAsc ? OrderSortState.ShipmentNumberDesc : OrderSortState.ShipmentNumberAsc;
-            ViewData["ProcessingDateSort"] = sortOrder == OrderSortState.ProcessingDateAsc ? OrderSortState.ProcessingDateDesc : OrderSortState.ProcessingDateAsc;
-            ViewData["ShippingDateSort"] = sortOrder == OrderSortState.ShippingDateAsc ? OrderSortState.ShippingDateDesc : OrderSortState.ShippingDateAsc;
-            ViewData["StatusSort"] = sortOrder == OrderSortState.StatusAsc ? OrderSortState.StatusDesc : OrderSortState.StatusAsc;
-            ViewData["CurrentPriceSort"] = sortOrder == OrderSortState.CurrentPriceAsc ? OrderSortState.CurrentPriceDesc : OrderSortState.CurrentPriceAsc;
-            ViewData["AppStatusIdSort"] = sortOrder == OrderSortState.AppStatusIdAsc ? OrderSortState.AppStatusIdDesc : OrderSortState.AppStatusIdAsc;
-            ViewData["ShipmentAmountSort"] = sortOrder == OrderSortState.ShipmentAmountAsc ? OrderSortState.ShipmentAmountDesc : OrderSortState.ShipmentAmountAsc;
-            ViewData["ProductNameSort"] = sortOrder == OrderSortState.ProductNameAsc ? OrderSortState.ProductNameDesc : OrderSortState.ProductNameAsc;
-            ViewData["ArticleSort"] = sortOrder == OrderSortState.ArticleAsc ? OrderSortState.ArticleDesc : OrderSortState.ArticleAsc;
-            ViewData["PriceSort"] = sortOrder == OrderSortState.PriceAsc ? OrderSortState.PriceDesc : OrderSortState.PriceAsc;
-            ViewData["QuantitySort"] = sortOrder == OrderSortState.QuantityAsc ? OrderSortState.QuantityDesc : OrderSortState.QuantityAsc;
-            ViewData["ShipmentWarehouseSort"] = sortOrder == OrderSortState.ShipmentWarehouseIdAsc ? OrderSortState.ShipmentWarehouseIdDesc : OrderSortState.ShipmentWarehouseIdAsc;
-            ViewData["SupplierSort"] = sortOrder == OrderSortState.SupplierAsc ? OrderSortState.SupplierDesc : OrderSortState.SupplierAsc;
-            ViewData["PurchasePriceSort"] = sortOrder == OrderSortState.PurchasePriceAsc ? OrderSortState.PurchasePriceDesc : OrderSortState.PurchasePriceAsc;
-            ViewData["ProductInfoIdSort"] = sortOrder == OrderSortState.ProductInfoIdAsc ? OrderSortState.ProductInfoIdDesc : OrderSortState.ProductInfoIdAsc;
-            ViewData["OzonCommissionSort"] = sortOrder == OrderSortState.MinOzonCommissionAsc ? OrderSortState.MinOzonCommissionDesc : OrderSortState.MinOzonCommissionAsc;
-            ViewData["VolumeSort"] = sortOrder == OrderSortState.VolumeAsc ? OrderSortState.VolumeDesc : OrderSortState.VolumeAsc;
-            ViewData["ProfitSort"] = sortOrder == OrderSortState.ProfitAsc ? OrderSortState.ProfitDesc : OrderSortState.ProfitAsc;
-            ViewData["DiscountSort"] = sortOrder == OrderSortState.DiscountAsc ? OrderSortState.DiscountDesc : OrderSortState.DiscountAsc;
-            ViewData["DeliveryCitySort"] = sortOrder == OrderSortState.DeliveryCityAsc ? OrderSortState.DeliveryCityDesc : OrderSortState.DeliveryCityAsc;
-            ViewData["CategorySort"] = sortOrder == OrderSortState.CategoryAsc ? OrderSortState.CategoryDesc : OrderSortState.CategoryAsc;
-            ViewData["OrderNumberToSupplierSort"] = sortOrder == OrderSortState.OrderNumberToSupplierAsc ? OrderSortState.OrderNumberToSupplierDesc : OrderSortState.OrderNumberToSupplierAsc;
-            ViewData["OzonClient"] = sortOrder == OrderSortState.OzonClientAsc ? OrderSortState.OzonClientDesc : OrderSortState.OzonClientAsc;
-            ViewData["ManufacturerSort"] = sortOrder == OrderSortState.ManufacturerAsc ? OrderSortState.ManufacturerDesc : OrderSortState.ManufacturerAsc;
-            ViewData["FromFileSort"] = sortOrder == OrderSortState.FromFileAsc ? OrderSortState.FromFileDesc : OrderSortState.FromFileAsc;
-            ViewData["DeliveryPeriodSort"] = sortOrder == OrderSortState.DeliveryPeriodAsc ? OrderSortState.DeliveryPeriodDesc : OrderSortState.DeliveryPeriodAsc;
-            ViewData["CostPriceсеSort"] = sortOrder == OrderSortState.CostPriceAsc ? OrderSortState.CostPriceDesc : OrderSortState.CostPriceAsc;
-            ViewData["TimeLeftSort"] = sortOrder == OrderSortState.TimeLeftAsc ? OrderSortState.TimeLeftDesc : OrderSortState.TimeLeftAsc;
-            ViewData["LastStatusChangeDateSort"] = sortOrder == OrderSortState.LastStatusChangeDateAsc ? OrderSortState.LastStatusChangeDateDesc : OrderSortState.LastStatusChangeDateAsc;
-            ViewData["DeliverySort"] = sortOrder == OrderSortState.DeliveryAsc ? OrderSortState.DeliveryDesc : OrderSortState.DeliveryAsc;
+            ViewData["ShipmentNumberSort"] = sortOrder == OrderSortState.ShipmentNumberAsc
+                ? OrderSortState.ShipmentNumberDesc
+                : OrderSortState.ShipmentNumberAsc;
+            ViewData["ProcessingDateSort"] = sortOrder == OrderSortState.ProcessingDateAsc
+                ? OrderSortState.ProcessingDateDesc
+                : OrderSortState.ProcessingDateAsc;
+            ViewData["ShippingDateSort"] = sortOrder == OrderSortState.ShippingDateAsc
+                ? OrderSortState.ShippingDateDesc
+                : OrderSortState.ShippingDateAsc;
+            ViewData["StatusSort"] = sortOrder == OrderSortState.StatusAsc
+                ? OrderSortState.StatusDesc
+                : OrderSortState.StatusAsc;
+            ViewData["CurrentPriceSort"] = sortOrder == OrderSortState.CurrentPriceAsc
+                ? OrderSortState.CurrentPriceDesc
+                : OrderSortState.CurrentPriceAsc;
+            ViewData["AppStatusIdSort"] = sortOrder == OrderSortState.AppStatusIdAsc
+                ? OrderSortState.AppStatusIdDesc
+                : OrderSortState.AppStatusIdAsc;
+            ViewData["ShipmentAmountSort"] = sortOrder == OrderSortState.ShipmentAmountAsc
+                ? OrderSortState.ShipmentAmountDesc
+                : OrderSortState.ShipmentAmountAsc;
+            ViewData["ProductNameSort"] = sortOrder == OrderSortState.ProductNameAsc
+                ? OrderSortState.ProductNameDesc
+                : OrderSortState.ProductNameAsc;
+            ViewData["ArticleSort"] = sortOrder == OrderSortState.ArticleAsc
+                ? OrderSortState.ArticleDesc
+                : OrderSortState.ArticleAsc;
+            ViewData["PriceSort"] =
+                sortOrder == OrderSortState.PriceAsc ? OrderSortState.PriceDesc : OrderSortState.PriceAsc;
+            ViewData["QuantitySort"] = sortOrder == OrderSortState.QuantityAsc
+                ? OrderSortState.QuantityDesc
+                : OrderSortState.QuantityAsc;
+            ViewData["ShipmentWarehouseSort"] = sortOrder == OrderSortState.ShipmentWarehouseIdAsc
+                ? OrderSortState.ShipmentWarehouseIdDesc
+                : OrderSortState.ShipmentWarehouseIdAsc;
+            ViewData["SupplierSort"] = sortOrder == OrderSortState.SupplierAsc
+                ? OrderSortState.SupplierDesc
+                : OrderSortState.SupplierAsc;
+            ViewData["PurchasePriceSort"] = sortOrder == OrderSortState.PurchasePriceAsc
+                ? OrderSortState.PurchasePriceDesc
+                : OrderSortState.PurchasePriceAsc;
+            ViewData["ProductInfoIdSort"] = sortOrder == OrderSortState.ProductInfoIdAsc
+                ? OrderSortState.ProductInfoIdDesc
+                : OrderSortState.ProductInfoIdAsc;
+            ViewData["OzonCommissionSort"] = sortOrder == OrderSortState.MinOzonCommissionAsc
+                ? OrderSortState.MinOzonCommissionDesc
+                : OrderSortState.MinOzonCommissionAsc;
+            ViewData["VolumeSort"] = sortOrder == OrderSortState.VolumeAsc
+                ? OrderSortState.VolumeDesc
+                : OrderSortState.VolumeAsc;
+            ViewData["ProfitSort"] = sortOrder == OrderSortState.ProfitAsc
+                ? OrderSortState.ProfitDesc
+                : OrderSortState.ProfitAsc;
+            ViewData["DiscountSort"] = sortOrder == OrderSortState.DiscountAsc
+                ? OrderSortState.DiscountDesc
+                : OrderSortState.DiscountAsc;
+            ViewData["DeliveryCitySort"] = sortOrder == OrderSortState.DeliveryCityAsc
+                ? OrderSortState.DeliveryCityDesc
+                : OrderSortState.DeliveryCityAsc;
+            ViewData["CategorySort"] = sortOrder == OrderSortState.CategoryAsc
+                ? OrderSortState.CategoryDesc
+                : OrderSortState.CategoryAsc;
+            ViewData["OrderNumberToSupplierSort"] = sortOrder == OrderSortState.OrderNumberToSupplierAsc
+                ? OrderSortState.OrderNumberToSupplierDesc
+                : OrderSortState.OrderNumberToSupplierAsc;
+            ViewData["OzonClient"] = sortOrder == OrderSortState.OzonClientAsc
+                ? OrderSortState.OzonClientDesc
+                : OrderSortState.OzonClientAsc;
+            ViewData["ManufacturerSort"] = sortOrder == OrderSortState.ManufacturerAsc
+                ? OrderSortState.ManufacturerDesc
+                : OrderSortState.ManufacturerAsc;
+            ViewData["FromFileSort"] = sortOrder == OrderSortState.FromFileAsc
+                ? OrderSortState.FromFileDesc
+                : OrderSortState.FromFileAsc;
+            ViewData["DeliveryPeriodSort"] = sortOrder == OrderSortState.DeliveryPeriodAsc
+                ? OrderSortState.DeliveryPeriodDesc
+                : OrderSortState.DeliveryPeriodAsc;
+            ViewData["CostPriceсеSort"] = sortOrder == OrderSortState.CostPriceAsc
+                ? OrderSortState.CostPriceDesc
+                : OrderSortState.CostPriceAsc;
+            ViewData["TimeLeftSort"] = sortOrder == OrderSortState.TimeLeftAsc
+                ? OrderSortState.TimeLeftDesc
+                : OrderSortState.TimeLeftAsc;
+            ViewData["LastStatusChangeDateSort"] = sortOrder == OrderSortState.LastStatusChangeDateAsc
+                ? OrderSortState.LastStatusChangeDateDesc
+                : OrderSortState.LastStatusChangeDateAsc;
+            ViewData["DeliverySort"] = sortOrder == OrderSortState.DeliveryAsc
+                ? OrderSortState.DeliveryDesc
+                : OrderSortState.DeliveryAsc;
         }
 
         public async Task<IEnumerable<Order>> ApplySortOrder(IEnumerable<Order> orders, OrderSortState sortOrder)
@@ -2053,7 +2214,8 @@ namespace OzonOrdersWeb.Controllers
                 OrderSortState.ProfitDesc => orders.OrderByDescending(o => o.MinProfit),
 
                 OrderSortState.CurrentPriceAsc => orders.OrderBy(o => o.ProductInfo?.CurrentPriceWithDiscount),
-                OrderSortState.CurrentPriceDesc => orders.OrderByDescending(o => o.ProductInfo?.CurrentPriceWithDiscount),
+                OrderSortState.CurrentPriceDesc =>
+                    orders.OrderByDescending(o => o.ProductInfo?.CurrentPriceWithDiscount),
 
                 OrderSortState.VolumeAsc => orders.OrderBy(o => o.ProductInfo?.VolumetricWeight),
                 OrderSortState.VolumeDesc => orders.OrderByDescending(o => o.ProductInfo?.VolumetricWeight),
@@ -2090,7 +2252,7 @@ namespace OzonOrdersWeb.Controllers
 
                 OrderSortState.LastStatusChangeDateAsc => orders.OrderBy(o => o.LastStatusChangeDate),
                 OrderSortState.LastStatusChangeDateDesc => orders.OrderByDescending(o => o.LastStatusChangeDate),
-                
+
                 OrderSortState.DeliveryAsc => orders.OrderBy(o => o.Delivery?.Provider.Name),
                 OrderSortState.DeliveryDesc => orders.OrderByDescending(o => o.Delivery?.Provider.Name),
                 _ => orders
@@ -2109,11 +2271,18 @@ namespace OzonOrdersWeb.Controllers
             }
 
             ViewBag.AppStatuses = new SelectList(appStatuses, "Name", "Name");
-            ViewBag.Suppliers = new SelectList((await _supplierDataServcies.GetSuppliers()).OrderBy(a => a.Name), "Name", "Name");
-            ViewBag.Clients = new SelectList((await _ozonClientServcies.GetOzonClients()).OrderBy(a => a.Name), "Name", "Name");
-            ViewBag.Warehouses = new SelectList((await _warehouseDataServcies.GetWarehouses()).OrderBy(a => a.Name), "Name", "Name");
-            ViewBag.Statuses = new SelectList(data.Select(s => s.Status).Distinct().Select(s => new { Name = s }).ToList().OrderBy(a => a.Name), "Name", "Name");
-            ViewBag.Providers = new SelectList((await _deliveryDataServcies.GetProviders()).OrderBy(a => a.Name), "Name", "Name");
+            ViewBag.Suppliers = new SelectList((await _supplierDataServcies.GetSuppliers()).OrderBy(a => a.Name),
+                "Name", "Name");
+            ViewBag.Clients = new SelectList((await _ozonClientServcies.GetOzonClients()).OrderBy(a => a.Name), "Name",
+                "Name");
+            ViewBag.Warehouses = new SelectList((await _warehouseDataServcies.GetWarehouses()).OrderBy(a => a.Name),
+                "Name", "Name");
+            ViewBag.Statuses =
+                new SelectList(
+                    data.Select(s => s.Status).Distinct().Select(s => new { Name = s }).ToList().OrderBy(a => a.Name),
+                    "Name", "Name");
+            ViewBag.Providers = new SelectList((await _deliveryDataServcies.GetProviders()).OrderBy(a => a.Name),
+                "Name", "Name");
         }
 
         public void SaveSortStateCookie(OrderSortState sortOrder)
@@ -2128,10 +2297,12 @@ namespace OzonOrdersWeb.Controllers
         private OrderSortState GetSortStateCookie()
         {
             var sortStateCookie = Request.Cookies["SortState"];
-            if (!string.IsNullOrEmpty(sortStateCookie) && Enum.TryParse<OrderSortState>(sortStateCookie, out var savedSortState))
+            if (!string.IsNullOrEmpty(sortStateCookie) &&
+                Enum.TryParse<OrderSortState>(sortStateCookie, out var savedSortState))
             {
                 return savedSortState;
             }
+
             return OrderSortState.StandardState;
         }
 
@@ -2144,16 +2315,19 @@ namespace OzonOrdersWeb.Controllers
                 ViewData["UploadResult"] = result;
                 ViewData["UploadResultPeriod"] = period;
             }
+
             if (TempData.ContainsKey("TransactionResult") && TempData["TransactionResult"] != null)
             {
                 string result = (string)TempData["TransactionResult"];
                 ViewData["TransactionResult"] = result;
             }
+
             if (TempData.ContainsKey("ErorrResult") && TempData["ErorrResult"] != null)
             {
                 string result = (string)TempData["ErorrResult"];
                 ViewData["ErorrResult"] = result;
             }
+
             if (TempData.ContainsKey("OrdersNotFoundInOzone") && TempData["OrdersNotFoundInOzone"] != null)
             {
                 string result = (string)TempData["OrdersNotFoundInOzone"];
@@ -2173,6 +2347,7 @@ namespace OzonOrdersWeb.Controllers
                     selectedIds.Add(id);
                 }
             }
+
             HttpContext.Session.SetString("selectedIds", JsonConvert.SerializeObject(selectedIds));
             return Ok();
         }
@@ -2195,6 +2370,7 @@ namespace OzonOrdersWeb.Controllers
                 selectedIds.Add(id);
                 HttpContext.Session.SetString("selectedIds", JsonConvert.SerializeObject(selectedIds));
             }
+
             return Ok();
         }
 
@@ -2207,6 +2383,7 @@ namespace OzonOrdersWeb.Controllers
                 selectedIds.Remove(id);
                 HttpContext.Session.SetString("selectedIds", JsonConvert.SerializeObject(selectedIds));
             }
+
             return Ok();
         }
 
@@ -2224,6 +2401,7 @@ namespace OzonOrdersWeb.Controllers
             {
                 return new List<int>();
             }
+
             return JsonConvert.DeserializeObject<List<int>>(selectedIds);
         }
 
@@ -2234,8 +2412,5 @@ namespace OzonOrdersWeb.Controllers
             HttpContext.Session.SetString("selectedIds", JsonConvert.SerializeObject(new List<int>()));
             return Ok();
         }
-        
-        
-
     }
 }

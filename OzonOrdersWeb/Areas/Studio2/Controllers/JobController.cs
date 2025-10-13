@@ -132,7 +132,7 @@ namespace OzonOrdersWeb.Controllers
         public IActionResult SetOzonRecurring(int delay)
         {
             string cronExp = $"*/{delay} * * * *";
-            RecurringJob.AddOrUpdate(() => UploadingOzon(1), cronExp, queue: "upload-queue-new");
+            RecurringJob.AddOrUpdate(() => UploadingOzon(1), cronExp, queue: "main");
 
             return Redirect("/Hangfire");
         }
@@ -142,7 +142,7 @@ namespace OzonOrdersWeb.Controllers
         public IActionResult SetYandexRecurring(int delay)
         {
             string cronExp = $"*/{delay} * * * *";
-            RecurringJob.AddOrUpdate(() => UploadingYandex(1), cronExp, queue: "upload-queue-new");
+            RecurringJob.AddOrUpdate(() => UploadingYandex(1), cronExp, queue: "main");
 
             return Redirect("/Hangfire");
         }
@@ -151,7 +151,7 @@ namespace OzonOrdersWeb.Controllers
         public async Task<IActionResult> SetEverydayUpdate(int monthsCount, int updateHour, int updateMinute)
         {
             string cronExp = $"{updateMinute} {updateHour} * * *";
-            RecurringJob.AddOrUpdate(() => EverydayUpdate(monthsCount), cronExp, queue: "upload-queue-new");
+            RecurringJob.AddOrUpdate(() => EverydayUpdate(monthsCount), cronExp, queue: "main");
 
             return Redirect("/Hangfire");
         }
@@ -160,7 +160,7 @@ namespace OzonOrdersWeb.Controllers
         public IActionResult SetOzonFileUploadRecurring(int delay)
         {
             string cronExp = $"*/{delay} * * * *";
-            RecurringJob.AddOrUpdate("FileUpload", () => FileUpload(), cronExp, queue: "upload-queue-new");
+            RecurringJob.AddOrUpdate("FileUpload", () => FileUpload(), cronExp, queue: "main");
 
             return Redirect("/Hangfire");
         }
@@ -173,7 +173,7 @@ namespace OzonOrdersWeb.Controllers
                 "StatusUpdateJob",
                 () => UpdateCartItemsStatusAsync(count),
                 cronExp,
-                queue: "upload-queue-new"
+                queue: "main"
             );
 
             TempData["Message"] = $"Фоновое обновление статусов установлено с периодом {delay} минут";
