@@ -14,8 +14,8 @@ public class OneCReceiptManager : IApiDataManager<OneCReceiptManager>
     private readonly IMemoryCache _cache;
     private readonly WarehouseMappingDataServcies _warehouseMappingDataServcies;
 
-    public OneCReceiptManager(OneCApiConfig config, 
-        IMemoryCache cache, 
+    public OneCReceiptManager(OneCApiConfig config,
+        IMemoryCache cache,
         WarehouseMappingDataServcies warehouseMappingDataServcies)
     {
         _apiConfig = config;
@@ -23,15 +23,15 @@ public class OneCReceiptManager : IApiDataManager<OneCReceiptManager>
         _cache = cache;
         _warehouseMappingDataServcies = warehouseMappingDataServcies;
     }
-    
-    public async Task<List<OneCResponse>> CreateReceipts(List<Order> ordersToReceipt, 
-                                                         ShippedBySupplierTransactionDto shippedBySupplierTransactionDto)
+
+    public async Task<List<OneCResponse>> CreateReceipts(List<Order> ordersToReceipt,
+        ShippedBySupplierTransactionDto shippedBySupplierTransactionDto)
     {
         if (ordersToReceipt == null || !ordersToReceipt.Any())
         {
             throw new ArgumentException("Список заказов не может быть пустым.");
         }
-        
+
         var distinctWarehouses = ordersToReceipt
             .Where(o => o.ShipmentWarehouse != null && !string.IsNullOrEmpty(o.ShipmentWarehouse.Name))
             .GroupBy(o => o.ShipmentWarehouse.Name)
@@ -47,11 +47,16 @@ public class OneCReceiptManager : IApiDataManager<OneCReceiptManager>
         {
             throw new ArgumentException("Не указан склад отгрузки для заказов.");
         }
-        
+
         var distinctSuppliers = ordersToReceipt
             .Where(o => o.Supplier != null && !string.IsNullOrEmpty(o.Supplier.INNCode))
             .GroupBy(o => o.Supplier.INNCode)
             .ToList();
+
+        if (distinctSuppliers.Count == 0)
+        {
+            throw new ArgumentException($"Не задан  ИНН для поставщика");
+        }
 
         if (distinctSuppliers.Count > 1)
         {
@@ -59,14 +64,15 @@ public class OneCReceiptManager : IApiDataManager<OneCReceiptManager>
             throw new ArgumentException($"Заказы имеют различных поставщиков: {suppliersNames}");
         }
 
-        
+
         var mappingWarehouse = await _warehouseMappingDataServcies.GetByOzonName(distinctWarehouses[0].Key);
         if (mappingWarehouse == null)
         {
             throw new ArgumentException($"Связь складов не найдена для {distinctWarehouses[0].Key}.");
         }
+
         var warehouseName = mappingWarehouse.BitrixWarehouseName;
-        
+
         var supplierName = distinctSuppliers[0].Key;
         if (supplierName.IsNullOrEmpty())
         {
@@ -93,7 +99,7 @@ public class OneCReceiptManager : IApiDataManager<OneCReceiptManager>
             {
                 throw new ArgumentException($"Клиент '{client.Name}' не имеет обязательных данных (ИНН или склад).");
             }
-            
+
             var products = orders
                 .Where(o => !string.IsNullOrEmpty(o.Article) && o.Quantity.HasValue && o.Quantity.Value > 0)
                 .Select(o => new ReceiptProduct
@@ -102,7 +108,8 @@ public class OneCReceiptManager : IApiDataManager<OneCReceiptManager>
                     Quantity = o.Quantity.Value,
                     Price = o.PurchasePrice ?? 0,
                     Sum = (o.PurchasePrice ?? 0) * o.Quantity.Value,
-                    SumNDS = (o.PurchasePrice ?? 0) * o.Quantity.Value * (o.Supplier.IsVatApplicable ? 0.20m : null) // проверка НДС
+                    SumNDS = (o.PurchasePrice ?? 0) * o.Quantity.Value *
+                             (o.Supplier.IsVatApplicable ? 0.20m : null) // проверка НДС
                 })
                 .ToList();
 
@@ -114,26 +121,26 @@ public class OneCReceiptManager : IApiDataManager<OneCReceiptManager>
 
             var model = new ReceiptOfGoodsRequest()
             {
-                    Date = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz)
-                            .ToString("dd.MM.yyyy HH:mm:ss", new System.Globalization.CultureInfo("ru-RU")),
-                    INNorganization = client.INNCode,
-                    Innbuyer = supplierName,
-                    Subdivisions  = client.WarehouseName,
-                    SenderRecipient  = warehouseName,
-                    Comment = shippedBySupplierTransactionDto.TransactionComment,
-                    NDS = orders.FirstOrDefault().Supplier.IsVatApplicable ? "да" : "",
-                    DateVh = TimeZoneInfo.ConvertTimeFromUtc(shippedBySupplierTransactionDto.DateVh, tz)
-                        .ToString("dd.MM.yyyy HH:mm:ss", new System.Globalization.CultureInfo("ru-RU")),
-                    NumberVh = shippedBySupplierTransactionDto.NumberVh,
-                    Contract = shippedBySupplierTransactionDto.Contract,
-                    Products = products 
+                Date = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz)
+                    .ToString("dd.MM.yyyy HH:mm:ss", new System.Globalization.CultureInfo("ru-RU")),
+                INNorganization = client.INNCode,
+                Innbuyer = supplierName,
+                Subdivisions = client.WarehouseName,
+                SenderRecipient = warehouseName,
+                Comment = shippedBySupplierTransactionDto.TransactionComment,
+                NDS = orders.FirstOrDefault().Supplier.IsVatApplicable ? "да" : "",
+                DateVh = TimeZoneInfo.ConvertTimeFromUtc(shippedBySupplierTransactionDto.DateVh, tz)
+                    .ToString("dd.MM.yyyy HH:mm:ss", new System.Globalization.CultureInfo("ru-RU")),
+                NumberVh = shippedBySupplierTransactionDto.NumberVh,
+                Contract = shippedBySupplierTransactionDto.Contract,
+                Products = products
             };
             modelsToTransfer.Add(model);
         }
 
         try
         {
-            foreach (var model in modelsToTransfer )
+            foreach (var model in modelsToTransfer)
             {
                 results.Add(await CreateReceiptOfGoodsAsync(model));
             }
@@ -148,9 +155,10 @@ public class OneCReceiptManager : IApiDataManager<OneCReceiptManager>
             };
             results.Add(errorResponse);
         }
+
         return results;
     }
-    
+
     public async Task<OneCResponse> CreateReceiptOfGoodsAsync(ReceiptOfGoodsRequest request)
     {
         if (request == null)
@@ -202,10 +210,9 @@ public class OneCReceiptManager : IApiDataManager<OneCReceiptManager>
         _apiConfig.Password = password;
         return this;
     }
-    
+
     public Task<bool> GetTestRequest(string clientId, string apiKey)
     {
         throw new NotImplementedException();
     }
-    
 }

@@ -11,7 +11,7 @@ namespace Servcies.DataServcies
         {
             _repository = repository;
         }
-        
+
         public async Task<List<Warehouse>> GetWarehouses()
         {
             return await _repository.Get();
@@ -26,10 +26,16 @@ namespace Servcies.DataServcies
         {
             return await _repository.GetAsync(value);
         }
-        
+
+        public async Task<Warehouse> GetOrCreateAsync(Warehouse value)
+        {
+            return await _repository.GetOrCreateAsync(value);
+        }
+
+
         public async Task<int> SaveChanges()
         {
-           return await _repository.SaveChanges();
+            return await _repository.SaveChanges();
         }
     }
 }

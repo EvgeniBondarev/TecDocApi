@@ -24,22 +24,23 @@ public class BitrixStockController : Controller
     private readonly EtProducerRepository _etProducerRepository;
     private readonly OzonClientServcies _ozonClientServcies;
     private OzonApiDataManager _ozonApiDataManager;
-    private  List<OzonClient> _ozonClients = new List<OzonClient>();
+    private List<OzonClient> _ozonClients = new List<OzonClient>();
     private CurrencyRateFetcher _currencyRateFetcher;
     private SupplierDataServcies _supplierDataServcies;
     private readonly IPriceHistoryDataService _priceHistoryService;
     private readonly WarehouseMappingDataServcies _warehouseMappingDataServcies;
     private readonly IMemoryCache _memoryCache;
     private readonly ImportProductPricesManager _importProductPricesManager;
+
     public BitrixStockController(BitrixStockRepository repository,
-                                 EtProducerRepository etProducerRepository,
-                                 OzonClientServcies ozonClientServcies,
-                                 CurrencyRateFetcher currencyRateFetcher,
-                                 SupplierDataServcies supplierDataServcies,
-                                 IPriceHistoryDataService priceHistoryService,
-                                 WarehouseMappingDataServcies warehouseMappingDataServcies,
-                                 IMemoryCache memoryCache,
-                                 ImportProductPricesManager importProductPricesManager)
+        EtProducerRepository etProducerRepository,
+        OzonClientServcies ozonClientServcies,
+        CurrencyRateFetcher currencyRateFetcher,
+        SupplierDataServcies supplierDataServcies,
+        IPriceHistoryDataService priceHistoryService,
+        WarehouseMappingDataServcies warehouseMappingDataServcies,
+        IMemoryCache memoryCache,
+        ImportProductPricesManager importProductPricesManager)
     {
         _repository = repository;
         _etProducerRepository = etProducerRepository;
@@ -51,53 +52,55 @@ public class BitrixStockController : Controller
         _memoryCache = memoryCache;
         _importProductPricesManager = importProductPricesManager;
     }
-    
+
     public async Task<IActionResult> Index([FromQuery] RemainingStockFilter filter)
     {
         if (filter.Page <= 0) filter.Page = 1;
         if (filter.PageSize <= 0) filter.PageSize = 20;
-        
+
         await SetClients();
         var result = await _repository.GetRemainingStockAsync(filter);
-        
+
         var suppliers = result.Items
             .Where(r => !string.IsNullOrWhiteSpace(r.Supplier))
             .Select(r => r.Supplier!)
             .Distinct()
             .ToList();
-        
+
         var prefixes = await _etProducerRepository.GetMarketPrefixesByNamesAsync(suppliers);
-        
+
         var productIds = result.Items.Select(x => x.ProductId).ToList();
         var priceHistories = await _priceHistoryService.GetLastByBitrixIdsAsync(productIds);
-        
+
         foreach (var item in result.Items)
         {
             if (!string.IsNullOrWhiteSpace(item.Supplier) && prefixes.TryGetValue(item.Supplier, out var prefix))
             {
                 item.MarketPrefix = prefix;
             }
-            
+
             if (priceHistories.TryGetValue(item.ProductId, out var priceHistory))
             {
                 item.PriceHistory = priceHistory;
             }
         }
-        
+
         if (filter.RegistrationPriceFrom.HasValue)
         {
             result.Items = result.Items
-                .Where(x => x.PriceHistory != null && x.PriceHistory.RegistrationPrice >= filter.RegistrationPriceFrom.Value)
+                .Where(x => x.PriceHistory != null &&
+                            x.PriceHistory.RegistrationPrice >= filter.RegistrationPriceFrom.Value)
                 .ToList();
         }
-        
+
         if (filter.RegistrationPriceTo.HasValue)
         {
             result.Items = result.Items
-                .Where(x => x.PriceHistory != null && x.PriceHistory.RegistrationPrice <= filter.RegistrationPriceTo.Value)
+                .Where(x => x.PriceHistory != null &&
+                            x.PriceHistory.RegistrationPrice <= filter.RegistrationPriceTo.Value)
                 .ToList();
         }
-        
+
         if (filter.LoadOzonWarehouses)
         {
             result.Items = await LoadOzonWarehousesAsync(result.Items, filter.LoadOzonWarehouses);
@@ -105,21 +108,29 @@ public class BitrixStockController : Controller
             if (!string.IsNullOrEmpty(filter.OzonStoreTitle))
             {
                 result.Items = result.Items
-                    .Where(x => x.OzonStores.Any(s => s.Title.Contains(filter.OzonStoreTitle, StringComparison.OrdinalIgnoreCase)))
+                    .Where(x => x.OzonStores.Any(s =>
+                        s.Title.Contains(filter.OzonStoreTitle, StringComparison.OrdinalIgnoreCase)))
                     .ToList();
             }
+
             if (filter.OzonAmountFrom.HasValue)
             {
                 result.Items = result.Items
                     .Where(x => x.OzonStores.Any(s => s.Amount >= filter.OzonAmountFrom.Value))
                     .ToList();
             }
+
             if (filter.OzonAmountTo.HasValue)
             {
                 result.Items = result.Items
                     .Where(x => x.OzonStores.Any(s => s.Amount <= filter.OzonAmountTo.Value))
                     .ToList();
             }
+        }
+
+        if (filter.LoadOzonPriceIndexes)
+        {
+            result.Items = await LoadOzonPriceIndexesAsync(result.Items, filter.LoadOzonPriceIndexes);
         }
 
         var vm = new RemainingStockViewModel
@@ -136,10 +147,10 @@ public class BitrixStockController : Controller
         };
         return View(vm);
     }
-    
+
     private async Task<List<RemainingStockBitrix>> LoadOzonWarehousesAsync(
-    List<RemainingStockBitrix> items, 
-    bool loadOzonWarehouses)
+        List<RemainingStockBitrix> items,
+        bool loadOzonWarehouses)
     {
         if (!loadOzonWarehouses || items == null || !items.Any())
             return items;
@@ -158,7 +169,7 @@ public class BitrixStockController : Controller
         {
             _ozonApiDataManager.SetClient(client.DecryptClientId, client.DecryptApiKey);
             var stockResponse = await _ozonApiDataManager.GetProductStocks(articles);
-            if (stockResponse?["items"] is not JArray itemsArray) 
+            if (stockResponse?["items"] is not JArray itemsArray)
                 continue;
 
             foreach (var item in itemsArray)
@@ -209,7 +220,7 @@ public class BitrixStockController : Controller
                         Amount = w.Stock.present,
                         ClientName = w.ClientName
                     })
-                    .OrderBy(s => s.Title) 
+                    .OrderBy(s => s.Title)
                     .ToList();
 
                 item.OzonStores = stockByStores;
@@ -219,9 +230,130 @@ public class BitrixStockController : Controller
         return items;
     }
 
+    private async Task<List<RemainingStockBitrix>> LoadOzonPriceIndexesAsync(
+        List<RemainingStockBitrix> items,
+        bool loadOzonPriceIndexes)
+    {
+        if (!loadOzonPriceIndexes || items == null || !items.Any())
+            return items;
 
+        var articles = items
+            .Where(x => !string.IsNullOrEmpty(x.ArticleWithKey))
+            .Select(x => x.ArticleWithKey)
+            .Distinct()
+            .ToArray();
 
-    
+        if (!articles.Any())
+            return items;
+
+        var allPriceIndexes = new List<(string Article, OzonPriceIndexes Indexes, string ClientName)>();
+
+        foreach (var client in _ozonClients)
+        {
+            _ozonApiDataManager.SetClient(client.DecryptClientId, client.DecryptApiKey);
+
+            try
+            {
+                // Получаем информацию о ценах и индексах
+                var priceResponse = await _ozonApiDataManager.GetProductPricesByArticles(articles);
+
+                if (priceResponse?["items"] is not JArray priceItems)
+                    continue;
+
+                foreach (var item in priceItems)
+                {
+                    var offerId = item["offer_id"]?.ToString();
+                    var priceIndexes = item["price_indexes"];
+
+                    if (string.IsNullOrEmpty(offerId) || priceIndexes == null)
+                        continue;
+
+                    var indexes = ParsePriceIndexes(priceIndexes, client.Name);
+                    if (indexes != null)
+                    {
+                        allPriceIndexes.Add((offerId, indexes, client.Name));
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+            }
+        }
+
+        // Присоединяем индексы к элементам
+        foreach (var item in items)
+        {
+            var itemIndexes = allPriceIndexes
+                .Where(x => x.Article == item.ArticleWithKey)
+                .Select(x => x.Indexes)
+                .ToList();
+
+            if (itemIndexes.Any())
+            {
+                item.OzonPriceIndexes = itemIndexes;
+            }
+        }
+
+        return items;
+    }
+
+    private OzonPriceIndexes ParsePriceIndexes(JToken priceIndexes, string clientName)
+    {
+        if (priceIndexes == null)
+            return null;
+
+        try
+        {
+            var indexes = new OzonPriceIndexes
+            {
+                ClientName = clientName,
+                ColorIndex = priceIndexes["color_index"]?.ToString()
+            };
+
+            // Парсим внешний индекс
+            var externalIndex = priceIndexes["external_index_data"];
+            if (externalIndex != null && externalIndex.HasValues)
+            {
+                indexes.ExternalIndex = new PriceIndexData
+                {
+                    MinPrice = externalIndex["min_price"]?.Value<decimal>() ?? 0,
+                    MinPriceCurrency = externalIndex["min_price_currency"]?.ToString() ?? "RUB",
+                    PriceIndexValue = externalIndex["price_index_value"]?.Value<double>() ?? 0
+                };
+            }
+
+            // Парсим Ozon индекс
+            var ozonIndex = priceIndexes["ozon_index_data"];
+            if (ozonIndex != null && ozonIndex.HasValues)
+            {
+                indexes.OzonIndex = new PriceIndexData
+                {
+                    MinPrice = ozonIndex["min_price"]?.Value<decimal>() ?? 0,
+                    MinPriceCurrency = ozonIndex["min_price_currency"]?.ToString() ?? "RUB",
+                    PriceIndexValue = ozonIndex["price_index_value"]?.Value<double>() ?? 0
+                };
+            }
+
+            // Парсим индекс собственных маркетплейсов
+            var selfMarketplacesIndex = priceIndexes["self_marketplaces_index_data"];
+            if (selfMarketplacesIndex != null && selfMarketplacesIndex.HasValues)
+            {
+                indexes.SelfMarketplacesIndex = new PriceIndexData
+                {
+                    MinPrice = selfMarketplacesIndex["min_price"]?.Value<decimal>() ?? 0,
+                    MinPriceCurrency = selfMarketplacesIndex["min_price_currency"]?.ToString() ?? "RUB",
+                    PriceIndexValue = selfMarketplacesIndex["price_index_value"]?.Value<double>() ?? 0
+                };
+            }
+
+            return indexes;
+        }
+        catch (Exception ex)
+        {
+            return null;
+        }
+    }
+
     public async Task<IActionResult> GetOzonPrices(string article)
     {
         await SetClients();
@@ -279,7 +411,8 @@ public class BitrixStockController : Controller
                         ["Item"] = JToken.FromObject(item)
                     };
 
-                    var warehouseInfo = await _ozonApiDataManager.GetWarehouseInfo(stocks, article, client, warehouseList);
+                    var warehouseInfo =
+                        await _ozonApiDataManager.GetWarehouseInfo(stocks, article, client, warehouseList);
                     if (warehouseInfo != null)
                     {
                         wrapped["WarehouseInfo"] = warehouseInfo;
@@ -289,10 +422,10 @@ public class BitrixStockController : Controller
                 }
             }
         }
+
         return Content(allItems.ToString(), "application/json");
     }
-    
-   
+
 
     private async Task<List<WarehouseOzon>> GetOrCreateWarehouseCache(string clientId)
     {
@@ -301,22 +434,24 @@ public class BitrixStockController : Controller
         {
             return cachedWarehouses;
         }
+
         var warehouseList = await _ozonApiDataManager.GetWarehouseList();
-    
+
         var cacheOptions = new MemoryCacheEntryOptions()
             .SetAbsoluteExpiration(TimeSpan.FromHours(1))
             .SetSlidingExpiration(TimeSpan.FromMinutes(30));
-    
+
         _memoryCache.Set(cacheKey, warehouseList, cacheOptions);
-    
+
         return warehouseList;
     }
 
     [HttpPost]
-    public async Task<IActionResult> UpdateProductStocks([FromBody] UpdateProductStocksViewModel updateProductStocksViewModel)
+    public async Task<IActionResult> UpdateProductStocks(
+        [FromBody] UpdateProductStocksViewModel updateProductStocksViewModel)
     {
         await SetClients();
-        _memoryCache.Remove( $"WarehouseList_{updateProductStocksViewModel.OzonClient}");
+        _memoryCache.Remove($"WarehouseList_{updateProductStocksViewModel.OzonClient}");
 
         var ozonClient = _ozonClients.Where(o => o.Name == updateProductStocksViewModel.OzonClient).FirstOrDefault();
         if (ozonClient == null)
@@ -339,6 +474,7 @@ public class BitrixStockController : Controller
             {
                 return BadRequest("Ozon API не вернул результат.");
             }
+
             var failedUpdates = result.Result.Where(r => r.Errors != null && r.Errors.Any()).ToList();
             if (failedUpdates.Any())
             {
@@ -365,7 +501,6 @@ public class BitrixStockController : Controller
                     Data = result.Result
                 });
             }
-            
         }
         catch (Exception ex)
         {
@@ -381,13 +516,13 @@ public class BitrixStockController : Controller
         if (targetClient == null)
             return NotFound("Клиент не найден");
 
-        var result = await _importProductPricesManager.UpdateProductPrices(request.Article, 
-                                                                                            targetClient,
-                                                                                            request.ConstantIndex,
-                                                                                            request.Percent);
+        var result = await _importProductPricesManager.UpdateProductPrices(request.Article,
+            targetClient,
+            request.ConstantIndex,
+            request.Percent);
         return Ok(result);
     }
-    
+
     [HttpPost]
     public async Task<IActionResult> SetProductPrice([FromBody] SetProductPriceRequest request)
     {
@@ -396,53 +531,57 @@ public class BitrixStockController : Controller
         var targetClient = _ozonClients.FirstOrDefault(o => o.Name == request.ClientName);
         if (targetClient == null)
             return NotFound("Клиент не найден");
-        
-        var result = await _importProductPricesManager.SetProductPrices(request.Article, 
-                                                                                             targetClient,
-                                                                                             request.YourPrice,
-                                                                                             request.OldPrice,
-                                                                                             request.MinPrice,
-                                                                                             request.CostPrice);
+
+        var result = await _importProductPricesManager.SetProductPrices(request.Article,
+            targetClient,
+            request.YourPrice,
+            request.OldPrice,
+            request.MinPrice,
+            request.CostPrice);
         return Ok(result);
     }
 
-    
+
     [HttpPost]
     public async Task<IActionResult> ToggleActiveStatus([FromBody] int productId)
     {
         try
-        { 
+        {
             var result = await _repository.ToggleElementActiveStatus(productId);
-        
+
             if (result == null)
             {
                 return NotFound(new { success = false, message = "Элемент не найден" });
             }
 
-            return Ok(new { 
-                success = true, 
+            return Ok(new
+            {
+                success = true,
                 message = "Статус успешно обновлен",
                 isActive = result.Value
             });
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { 
-                success = false, 
+            return StatusCode(500, new
+            {
+                success = false,
                 message = "Ошибка при обновлении статуса",
-                error = ex.Message 
+                error = ex.Message
             });
         }
     }
 
-    
+
     private async Task SetClients()
     {
         if (_ozonClients.Count == 0)
         {
-            _ozonClients = (await _ozonClientServcies.GetOzonClients()).Where(o => o.ClientType == ClientType.OZON).ToList();
+            _ozonClients = (await _ozonClientServcies.GetOzonClients()).Where(o => o.ClientType == ClientType.OZON)
+                .ToList();
             _ = PreloadWarehouseCachesAsync();
         }
+
         _ozonApiDataManager = new OzonApiDataManager(_ozonClients[0].DecryptClientId, _ozonClients[0].DecryptApiKey);
     }
 

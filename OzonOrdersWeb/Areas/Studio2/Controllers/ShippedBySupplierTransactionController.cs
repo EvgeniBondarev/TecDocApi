@@ -40,6 +40,7 @@ public class ShippedBySupplierTransactionController : Controller
     private readonly OrderCache _cache;
     private readonly ProxyHttpClientService _proxyHttpClientService;
     private readonly OneCReceiptManager _oneCReceiptManager;
+    private readonly WarehouseDataServcies _warehouseDataServcies;
 
     public ShippedBySupplierTransactionController(
         OzonOrderContext context,
@@ -54,7 +55,8 @@ public class ShippedBySupplierTransactionController : Controller
         CacheUpdater<Order> cacheUpdater,
         OrderCache cache,
         ProxyHttpClientService proxyHttpClientService,
-        OneCReceiptManager oneCReceiptManager)
+        OneCReceiptManager oneCReceiptManager,
+        WarehouseDataServcies warehouseDataServcies)
     {
         _context = context;
         _appStatusServcies = appStatusServcies;
@@ -69,6 +71,7 @@ public class ShippedBySupplierTransactionController : Controller
         _cache = cache;
         _proxyHttpClientService = proxyHttpClientService;
         _oneCReceiptManager = oneCReceiptManager;
+        _warehouseDataServcies = warehouseDataServcies;
     }
 
     // ==============================
@@ -99,11 +102,28 @@ public class ShippedBySupplierTransactionController : Controller
             {
                 order.AppStatus = appStatus;
                 order.UpdatedBy = User.Identity?.Name;
+                if (order.FromFile.Value)
+                {
+                    if (order.Supplier != null)
+                    {
+                        var curentWarehouse = await _warehouseDataServcies.GetOrCreateAsync(
+                            new Warehouse()
+                            {
+                                Name = order.Supplier.Name
+                            });
+                        if (curentWarehouse != null)
+                        {
+                            order.ShipmentWarehouse = curentWarehouse;
+                        }
+                    }
+                }
+
                 ordersToTransaction.Add(order);
             }
             else
             {
-                errorReason = $"Заказ {order.ShipmentNumber} имеет статус '{order.AppStatus?.Name}', а должен быть 'Заказан поставщику'.";
+                errorReason =
+                    $"Заказ {order.ShipmentNumber} имеет статус '{order.AppStatus?.Name}', а должен быть 'Заказан поставщику'.";
             }
         }
 
@@ -117,7 +137,9 @@ public class ShippedBySupplierTransactionController : Controller
             if (distinctSuppliers.Count > 1)
             {
                 errorReason = "Выбраны заказы с разными поставщиками: " +
-                              string.Join(", ", distinctSuppliers.SelectMany(g => g.Select(o => $"{o.ShipmentNumber} (поставщик: {g.Key})")));
+                              string.Join(", ",
+                                  distinctSuppliers.SelectMany(g =>
+                                      g.Select(o => $"{o.ShipmentNumber} (поставщик: {g.Key})")));
                 ordersToTransaction.Clear();
             }
 
@@ -125,7 +147,9 @@ public class ShippedBySupplierTransactionController : Controller
             if (distinctWarehouses.Count > 1)
             {
                 errorReason = "Выбраны заказы с разными складами: " +
-                              string.Join(", ", distinctWarehouses.SelectMany(g => g.Select(o => $"{o.ShipmentNumber} (склад: {g.Key})")));
+                              string.Join(", ",
+                                  distinctWarehouses.SelectMany(g =>
+                                      g.Select(o => $"{o.ShipmentNumber} (склад: {g.Key})")));
                 ordersToTransaction.Clear();
             }
         }
@@ -186,200 +210,233 @@ public class ShippedBySupplierTransactionController : Controller
     public async Task<IActionResult> CreateShippedBySupplierTransaction(
         ShippedBySupplierTransactionViewModel model)
     {
-            
-            if (model.Orders == null)
+        if (model.Orders == null)
+        {
+            TempData["ErorrResult"] =
+                $"Не удалось провести выбранные заказы.<br>Было передано слишком большое количество записей.";
+            return RedirectToAction("Index");
+        }
+        else
+        {
+            if (model.DeletedOrders != null)
             {
-                TempData["ErorrResult"] = $"Не удалось провести выбранные заказы.<br>Было передано слишком большое количество записей.";
-                return RedirectToAction("Index");
+                var deletedOrderIds = model.DeletedOrders.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(int.Parse).ToList();
+                model.Orders = model.Orders.Where(o => !deletedOrderIds.Contains(o.Id)).ToList();
             }
-            else
+        }
+
+        try
+        {
+            if (model.Orders.Count != 0)
             {
-                if (model.DeletedOrders != null)
+                DateTime createAt = DateTime.Now;
+                var changeCount = 0;
+                var dateTime = "";
+                List<Order> ordersToUpdate = new List<Order>();
+                List<string> ordersNotFoundInOzone = [];
+                foreach (var order in model.Orders)
                 {
-                    var deletedOrderIds = model.DeletedOrders.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(int.Parse).ToList();
-                   model.Orders = model.Orders.Where(o => !deletedOrderIds.Contains(o.Id)).ToList();
+                    var orderToUpdate = await _orderServcies.TransactOrder(order);
+                    if (orderToUpdate.FromFile.Value)
+                    {
+                        if (orderToUpdate.Supplier != null)
+                        {
+                            var curentWarehouse = await _warehouseDataServcies.GetWarehouseAsync(
+                                new Warehouse()
+                                {
+                                    Name = orderToUpdate.Supplier.Name
+                                });
+                            if (curentWarehouse != null)
+                            {
+                                orderToUpdate.ShipmentWarehouse = curentWarehouse;
+                            }
+                        }
+                    }
+
+                    ordersToUpdate.Add(orderToUpdate);
                 }
-            }
 
-            try
-            {
-                if (model.Orders.Count != 0)
+                var appStatus =
+                    await _appStatusServcies.GetAppStatusAsync(new AppStatus() { Name = "Отгружен поставщиком" });
+                var oldStatus =
+                    await _appStatusServcies.GetAppStatusAsync(new AppStatus() { Name = "Заказан поставщику" });
+                var backStatus =
+                    await _appStatusServcies.GetAppStatusAsync(new AppStatus() { Name = "Утерян поставщиком" });
+                if (backStatus == null)
                 {
-                    DateTime createAt = DateTime.Now;
-                    var changeCount = 0;
-                    var dateTime = "";
-                    List<Order> ordersToUpdate = new List<Order>();
-                    List<string> ordersNotFoundInOzone = [];
-                    foreach (var order in model.Orders)
+                    AppStatus newStatus = new AppStatus()
                     {
-                        ordersToUpdate.Add(await _orderServcies.TransactOrder(order));
+                        Name = "Утерян поставщиком"
+                    };
+                    _context.AppStatuses.Add(newStatus);
+                    await _context.SaveChangesAsync();
+                    backStatus = newStatus;
+                }
+
+                List<Order> ordersToTransaction =
+                    ordersToUpdate.Where(o => o.AppStatus.Id == appStatus.Id && o.Quantity > 0).ToList();
+                List<Order> ordersToBack = ordersToUpdate.Where(o => o.Quantity <= 0).ToList();
+                foreach (var order in ordersToBack)
+                {
+                    order.AppStatus = backStatus;
+                }
+
+                int ordersToBackResult = await _orderServcies.UpdateOrders(ordersToBack);
+
+
+                string oneCResult = "";
+                IEnumerable<string> oneCHash = [];
+                List<OneCResponse> transferResult = new List<OneCResponse>();
+                if (model.ProcessIn1C)
+                {
+                    try
+                    {
+                        transferResult = await _oneCReceiptManager.CreateReceipts(ordersToTransaction,
+                            new ShippedBySupplierTransactionDto()
+                            {
+                                NDS = model.NDS,
+                                Contract = model.Contract,
+                                NumberVh = model.NumberVh,
+                                DateVh = model.DateVh,
+                                TransactionComment = model.TransactionComment,
+                            });
+                    }
+                    catch (Exception e)
+                    {
+                        string msg = $"<div class='alert alert-danger'>" +
+                                     $"<strong>⚠️ Ошибка обработки в 1С</strong><br/>" +
+                                     $"{e.Message}</div>";
+                        foreach (var item in ordersToTransaction)
+                        {
+                            item.AppStatus = oldStatus;
+                        }
+
+                        int ordersToOldResult = await _orderServcies.UpdateOrders(ordersToTransaction);
+                        if (ordersToOldResult > 0)
+                        {
+                            msg += $"<div class='alert alert-info'>" +
+                                   $"<strong>📊 Обновление статусов</strong><br/>" +
+                                   $"Статус 'Заказан поставщику' установлен для <strong>{ordersToOldResult}</strong> заказов" +
+                                   $"</div>";
+                        }
+
+                        TempData["TransactionResult"] = msg;
+                        return RedirectToAction("Index", "Orders",
+                            new { sortOrder = GetSortStateCookie(), page = model.Page });
                     }
 
-                    var appStatus = await _appStatusServcies.GetAppStatusAsync(new AppStatus() { Name = "Отгружен поставщиком" });
-                    var oldStatus = await _appStatusServcies.GetAppStatusAsync(new AppStatus() { Name = "Заказан поставщику" });
-                    var backStatus = await _appStatusServcies.GetAppStatusAsync(new AppStatus() { Name = "Утерян поставщиком" });
-                    if (backStatus == null)
+                    var successfulTransfers = transferResult.Where(tr => tr.Success).ToList();
+                    var failedTransfers = transferResult.Where(tr => !tr.Success).ToList();
+
+                    if (failedTransfers.Count > 0)
                     {
-                        AppStatus newStatus = new AppStatus()
-                        {
-                            Name = "Утерян поставщиком"
-                        };
-                        _context.AppStatuses.Add(newStatus);
-                        await _context.SaveChangesAsync();
-                        backStatus = newStatus;
-                    }
-                    List<Order> ordersToTransaction = ordersToUpdate.Where(o => o.AppStatus.Id == appStatus.Id && o.Quantity > 0).ToList();
-                    List<Order> ordersToBack = ordersToUpdate.Where(o => o.Quantity <= 0).ToList();
-                    foreach (var order in ordersToBack)
-                    {
-                        order.AppStatus = backStatus;
-                    }
-                    int ordersToBackResult = await _orderServcies.UpdateOrders(ordersToBack);
-                    
+                        // Есть ошибки
+                        var errorMessages = failedTransfers.Select(tr => tr.Message).Distinct().Take(3);
+                        var errorCount = failedTransfers.Count;
+                        var successCount = successfulTransfers.Count;
+                        var totalCount = transferResult.Count;
 
-                    string oneCResult = "";
-                    IEnumerable<string> oneCHash = [];
-                    List<OneCResponse> transferResult = new List<OneCResponse>();
-                    if (model.ProcessIn1C)
-                    {
-                        try
-                        {
-                            transferResult = await _oneCReceiptManager.CreateReceipts(ordersToTransaction,
-                                                                                        new ShippedBySupplierTransactionDto()
-                                                                                        {
-                                                                                            NDS = model.NDS,
-                                                                                            Contract = model.Contract,
-                                                                                            NumberVh = model.NumberVh,
-                                                                                            DateVh = model.DateVh,
-                                                                                            TransactionComment = model.TransactionComment,
-                                                                                        });
-                        }
-                        catch (Exception e)
-                        {
-                            string msg = $"<div class='alert alert-danger'>" +
-                                         $"<strong>⚠️ Ошибка обработки в 1С</strong><br/>" +
-                                         $"{e.Message}</div>";
-                            foreach (var item in ordersToTransaction)
-                            {
-                                item.AppStatus = oldStatus;
-                            }
-                            int ordersToOldResult = await _orderServcies.UpdateOrders(ordersToTransaction);
-                            if (ordersToOldResult > 0)
-                            {
-                                msg += $"<div class='alert alert-info'>" +
-                                       $"<strong>📊 Обновление статусов</strong><br/>" +
-                                       $"Статус 'Заказан поставщику' установлен для <strong>{ordersToOldResult}</strong> заказов" +
-                                       $"</div>";
-                            }
-                            TempData["TransactionResult"] = msg;
-                            return RedirectToAction("Index", "Orders", new { sortOrder = GetSortStateCookie(), page = model.Page });
-                        }
-                        
-                        var successfulTransfers = transferResult.Where(tr => tr.Success).ToList();
-                        var failedTransfers = transferResult.Where(tr => !tr.Success).ToList();
+                        string msg = $"<div class='alert alert-warning'>" +
+                                     $"<strong>⚠️ Частичный результат обработки в 1С</strong><br/>" +
+                                     $"Успешно: {successCount} из {totalCount} документов<br/>" +
+                                     $"С ошибками: {errorCount} документов<br/>" +
+                                     $"<small>Ошибки: {string.Join("; ", errorMessages)}" +
+                                     (errorCount > 3 ? "..." : "") + "</small>" +
+                                     "</div>";
 
-                        if (failedTransfers.Count > 0)
-                        {
-                            // Есть ошибки
-                            var errorMessages = failedTransfers.Select(tr => tr.Message).Distinct().Take(3);
-                            var errorCount = failedTransfers.Count;
-                            var successCount = successfulTransfers.Count;
-                            var totalCount = transferResult.Count;
 
-                            string msg = $"<div class='alert alert-warning'>" +
-                                         $"<strong>⚠️ Частичный результат обработки в 1С</strong><br/>" +
-                                         $"Успешно: {successCount} из {totalCount} документов<br/>" +
-                                         $"С ошибками: {errorCount} документов<br/>" +
-                                         $"<small>Ошибки: {string.Join("; ", errorMessages)}" +
-                                         (errorCount > 3 ? "..." : "") + "</small>" +
-                                         "</div>";
-
-                            
-                            
-                            foreach (var item in ordersToTransaction)
-                            {
-                                item.AppStatus = oldStatus;
-                            }
-                            int ordersToOldResult = await _orderServcies.UpdateOrders(ordersToTransaction);
-                            if (ordersToOldResult > 0)
-                            {
-                                msg += $"<div class='alert alert-info'>" +
-                                              $"<strong>📊 Обновление статусов</strong><br/>" +
-                                              $"Статус 'Заказан поставщику' установлен для <strong>{ordersToOldResult}</strong> заказов" +
-                                              $"</div>";
-                            }
-                            TempData["TransactionResult"] = msg;
-                            return RedirectToAction("Index", "Orders", new { sortOrder = GetSortStateCookie(), page = model.Page });
-                        }
-                        else
+                        foreach (var item in ordersToTransaction)
                         {
-                            oneCHash = successfulTransfers.Select(h => h.TransactionId);
-                            var documentCount = successfulTransfers.Count;
-        
-                            oneCResult = $"<div class='alert alert-success'>" +
-                                         $"<strong>✅ Успешно создано в 1С</strong><br/>" +
-                                         $"Количество документов: {documentCount}<br/>" +
-                                         $"Номера транзакций: <code>{string.Join(", ", oneCHash)}</code>" +
-                                         $"</div>";
+                            item.AppStatus = oldStatus;
                         }
+
+                        int ordersToOldResult = await _orderServcies.UpdateOrders(ordersToTransaction);
+                        if (ordersToOldResult > 0)
+                        {
+                            msg += $"<div class='alert alert-info'>" +
+                                   $"<strong>📊 Обновление статусов</strong><br/>" +
+                                   $"Статус 'Заказан поставщику' установлен для <strong>{ordersToOldResult}</strong> заказов" +
+                                   $"</div>";
+                        }
+
+                        TempData["TransactionResult"] = msg;
+                        return RedirectToAction("Index", "Orders",
+                            new { sortOrder = GetSortStateCookie(), page = model.Page });
                     }
                     else
                     {
-                        oneCResult = "<div class='alert alert-info'><strong>ℹ️ Информация</strong><br/>Создание документов в 1С не требовалось</div>";
-                    }
+                        oneCHash = successfulTransfers.Select(h => h.TransactionId);
+                        var documentCount = successfulTransfers.Count;
 
-                    if (ordersToBackResult > 0)
-                    {
-                        oneCResult += $"<div class='alert alert-info'>" +
-                                      $"<strong>📊 Обновление статусов</strong><br/>" +
-                                      $"Статус 'Утерян реализатором' установлен для <strong>{ordersToBackResult}</strong> заказов" +
-                                      $"</div>";
-                    }
-                    await NotificationService.NotifyAllAsync(oneCResult);
-                    (changeCount, dateTime) = await _transaction.CreateShippedBySupplierTransaction(ordersToTransaction,
-                                                                                                  model.UserName,
-                                                                                                  createAt,
-                                                                                                  model.Comment + string.Join(", ", oneCHash));
-                    int cancelCount = ordersToUpdate.Where(o => o.AppStatus.Name == "Отменен").Count();
-
-                    if (changeCount > 0)
-                    {   
-                        await _cacheUpdater.Update(_cache);
-                        string msg = $"Заказы добавлены в журнал<br/>" +
-                                     $"<b>{changeCount}</b> заказам изменен статус на '<b>Отгружен поставщиком</b>', <b>{cancelCount}</b> заказов были отменены." +
-                                     $"<br/>Время<b>: {dateTime}</b>" +
-                                     $"<br/>Пользователь<b>: {model.UserName}</b>" +
-                                     $"<br/>Комментарий: {model.Comment}" +
-                                     $"<br/>Заказы: {string.Join(" ", model.Orders.Select(o => o.ShipmentNumber))}"+
-                                     $"<br/>{oneCResult}";
-                        await NotificationService.NotifyAllAsync(msg);
-                        TempData["TransactionResult"] = msg;
-
-                    }
-                    await _transactionCache.Update();
-
-                    if (ordersNotFoundInOzone.Count > 0)
-                    {
-                        TempData["OrdersNotFoundInOzone"] = $"Заказы не найдены в системе Ozon - {ordersNotFoundInOzone.Aggregate((x, y) => x + ", " + y)}";
+                        oneCResult = $"<div class='alert alert-success'>" +
+                                     $"<strong>✅ Успешно создано в 1С</strong><br/>" +
+                                     $"Количество документов: {documentCount}<br/>" +
+                                     $"Номера транзакций: <code>{string.Join(", ", oneCHash)}</code>" +
+                                     $"</div>";
                     }
                 }
-                ClearSelectedIdsSession();
-                foreach (var order in model.Orders)
+                else
                 {
-                    var cookieKey = $"PurchasePrice_{order.Id}";
-                    if (Request.Cookies.ContainsKey(cookieKey))
-                    {
-                        Response.Cookies.Delete(cookieKey);
-                    }
+                    oneCResult =
+                        "<div class='alert alert-info'><strong>ℹ️ Информация</strong><br/>Создание документов в 1С не требовалось</div>";
                 }
-                
-                return RedirectToAction("Index", "Orders", new { sortOrder = GetSortStateCookie(), page = model.Page });
+
+                if (ordersToBackResult > 0)
+                {
+                    oneCResult += $"<div class='alert alert-info'>" +
+                                  $"<strong>📊 Обновление статусов</strong><br/>" +
+                                  $"Статус 'Утерян реализатором' установлен для <strong>{ordersToBackResult}</strong> заказов" +
+                                  $"</div>";
+                }
+
+                await NotificationService.NotifyAllAsync(oneCResult);
+                (changeCount, dateTime) = await _transaction.CreateShippedBySupplierTransaction(ordersToTransaction,
+                    model.UserName,
+                    createAt,
+                    model.Comment + string.Join(", ", oneCHash));
+                int cancelCount = ordersToUpdate.Where(o => o.AppStatus.Name == "Отменен").Count();
+
+                if (changeCount > 0)
+                {
+                    await _cacheUpdater.Update(_cache);
+                    string msg = $"Заказы добавлены в журнал<br/>" +
+                                 $"<b>{changeCount}</b> заказам изменен статус на '<b>Отгружен поставщиком</b>', <b>{cancelCount}</b> заказов были отменены." +
+                                 $"<br/>Время<b>: {dateTime}</b>" +
+                                 $"<br/>Пользователь<b>: {model.UserName}</b>" +
+                                 $"<br/>Комментарий: {model.Comment}" +
+                                 $"<br/>Заказы: {string.Join(" ", model.Orders.Select(o => o.ShipmentNumber))}" +
+                                 $"<br/>{oneCResult}";
+                    await NotificationService.NotifyAllAsync(msg);
+                    TempData["TransactionResult"] = msg;
+                }
+
+                await _transactionCache.Update();
+
+                if (ordersNotFoundInOzone.Count > 0)
+                {
+                    TempData["OrdersNotFoundInOzone"] =
+                        $"Заказы не найдены в системе Ozon - {ordersNotFoundInOzone.Aggregate((x, y) => x + ", " + y)}";
+                }
             }
-            catch (Exception ex)
+
+            ClearSelectedIdsSession();
+            foreach (var order in model.Orders)
             {
-                TempData["ErorrResult"] = $"Не удалось провести выбранные заказы ({ex.Message})";
-                return RedirectToAction("Index", "Orders", new { sortOrder = GetSortStateCookie(), page = model.Page });
+                var cookieKey = $"PurchasePrice_{order.Id}";
+                if (Request.Cookies.ContainsKey(cookieKey))
+                {
+                    Response.Cookies.Delete(cookieKey);
+                }
             }
+
+            return RedirectToAction("Index", "Orders", new { sortOrder = GetSortStateCookie(), page = model.Page });
+        }
+        catch (Exception ex)
+        {
+            TempData["ErorrResult"] = $"Не удалось провести выбранные заказы ({ex.Message})";
+            return RedirectToAction("Index", "Orders", new { sortOrder = GetSortStateCookie(), page = model.Page });
+        }
     }
 
     [HttpPost]
