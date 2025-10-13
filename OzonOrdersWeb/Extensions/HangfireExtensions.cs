@@ -29,7 +29,7 @@ public static class HangfireExtensions
         services.AddHangfireServer(options =>
         {
             options.Queues = ["main"];
-            options.WorkerCount = 3;
+            options.WorkerCount = 1;
         });
     }
 }
