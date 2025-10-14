@@ -102,22 +102,6 @@ public class ShippedBySupplierTransactionController : Controller
             {
                 order.AppStatus = appStatus;
                 order.UpdatedBy = User.Identity?.Name;
-                if (order.FromFile.Value)
-                {
-                    if (order.Supplier != null)
-                    {
-                        var curentWarehouse = await _warehouseDataServcies.GetOrCreateAsync(
-                            new Warehouse()
-                            {
-                                Name = order.Supplier.Name
-                            });
-                        if (curentWarehouse != null)
-                        {
-                            order.ShipmentWarehouse = curentWarehouse;
-                        }
-                    }
-                }
-
                 ordersToTransaction.Add(order);
             }
             else
@@ -238,22 +222,6 @@ public class ShippedBySupplierTransactionController : Controller
                 foreach (var order in model.Orders)
                 {
                     var orderToUpdate = await _orderServcies.TransactOrder(order);
-                    if (orderToUpdate.FromFile.Value)
-                    {
-                        if (orderToUpdate.Supplier != null)
-                        {
-                            var curentWarehouse = await _warehouseDataServcies.GetWarehouseAsync(
-                                new Warehouse()
-                                {
-                                    Name = orderToUpdate.Supplier.Name
-                                });
-                            if (curentWarehouse != null)
-                            {
-                                orderToUpdate.ShipmentWarehouse = curentWarehouse;
-                            }
-                        }
-                    }
-
                     ordersToUpdate.Add(orderToUpdate);
                 }
 

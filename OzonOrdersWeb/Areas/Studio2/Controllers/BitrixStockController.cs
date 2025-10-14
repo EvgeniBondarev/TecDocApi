@@ -131,7 +131,48 @@ public class BitrixStockController : Controller
         if (filter.LoadOzonPriceIndexes)
         {
             result.Items = await LoadOzonPriceIndexesAsync(result.Items, filter.LoadOzonPriceIndexes);
+
+            /*// --- фильтрация по цвету индекса ---
+            if (!string.IsNullOrEmpty(filter.PriceIndexColor))
+            {
+                result.Items = result.Items
+                    .Where(x => x.OzonPriceIndexes != null &&
+                                x.OzonPriceIndexes.ColorIndex.Equals(filter.PriceIndexColor,
+                                    StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+            }
+
+            // --- фильтрация по значению индекса ---
+            if (filter.PriceIndexValueFrom.HasValue)
+            {
+                result.Items = result.Items
+                    .Where(x => x.OzonPriceIndexes?.OzonIndex?.PriceIndexValue >= filter.PriceIndexValueFrom.Value)
+                    .ToList();
+            }
+
+            if (filter.PriceIndexValueTo.HasValue)
+            {
+                result.Items = result.Items
+                    .Where(x => x.OzonPriceIndexes?.OzonIndex?.PriceIndexValue <= filter.PriceIndexValueTo.Value)
+                    .ToList();
+            }
+
+            // --- фильтрация по минимальной цене ---
+            if (filter.MinPriceFrom.HasValue)
+            {
+                result.Items = result.Items
+                    .Where(x => x.OzonPriceIndexes?.OzonIndex?.MinPrice >= filter.MinPriceFrom.Value)
+                    .ToList();
+            }
+
+            if (filter.MinPriceTo.HasValue)
+            {
+                result.Items = result.Items
+                    .Where(x => x.OzonPriceIndexes?.OzonIndex?.MinPrice <= filter.MinPriceTo.Value)
+                    .ToList();
+            }*/
         }
+
 
         var vm = new RemainingStockViewModel
         {
