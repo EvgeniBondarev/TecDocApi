@@ -292,6 +292,16 @@ namespace Servcies.DataServcies
 
             existingOrder.IsVerified = true;
 
+            if (order.ShipmentWarehouse != null &&
+                order.ShipmentWarehouse.Id == 0
+                && order.ShipmentWarehouse.Name != null)
+            {
+                existingOrder.ShipmentWarehouse =
+                    await warehouseDataServcies.GetWarehouseAsync(new Warehouse
+                        { Name = order.ShipmentWarehouse.Name });
+            }
+
+
             await SaveChanges();
             return existingOrder;
         }
@@ -532,6 +542,7 @@ namespace Servcies.DataServcies
                 order = await orderPriceManager.CalculateProfit(order);
                 order = await orderPriceManager.CalculateDiscount(order);
             }
+
 
             order = await SetIsReturnable(order);
 

@@ -8,6 +8,7 @@ using OzonOrdersWeb.ViewModels.OrderViewModels;
 using OzonRepositories.Context;
 using OzonRepositories.Data.Bitrix;
 using PartsInfo.HttpUtils;
+using Servcies.ApiServcies;
 using Servcies.ApiServcies._1CApi;
 using Servcies.ApiServcies._1CApi.DTO;
 using Servcies.ApiServcies._1CApi.Models;
@@ -35,7 +36,6 @@ public class ShippedBySupplierTransactionController : Controller
     private readonly SupplierDataServcies _supplierDataServcies;
     private readonly IUserCacheService _userCacheService;
     private readonly CurrencyRateFetcher _currencyRateFetcher;
-    private readonly BitrixStockRepository _bitrixStockRepository;
     private readonly CacheUpdater<Order> _cacheUpdater;
     private readonly OrderCache _cache;
     private readonly ProxyHttpClientService _proxyHttpClientService;
@@ -51,7 +51,6 @@ public class ShippedBySupplierTransactionController : Controller
         SupplierDataServcies supplierDataServcies,
         IUserCacheService userCacheService,
         CurrencyRateFetcher currencyRateFetcher,
-        BitrixStockRepository bitrixStockRepository,
         CacheUpdater<Order> cacheUpdater,
         OrderCache cache,
         ProxyHttpClientService proxyHttpClientService,
@@ -66,7 +65,6 @@ public class ShippedBySupplierTransactionController : Controller
         _supplierDataServcies = supplierDataServcies;
         _userCacheService = userCacheService;
         _currencyRateFetcher = currencyRateFetcher;
-        _bitrixStockRepository = bitrixStockRepository;
         _cacheUpdater = cacheUpdater;
         _cache = cache;
         _proxyHttpClientService = proxyHttpClientService;
@@ -152,6 +150,7 @@ public class ShippedBySupplierTransactionController : Controller
             UniqueArticles = await _orderServcies.GetUniqueArticles(),
             UniqueDeliveryCitys = await _orderServcies.GetUniqueDeliveryCities(),
             UniqueNumbers = await _orderServcies.GetUniqueShipmentNumbers(),
+            Warehouses = await _warehouseDataServcies.GetWarehouses(),
             AppStatus = appStatus
         };
 

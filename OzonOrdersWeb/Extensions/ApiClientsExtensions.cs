@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
 using PartsInfo.HttpUtils;
+using Servcies.ApiServcies;
 using Servcies.ApiServcies._1CApi;
 using Servcies.ApiServcies.AbcpApi;
 using Servcies.ApiServcies.AvdApiConfig;
@@ -89,7 +90,7 @@ public static class ApiClientsExtensions
             UserPsw = configuration["Abcp:UserPsw"],
             Domain = configuration["Abcp:Domain"]
         });
-        
+
         services.AddSingleton<AbcpDataManager>(serviceProvider =>
         {
             var config = serviceProvider.GetRequiredService<AbcpApiConfig>();
@@ -97,14 +98,14 @@ public static class ApiClientsExtensions
             return new AbcpDataManager(config, cache);
         });
         services.AddTransient<AbcpApiClient>();
-        
+
         services.AddSingleton(new AvdApiConfig
         {
             Login = configuration["Avd:Login"],
-            
+
             Password = configuration["Avd:Password"],
         });
-        
+
         services.AddTransient<AvdDataManager>(serviceProvider =>
         {
             var config = serviceProvider.GetRequiredService<AvdApiConfig>();
@@ -112,7 +113,7 @@ public static class ApiClientsExtensions
             return new AvdDataManager(config, cache);
         });
         services.AddTransient<AvdApiClient>();
-        
+
         services.AddSingleton(new OneCApiConfig
         {
             User = configuration["OneC:User"],
@@ -132,7 +133,7 @@ public static class ApiClientsExtensions
             var warehouseMappingDataServcies = serviceProvider.GetRequiredService<WarehouseMappingDataServcies>();
             return new OneCTransferManager(config, cache, warehouseMappingDataServcies);
         });
-        
+
         services.AddTransient<OneCReceiptManager>(serviceProvider =>
         {
             var config = serviceProvider.GetRequiredService<OneCApiConfig>();
@@ -140,8 +141,13 @@ public static class ApiClientsExtensions
             var warehouseMappingDataServcies = serviceProvider.GetRequiredService<WarehouseMappingDataServcies>();
             return new OneCReceiptManager(config, cache, warehouseMappingDataServcies);
         });
-        
+
+        services.AddTransient<OneCDataManager>(serviceProvider =>
+        {
+            var config = serviceProvider.GetRequiredService<OneCApiConfig>();
+            return new OneCDataManager(config);
+        });
+
         services.AddScoped<ProxyHttpClientService>();
-        
     }
 }

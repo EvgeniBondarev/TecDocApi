@@ -24,7 +24,7 @@ namespace OzonRepositories.Data
 
         public async Task<List<Warehouse>> Get()
         {
-            return await _context.Warehouses.ToListAsync();
+            return await _context.Warehouses.OrderBy(n => n.Name).ToListAsync();
         }
 
         public async Task<Warehouse> GetAsync(int id)

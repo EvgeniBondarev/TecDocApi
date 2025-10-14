@@ -4,12 +4,12 @@
 @model MultiplayEditOrderViewModel
 
 @{
-ViewData["Title"] = "Edit";
-Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Edit";
+    Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<link rel="stylesheet" href="~/css/table.css" />
-<link rel="stylesheet" href="~/css/transaction.css" />
+<link rel="stylesheet" href="~/css/table.css"/>
+<link rel="stylesheet" href="~/css/transaction.css"/>
 <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
 
 <script src="~/js/Studio2/Orders/CreateOrderToSupplierTransactionV2/generateInfoRow.js"></script>
@@ -24,10 +24,11 @@ Layout = "~/Views/Shared/_Layout.cshtml";
     </div>
 </div>
 
-<hr />
+<hr/>
 
 <!-- Модальное окно со спиннером -->
-<div class="modal fade" id="loadingModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="loadingModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+     aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="background: transparent; border: none; box-shadow: none;">
             <div class="d-flex justify-content-center align-items-center" style="height: 150px;">
@@ -70,22 +71,24 @@ Layout = "~/Views/Shared/_Layout.cshtml";
 
 @if (Model.Orders.Count > 0)
 {
-    <form asp-area="Studio2" asp-controller="ShippedBySupplierTransaction" asp-action="CreateShippedBySupplierTransaction" id="createOrderForm">
+    <form asp-area="Studio2" asp-controller="ShippedBySupplierTransaction"
+          asp-action="CreateShippedBySupplierTransaction" id="createOrderForm">
         <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-        <input type="hidden" asp-for="RedirectPage" />
-    
-        @await Html.PartialAsync("_TransactionTable", Model)
-    
+        <input type="hidden" asp-for="RedirectPage"/>
+
+        @await Html.PartialAsync("_ShippedBySupplierTransactionTable", Model)
+
         <div class="form-check ms-3">
             <input class="form-check-input" type="checkbox" id="ProcessIn1C" name="ProcessIn1C" value="true" checked>
             <label class="form-check-label" for="ProcessIn1C">
                 Провести в 1С
             </label>
         </div>
-        
-            
+
+
         <!-- ================== МОДАЛЬНОЕ ОКНО ================== -->
-        <div class="modal fade" id="transactionModal" tabindex="-1" aria-labelledby="transactionModalLabel" aria-hidden="true">
+        <div class="modal fade" id="transactionModal" tabindex="-1" aria-labelledby="transactionModalLabel"
+             aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
@@ -113,21 +116,23 @@ Layout = "~/Views/Shared/_Layout.cshtml";
                                    required
                                    value="@DateTime.Now.ToString("yyyy-MM-dd")">
                         </div>
-                        
+
                         <div class="mb-3">
                             <label for="TransactionComment" class="form-label">Комментарий</label>
-                            <textarea id="TransactionComment" name="TransactionComment" class="form-control" rows="3" placeholder="Введите комментарий..."></textarea>
+                            <textarea id="TransactionComment" name="TransactionComment" class="form-control" rows="3"
+                                      placeholder="Введите комментарий..."></textarea>
                         </div>
                     </div>
 
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                        <button type="button" id="confirmSubmit" class="btn btn-primary">Подтвердить и сохранить</button>
+                        <button type="button" id="confirmSubmit" class="btn btn-primary">Подтвердить и сохранить
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
-        
+
         <input type="hidden" name="UserName" id="UserName" value="@User.Identity.Name"/>
         <input type="hidden" name="Page" id="Page" value="@Model.RedirectPage"/>
 
@@ -138,7 +143,7 @@ Layout = "~/Views/Shared/_Layout.cshtml";
                            style="width: 170px;"
                            class="btn btn-primary"
                            data-bs-toggle="modal"
-                           data-bs-target="#transactionModal" />
+                           data-bs-target="#transactionModal"/>
                 </span>
             </div>
         </div>
@@ -158,7 +163,8 @@ else
     @Html.Partial("_OrderStatusFlow")
 }
 
-<div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+<div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+     aria-labelledby="staticBackdropLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -208,7 +214,7 @@ else
     </div>
 </div>
 
-<input type="hidden" id="DeletedOrders" name="DeletedOrders" />
+<input type="hidden" id="DeletedOrders" name="DeletedOrders"/>
 @await Html.PartialAsync("_TransactionScript", Model)
 
 <script>

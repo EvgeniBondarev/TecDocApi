@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc.Rendering;
 using OzonDomains.Models;
 using OzonRepositories.Context.Identity;
+using Servcies.ApiServcies._1CApi.Models;
 
 namespace OzonOrdersWeb.ViewModels.OrderViewModels
 {
@@ -13,15 +14,14 @@ namespace OzonOrdersWeb.ViewModels.OrderViewModels
         public CustomIdentityUser User { get; set; }
 
         public decimal RateUSD { get; set; }
-        public decimal RateEUR { get; set;}
+        public decimal RateEUR { get; set; }
         public decimal RateBYN { get; set; }
         public string? ErrorMessage { get; set; }
 
         public Dictionary<string, int> UniqueArticles { get; set; }
         public Dictionary<string, int> UniqueDeliveryCitys { get; set; }
         public Dictionary<string, int> UniqueNumbers { get; set; }
-        
+        public List<Warehouse> Warehouses { get; set; }
         public AppStatus AppStatus { get; set; }
-
     }
 }

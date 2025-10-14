@@ -111,6 +111,36 @@ public class OneCApiClient : IApiClient
         }
     }
 
+    public async Task<string> MakeRequestGetAsync(string requestUri)
+    {
+        try
+        {
+            using var httpClient = new HttpClient();
+
+            if (!string.IsNullOrEmpty(_base64Auth))
+            {
+                httpClient.DefaultRequestHeaders.Authorization =
+                    new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", _base64Auth);
+            }
+
+            using var httpResponse = await httpClient.GetAsync(requestUri);
+            var jsonResponse = await httpResponse.Content.ReadAsStringAsync();
+
+            if (!httpResponse.IsSuccessStatusCode)
+                throw new Exception($"Ошибка GET-запроса к API 1C: {httpResponse.StatusCode}, {jsonResponse}");
+
+            return jsonResponse;
+        }
+        catch (HttpRequestException ex)
+        {
+            throw new Exception($"Ошибка HTTP при GET-запросе к API 1C: {ex.Message}", ex);
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"Непредвиденная ошибка при GET-запросе к API 1C: {ex.Message}", ex);
+        }
+    }
+
     public async Task<bool> GetTestRequest(string username, string password)
     {
         try
