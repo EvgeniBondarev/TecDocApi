@@ -132,47 +132,59 @@ public class BitrixStockController : Controller
         {
             result.Items = await LoadOzonPriceIndexesAsync(result.Items, filter.LoadOzonPriceIndexes);
 
-            /*// --- фильтрация по цвету индекса ---
+            // --- фильтрация по цвету индекса ---
             if (!string.IsNullOrEmpty(filter.PriceIndexColor))
             {
                 result.Items = result.Items
                     .Where(x => x.OzonPriceIndexes != null &&
-                                x.OzonPriceIndexes.ColorIndex.Equals(filter.PriceIndexColor,
-                                    StringComparison.OrdinalIgnoreCase))
+                                x.OzonPriceIndexes.Any(i =>
+                                    string.Equals(i.ColorIndex, filter.PriceIndexColor,
+                                        StringComparison.OrdinalIgnoreCase)))
                     .ToList();
             }
 
-            // --- фильтрация по значению индекса ---
-            if (filter.PriceIndexValueFrom.HasValue)
+            // --- фильтрация по значению OzonIndex ---
+            if (filter.PriceIndexValueFrom.HasValue || filter.PriceIndexValueTo.HasValue)
             {
                 result.Items = result.Items
-                    .Where(x => x.OzonPriceIndexes?.OzonIndex?.PriceIndexValue >= filter.PriceIndexValueFrom.Value)
+                    .Where(x => x.OzonPriceIndexes != null &&
+                                x.OzonPriceIndexes.Any(i =>
+                                {
+                                    var value = i.OzonIndex?.PriceIndexValue;
+                                    if (!value.HasValue) return false;
+
+                                    bool match = true;
+                                    if (filter.PriceIndexValueFrom.HasValue)
+                                        match &= value.Value >= filter.PriceIndexValueFrom.Value;
+                                    if (filter.PriceIndexValueTo.HasValue)
+                                        match &= value.Value <= filter.PriceIndexValueTo.Value;
+
+                                    return match;
+                                }))
                     .ToList();
             }
 
-            if (filter.PriceIndexValueTo.HasValue)
+            // --- фильтрация по минимальной цене OzonIndex ---
+            if (filter.MinPriceFrom.HasValue || filter.MinPriceTo.HasValue)
             {
                 result.Items = result.Items
-                    .Where(x => x.OzonPriceIndexes?.OzonIndex?.PriceIndexValue <= filter.PriceIndexValueTo.Value)
+                    .Where(x => x.OzonPriceIndexes != null &&
+                                x.OzonPriceIndexes.Any(i =>
+                                {
+                                    var minPrice = i.OzonIndex?.MinPrice;
+                                    if (!minPrice.HasValue) return false;
+
+                                    bool match = true;
+                                    if (filter.MinPriceFrom.HasValue)
+                                        match &= minPrice.Value >= filter.MinPriceFrom.Value;
+                                    if (filter.MinPriceTo.HasValue)
+                                        match &= minPrice.Value <= filter.MinPriceTo.Value;
+
+                                    return match;
+                                }))
                     .ToList();
             }
-
-            // --- фильтрация по минимальной цене ---
-            if (filter.MinPriceFrom.HasValue)
-            {
-                result.Items = result.Items
-                    .Where(x => x.OzonPriceIndexes?.OzonIndex?.MinPrice >= filter.MinPriceFrom.Value)
-                    .ToList();
-            }
-
-            if (filter.MinPriceTo.HasValue)
-            {
-                result.Items = result.Items
-                    .Where(x => x.OzonPriceIndexes?.OzonIndex?.MinPrice <= filter.MinPriceTo.Value)
-                    .ToList();
-            }*/
         }
-
 
         var vm = new RemainingStockViewModel
         {
