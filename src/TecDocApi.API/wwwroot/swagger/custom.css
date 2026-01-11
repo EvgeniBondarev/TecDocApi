@@ -1,0 +1,37 @@
+/* Кастомные стили для Swagger UI с логотипом */
+.swagger-ui .topbar {
+    background-color: #fff;
+    border-bottom: 1px solid #e0e0e0;
+    padding: 10px 0;
+}
+
+.swagger-ui .topbar .download-url-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.swagger-ui .topbar .download-url-wrapper::before {
+    content: '';
+    display: inline-block;
+    width: 80px;
+    height: 30px;
+    background-image: url('http://studio-web-client.interparts.ru/logo.svg');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: left center;
+    margin-right: 15px;
+}
+
+/* Улучшаем отображение примеров JSON */
+.swagger-ui .model-example {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-family: 'Courier New', monospace;
+    background-color: #f5f5f5;
+    padding: 10px;
+    border-radius: 4px;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
