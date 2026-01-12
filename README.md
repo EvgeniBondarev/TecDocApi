@@ -35,6 +35,7 @@ TecDoc API предоставляет RESTful интерфейс для рабо
 - **Elasticsearch поиск** - быстрый полнотекстовый поиск по артикулам и поставщикам
 - **MySQL поиск** - точный поиск по номеру артикула и ID поставщика
 - **Ngram анализ** - поиск по части артикула (например, "123" найдет "12345")
+- **Изображения из S3** - быстрый доступ к изображениям из S3 хранилища с кэшированием
 - **Русский язык** - поддержка морфологии и стемминга для русского языка
 - **Fuzzy search** - поиск с учетом опечаток
 - **Сортировка** - по релевантности, номеру артикула, описанию, количеству артикулов
@@ -81,9 +82,9 @@ docker-compose logs -f api
 ```
 
 После запуска:
-- **API:** http://localhost:8080
-- **Swagger UI:** http://localhost:8080/swagger
-- **ReDoc:** http://localhost:8080/docs
+- **API:** http://localhost:8082
+- **Swagger UI:** http://localhost:8082/swagger
+- **ReDoc:** http://localhost:8082/docs
 - **Elasticsearch:** http://localhost:9200
 - **Kibana:** http://localhost:5601
 
@@ -214,6 +215,43 @@ TecDocApi/
 - Возвращает полную информацию об артикуле, включая кросс-номера, изображения и т.д.
 
 **GET** `/api/v1/articles/{supplierId}/{articleNumber}`
+- Получение артикула по точному совпадению
+- Возвращает полную информацию со всеми связями
+
+### 🖼️ Изображения из S3
+
+#### Получение URL изображения
+
+**GET** `/api/Images/{supplierId}/{fileName}`
+- Получение публичного URL изображения из S3 хранилища Timeweb
+- Быстрый метод с кэшированием URL на 24 часа
+- Автоматическая проверка существования изображения
+- **Пример:** `GET /api/Images/101/101_116209_1.jpg`
+- **Ответ:**
+  ```json
+  {
+    "url": "https://s3.timeweb.cloud/25f554fc-.../TD2018/images/101/101_116209_1.jpg",
+    "supplierId": 101,
+    "fileName": "101_116209_1.jpg"
+  }
+  ```
+
+**GET** `/api/Images/{supplierId}/{fileName}/stream`
+- Получение изображения напрямую из S3 как поток данных
+- Полезно для проксирования или дополнительной обработки
+- Автоматическое определение Content-Type
+
+**GET** `/api/Images/{supplierId}/{fileName}/exists`
+- Быстрая проверка существования изображения в S3
+- Не загружает файл, только проверяет метаданные
+- **Ответ:**
+  ```json
+  {
+    "exists": true,
+    "supplierId": 101,
+    "fileName": "101_116209_1.jpg"
+  }
+  ```
 - Получение артикула по точному совпадению SupplierId и DataSupplierArticleNumber
 
 #### Поставщики
@@ -226,8 +264,8 @@ TecDocApi/
 
 ### 📖 Документация API
 
-- **Swagger UI:** http://localhost:8080/swagger - интерактивная документация с возможностью тестирования
-- **ReDoc:** http://localhost:8080/docs - красивая документация с примерами
+- **Swagger UI:** http://localhost:8082/swagger - интерактивная документация с возможностью тестирования
+- **ReDoc:** http://localhost:8082/docs - красивая документация с примерами
 
 ## Настройка
 
@@ -242,6 +280,13 @@ TecDocApi/
 # ВАЖНО: Если пароль содержит специальные символы ($, }, (, ), и т.д.), 
 # заключите значение в одинарные кавычки:
 TECDOC_DATABASE_CONNECTION_STRING='Server=your-server;Port=3306;Database=TD2018;User=your-user;Password=your-password;Allow User Variables=true;MaximumPoolSize=50;ConnectionIdleTimeout=30;ConnectionTimeout=10;SslMode=None;AllowPublicKeyRetrieval=True;Charset=utf8mb4;'
+
+# Настройки S3 для изображений
+S3_ACCESS_KEY=your-access-key
+S3_SECRET_KEY=your-secret-key
+S3_ENDPOINT_URL=https://s3.timeweb.cloud
+S3_REGION_NAME=ru-1
+S3_BUCKET_NAME=your-bucket-name
 ```
 
 **Важно:** 
@@ -347,7 +392,7 @@ curl -X POST "http://localhost:9200/articles/_search?pretty" \
 
 Приложение использует Docker Compose для оркестрации следующих сервисов:
 
-- **api** - ASP.NET Core приложение (порт 8080)
+- **api** - ASP.NET Core приложение (порт 8082)
 - **elasticsearch** - Elasticsearch сервер (порт 9200)
 - **kibana** - Kibana dashboard (порт 5601)
 
@@ -461,10 +506,10 @@ dotnet ef database update --project src/TecDocApi.Infrastructure --startup-proje
 
 ```bash
 # Проверка Elasticsearch для артикулов
-curl http://localhost:8080/api/ArticleSearch/health
+curl http://localhost:8082/api/ArticleSearch/health
 
 # Проверка Elasticsearch для поставщиков
-curl http://localhost:8080/api/SupplierSearch/health
+curl http://localhost:8082/api/SupplierSearch/health
 ```
 
 ### Логирование

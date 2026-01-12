@@ -37,17 +37,19 @@ services:
     restart: unless-stopped
 
   api:
-    image: bondarevevgeni/tecdoc-api:latest
-    pull_policy: always
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: tecdoc-api
     ports:
       - "8082:8082"
     env_file:
       - .env
     environment:
-      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8082
       # Строка подключения к БД берется из .env файла (TECDOC_DATABASE_CONNECTION_STRING)
+      # Или из appsettings.Development.json для локальной разработки
       - Elasticsearch__Url=http://elasticsearch:9200
       - Elasticsearch__IndexName=articles
       - Elasticsearch__SupplierIndexName=suppliers
@@ -69,9 +71,8 @@ services:
     networks:
       - tecdoc-network
     # Примечание: База данных MySQL должна быть доступна извне
-    # Строка подключения настраивается в .env файле
-    # Образ публикуется на Docker Hub: bondarevevgeni/tecdoc-api:latest
-    # Для локальной разработки используйте: docker-compose -f docker-compose.local.yml up
+    # Строка подключения настраивается в .env файле или appsettings.Development.json
+    # Этот файл используется для локальной разработки с локальной сборкой образа
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8082/swagger/index.html"]
       interval: 30s

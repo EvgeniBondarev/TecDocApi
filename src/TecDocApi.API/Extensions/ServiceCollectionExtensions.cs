@@ -267,6 +267,9 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<TecDocApi.Application.Services.ISupplierElasticsearchService, TecDocApi.Application.Services.SupplierElasticsearchService>();
         services.AddHostedService<TecDocApi.Application.Services.SupplierSyncBackgroundService>();
 
+        // S3 сервис для изображений
+        services.AddSingleton<TecDocApi.Application.Services.IS3ImageService, TecDocApi.Application.Services.S3ImageService>();
+
         services.AddHttpClient("default")
             .AddPollyPolicies()
             .ConfigureHttpClient(client =>

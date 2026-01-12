@@ -1,0 +1,1055 @@
+openapi: 3.0.3
+info:
+  title: TecDoc API
+  description: |
+    RESTful API для работы с каталогом автозапчастей TecDoc с поддержкой быстрого полнотекстового поиска через Elasticsearch.
+    
+    ## Особенности API:
+    - Быстрый поиск артикулов и поставщиков через Elasticsearch
+    - Классический поиск через MySQL для точных запросов
+    - Поддержка русского языка в полнотекстовом поиске
+    - Частичный поиск по номерам артикулов (ngram)
+    - Пагинация результатов
+    - Rate limiting для защиты от злоупотреблений
+    
+    ## Базовый URL:
+    - Production: `http://localhost:8082`
+    - Development: `https://localhost:5001`
+    
+    ## Формат данных:
+    Все запросы и ответы используют формат JSON с кодировкой UTF-8.
+    
+    ## Обработка ошибок:
+    Все ошибки возвращаются в едином формате `ErrorResponse` с кодом ошибки и сообщением.
+  version: 1.0.0
+  contact:
+    name: TecDoc API Support
+  license:
+    name: Proprietary
+
+servers:
+  - url: http://localhost:8082
+    description: Production server
+  - url: https://localhost:5001
+    description: Development server
+
+tags:
+  - name: ArticleSearch
+    description: Поиск артикулов через Elasticsearch (быстрый полнотекстовый поиск)
+  - name: SupplierSearch
+    description: Поиск поставщиков через Elasticsearch
+  - name: Articles
+    description: Работа с артикулами через MySQL (классический поиск)
+  - name: Suppliers
+    description: Работа с поставщиками через MySQL
+
+paths:
+  /api/ArticleSearch/search:
+    post:
+      tags:
+        - ArticleSearch
+      summary: Поиск артикулов через Elasticsearch
+      description: |
+        Быстрый полнотекстовый поиск артикулов по полям FoundString и NormalizedDescription.
+        
+        ### Особенности поиска:
+        - Поиск по FoundString: точное совпадение (boost 5.0) и частичное совпадение через ngram (boost 3.0)
+        - Поиск по NormalizedDescription: полнотекстовый поиск с поддержкой русского языка (boost 2.0)
+        - Поддержка нечеткого поиска (fuzzy search)
+        - Сортировка по релевантности
+        
+        ### Примеры запросов:
+        - `"12345"` - найдет артикулы с номером "12345"
+        - `"123"` - найдет артикулы, содержащие "123" (например, "12345", "A123", "1234")
+        - `"фильтр масляный"` - найдет артикулы с описанием, содержащим эти слова
+      operationId: searchArticles
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ArticleSearchRequest'
+            examples:
+              basic:
+                summary: Базовый поиск
+                value:
+                  query: "12345"
+                  page: 1
+                  pageSize: 20
+              withSupplier:
+                summary: Поиск с фильтром по поставщику
+                value:
+                  query: "фильтр"
+                  supplierId: 7
+                  page: 1
+                  pageSize: 20
+                  sortBy: "relevance"
+      responses:
+        '200':
+          description: Поиск выполнен успешно
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArticleSearchResult'
+        '400':
+          description: Некорректные параметры запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/ArticleSearch/search-by-supplier:
+    post:
+      tags:
+        - ArticleSearch
+      summary: Поиск артикулов по модели поставщика
+      description: |
+        Быстрый полнотекстовый поиск артикулов по полям SupplierDescription и SupplierMatchcode (модель поставщика).
+        
+        ### Особенности поиска:
+        - Поиск по SupplierMatchcode: точное совпадение и частичное совпадение через ngram
+        - Поиск по SupplierDescription: полнотекстовый поиск с поддержкой русского языка
+        - Поддержка нечеткого поиска (fuzzy search)
+      operationId: searchArticlesBySupplier
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ArticleSearchRequest'
+      responses:
+        '200':
+          description: Поиск выполнен успешно
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArticleSearchResult'
+        '400':
+          description: Некорректные параметры запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/ArticleSearch/health:
+    get:
+      tags:
+        - ArticleSearch
+      summary: Проверка состояния Elasticsearch для артикулов
+      description: Возвращает информацию о состоянии индекса Elasticsearch и количестве проиндексированных документов.
+      operationId: articleSearchHealth
+      responses:
+        '200':
+          description: Elasticsearch доступен
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+                  indexExists:
+                    type: boolean
+                    example: true
+                  indexedDocuments:
+                    type: integer
+                    format: int64
+                    example: 1500000
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: "2024-01-10T12:00:00Z"
+        '503':
+          description: Elasticsearch недоступен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/SupplierSearch/search:
+    post:
+      tags:
+        - SupplierSearch
+      summary: Поиск поставщиков через Elasticsearch
+      description: |
+        Быстрый полнотекстовый поиск поставщиков по полям Description и Matchcode.
+        
+        ### Особенности поиска:
+        - Поиск по Matchcode: точное совпадение (boost 5.0) и частичное совпадение через ngram (boost 4.0)
+        - Поиск по Description: полнотекстовый поиск с поддержкой русского языка (boost 3.0)
+        - Поддержка нечеткого поиска (fuzzy search)
+        - Сортировка по релевантности, описанию, коду или количеству артикулов
+      operationId: searchSuppliers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SupplierSearchRequest'
+            examples:
+              basic:
+                summary: Базовый поиск
+                value:
+                  query: "BOSCH"
+                  page: 1
+                  pageSize: 20
+              sorted:
+                summary: Сортировка по количеству артикулов
+                value:
+                  query: "BOS"
+                  page: 1
+                  pageSize: 20
+                  sortBy: "nbrOfArticles"
+                  sortDescending: true
+      responses:
+        '200':
+          description: Поиск выполнен успешно
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupplierSearchResult'
+        '400':
+          description: Некорректные параметры запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/SupplierSearch/health:
+    get:
+      tags:
+        - SupplierSearch
+      summary: Проверка состояния Elasticsearch для поставщиков
+      description: Возвращает информацию о состоянии индекса Elasticsearch и количестве проиндексированных поставщиков.
+      operationId: supplierSearchHealth
+      responses:
+        '200':
+          description: Elasticsearch доступен
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+                  indexExists:
+                    type: boolean
+                    example: true
+                  indexedDocuments:
+                    type: integer
+                    format: int64
+                    example: 5000
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: "2024-01-10T12:00:00Z"
+        '503':
+          description: Elasticsearch недоступен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/articles/search:
+    get:
+      tags:
+        - Articles
+      summary: Поиск артикулов по номеру (MySQL)
+      description: |
+        Поиск артикулов по номеру через MySQL. Поиск выполняется без учета регистра, пробелов и спецсимволов.
+        
+        ### Особенности:
+        - Артикул автоматически нормализуется
+        - Возвращает полную информацию со всеми связями (кроссы, OEM, изображения и т.д.)
+        - Максимум 50 результатов
+        - Кэш: 5 минут
+        
+        ### Примеры:
+        - `ABC-123` = `abc 123` = `ABC123`
+      operationId: searchArticlesByNumber
+      parameters:
+        - name: articleNumber
+          in: query
+          required: true
+          description: Артикул для поиска (будет нормализован автоматически)
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 100
+            example: "12345"
+        - name: supplierId
+          in: query
+          required: false
+          description: Опционально: ID поставщика для фильтрации результатов
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 65535
+            example: 7
+      responses:
+        '200':
+          description: Артикулы найдены
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArticleSearchResponseDto'
+        '400':
+          description: Ошибка валидации параметров
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Артикулы не найдены
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Превышен лимит запросов
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/articles/{supplierId}/{articleNumber}:
+    get:
+      tags:
+        - Articles
+      summary: Получить артикул по точному совпадению
+      description: |
+        Получение полной информации об артикуле по точному совпадению FoundString (нормализованный артикул).
+        
+        ### Особенности:
+        - Артикул будет автоматически нормализован
+        - Возвращает полную информацию со всеми связями (кроссы, OEM, изображения и т.д.)
+        - Кэш: 10 минут
+      operationId: getArticleByExactMatch
+      parameters:
+        - name: supplierId
+          in: path
+          required: true
+          description: ID поставщика
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 65535
+            example: 7
+        - name: articleNumber
+          in: path
+          required: true
+          description: Номер артикула (будет нормализован)
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 100
+            example: "12345"
+      responses:
+        '200':
+          description: Артикул найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArticleDto'
+        '404':
+          description: Артикул не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Превышен лимит запросов
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    ArticleSearchRequest:
+      type: object
+      required:
+        - query
+      properties:
+        query:
+          type: string
+          nullable: true
+          description: |
+            Поисковый запрос (по FoundString и NormalizedDescription).
+            Поиск выполняется по следующим полям:
+            - FoundString: точное совпадение (boost 5.0) и частичное совпадение через ngram (boost 3.0)
+            - NormalizedDescription: полнотекстовый поиск с поддержкой русского языка (boost 2.0)
+            - Description: дополнительное описание (boost 1.0)
+          example: "12345"
+        page:
+          type: integer
+          format: int32
+          nullable: true
+          minimum: 1
+          default: 1
+          description: Номер страницы (начиная с 1)
+          example: 1
+        pageSize:
+          type: integer
+          format: int32
+          nullable: true
+          minimum: 1
+          maximum: 100
+          default: 20
+          description: Размер страницы (количество результатов на странице)
+          example: 20
+        supplierId:
+          type: integer
+          format: int32
+          nullable: true
+          minimum: 1
+          maximum: 65535
+          description: ID поставщика для фильтрации результатов (опционально)
+          example: 7
+        sortBy:
+          type: string
+          nullable: true
+          enum:
+            - relevance
+            - foundString
+            - description
+          default: relevance
+          description: |
+            Тип сортировки результатов:
+            - "relevance" (по умолчанию) - сортировка по релевантности поиска
+            - "foundString" - сортировка по номеру артикула
+            - "description" - сортировка по описанию
+          example: relevance
+        sortDescending:
+          type: boolean
+          default: false
+          description: |
+            Направление сортировки:
+            - false - по возрастанию (A-Z, 0-9)
+            - true - по убыванию (Z-A, 9-0)
+          example: false
+
+    ArticleSearchResult:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ArticleDocument'
+          description: Список найденных артикулов
+        total:
+          type: integer
+          format: int64
+          description: Общее количество найденных записей (без учета пагинации)
+          example: 150
+        page:
+          type: integer
+          format: int32
+          description: Номер текущей страницы
+          example: 1
+        pageSize:
+          type: integer
+          format: int32
+          description: Размер страницы (количество результатов на странице)
+          example: 20
+        totalPages:
+          type: integer
+          format: int32
+          description: Общее количество страниц с результатами
+          example: 8
+        took:
+          type: integer
+          format: int64
+          description: Время выполнения запроса в Elasticsearch (в миллисекундах)
+          example: 15
+
+    ArticleDocument:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Уникальный идентификатор документа в Elasticsearch (формат: "{SupplierId}_{DataSupplierArticleNumber}")
+          example: "7_12345"
+        supplierId:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 65535
+          description: ID поставщика (производителя)
+          example: 7
+        dataSupplierArticleNumber:
+          type: string
+          description: Номер артикула поставщика в оригинальном формате
+          example: "12-345"
+        foundString:
+          type: string
+          description: Артикул в нормализованном виде для поиска (только цифры и буквы, без пробелов, дефисов, точек)
+          example: "12345"
+        normalizedDescription:
+          type: string
+          description: Основное описание артикула (наименование)
+          example: "Фильтр масляный"
+        description:
+          type: string
+          description: Дополнительное описание (примечание)
+          example: "Для легковых автомобилей"
+        articleStateDisplayValue:
+          type: string
+          description: Статус изделия
+          example: "Normal"
+        quantityPerPackingUnit:
+          type: integer
+          format: int32
+          nullable: true
+          minimum: 0
+          description: Количество единиц в упаковке
+          example: 1
+        supplierDescription:
+          type: string
+          description: Название поставщика (описание)
+          example: "BOSCH"
+        supplierMatchcode:
+          type: string
+          description: Код поставщика для поиска (Matchcode)
+          example: "BOS"
+        indexedAt:
+          type: string
+          format: date-time
+          description: Дата и время индексации документа в Elasticsearch (UTC)
+          example: "2024-01-10T12:00:00Z"
+        lastModified:
+          type: string
+          format: date-time
+          nullable: true
+          description: Дата и время последнего обновления артикула в базе данных (UTC)
+          example: "2024-01-10T12:00:00Z"
+
+    SupplierSearchRequest:
+      type: object
+      properties:
+        query:
+          type: string
+          nullable: true
+          description: |
+            Поисковый запрос (по Description и Matchcode).
+            Поиск выполняется по следующим полям:
+            - Matchcode: точное совпадение (boost 5.0) и частичное совпадение через ngram (boost 4.0)
+            - Description: полнотекстовый поиск с поддержкой русского языка (boost 3.0)
+          example: "BOSCH"
+        page:
+          type: integer
+          format: int32
+          nullable: true
+          minimum: 1
+          default: 1
+          description: Номер страницы (начиная с 1)
+          example: 1
+        pageSize:
+          type: integer
+          format: int32
+          nullable: true
+          minimum: 1
+          maximum: 100
+          default: 20
+          description: Размер страницы (количество результатов на странице)
+          example: 20
+        sortBy:
+          type: string
+          nullable: true
+          enum:
+            - relevance
+            - description
+            - matchcode
+            - nbrOfArticles
+          default: relevance
+          description: |
+            Тип сортировки результатов:
+            - "relevance" (по умолчанию) - сортировка по релевантности поиска
+            - "description" - сортировка по описанию поставщика
+            - "matchcode" - сортировка по коду поставщика
+            - "nbrOfArticles" - сортировка по количеству артикулов у поставщика
+          example: relevance
+        sortDescending:
+          type: boolean
+          default: false
+          description: |
+            Направление сортировки:
+            - false - по возрастанию (A-Z, 0-9)
+            - true - по убыванию (Z-A, 9-0)
+          example: false
+
+    SupplierSearchResult:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SupplierDocument'
+          description: Список найденных поставщиков
+        total:
+          type: integer
+          format: int64
+          description: Общее количество найденных записей (без учета пагинации)
+          example: 25
+        page:
+          type: integer
+          format: int32
+          description: Номер текущей страницы
+          example: 1
+        pageSize:
+          type: integer
+          format: int32
+          description: Размер страницы (количество результатов на странице)
+          example: 20
+        totalPages:
+          type: integer
+          format: int32
+          description: Общее количество страниц с результатами
+          example: 2
+        took:
+          type: integer
+          format: int64
+          description: Время выполнения запроса в Elasticsearch (в миллисекундах)
+          example: 8
+
+    SupplierDocument:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Уникальный идентификатор документа в Elasticsearch (ID поставщика)
+          example: "7"
+        supplierId:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 65535
+          description: Идентификатор поставщика
+          example: 7
+        description:
+          type: string
+          description: Полное название поставщика (описание)
+          example: "BOSCH"
+        matchcode:
+          type: string
+          description: Код поставщика для поиска (Matchcode)
+          example: "BOS"
+        dataVersion:
+          type: integer
+          format: int32
+          nullable: true
+          minimum: 0
+          maximum: 65535
+          description: Версия данных поставщика
+          example: 2024
+        nbrOfArticles:
+          type: integer
+          format: int64
+          nullable: true
+          minimum: 0
+          description: Количество артикулов у поставщика в каталоге
+          example: 15000
+        hasNewVersionArticles:
+          type: boolean
+          nullable: true
+          description: Наличие артикулов новой версии
+          example: true
+        indexedAt:
+          type: string
+          format: date-time
+          description: Дата и время индексации документа в Elasticsearch (UTC)
+          example: "2024-01-10T12:00:00Z"
+        lastModified:
+          type: string
+          format: date-time
+          nullable: true
+          description: Дата и время последнего обновления поставщика в базе данных (UTC)
+          example: "2024-01-10T12:00:00Z"
+
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          description: Код ошибки для программной обработки
+          enum:
+            - INTERNAL_SERVER_ERROR
+            - VALIDATION_ERROR
+            - NOT_FOUND
+            - UNAUTHORIZED
+            - FORBIDDEN
+            - RATE_LIMIT_EXCEEDED
+            - CONFLICT
+            - BAD_REQUEST
+            - ARTICLE_NOT_FOUND
+            - ARTICLE_INVALID
+            - SUPPLIER_NOT_FOUND
+            - SUPPLIER_INVALID
+            - DATABASE_ERROR
+            - DATABASE_TIMEOUT
+          example: BAD_REQUEST
+        message:
+          type: string
+          description: Сообщение об ошибке для пользователя
+          example: "Максимальный размер страницы: 100"
+        details:
+          type: string
+          nullable: true
+          description: Дополнительные детали (только в Development)
+          example: "Stack trace..."
+        path:
+          type: string
+          nullable: true
+          description: Путь запроса, где произошла ошибка
+          example: "/api/ArticleSearch/search"
+        timestamp:
+          type: string
+          format: date-time
+          description: Время возникновения ошибки (UTC)
+          example: "2024-01-10T12:00:00Z"
+
+    ArticleSearchResponseDto:
+      type: object
+      properties:
+        count:
+          type: integer
+          format: int32
+          description: Количество найденных артикулов
+          example: 5
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ArticleDto'
+          description: Список найденных артикулов
+
+    ArticleDto:
+      type: object
+      properties:
+        article:
+          $ref: '#/components/schemas/ArticleInfoDto'
+        supplier:
+          $ref: '#/components/schemas/SupplierInfoDto'
+          nullable: true
+        crosses:
+          type: array
+          items:
+            $ref: '#/components/schemas/CrossDto'
+          description: Кроссы (аналоги) артикула
+        oeNumbers:
+          type: array
+          items:
+            $ref: '#/components/schemas/OeNumberDto'
+          description: OEM номера
+        attributes:
+          type: array
+          items:
+            $ref: '#/components/schemas/AttributeDto'
+          description: Атрибуты артикула
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImageDto'
+          description: Изображения артикула
+        linkages:
+          type: array
+          items:
+            $ref: '#/components/schemas/LinkageDto'
+          description: Применимость (linkages)
+        eanCodes:
+          type: array
+          items:
+            $ref: '#/components/schemas/EanCodeDto'
+          description: EAN коды
+        information:
+          type: array
+          items:
+            $ref: '#/components/schemas/InformationDto'
+          description: Дополнительная информация
+        accessories:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccessoryDto'
+          description: Аксессуары
+        newNumbers:
+          type: array
+          items:
+            $ref: '#/components/schemas/NewNumberDto'
+          description: Новые номера
+
+    ArticleInfoDto:
+      type: object
+      properties:
+        supplierId:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 65535
+          example: 7
+        dataSupplierArticleNumber:
+          type: string
+          example: "ABC-123"
+        foundString:
+          type: string
+          example: "ABC123"
+        normalizedDescription:
+          type: string
+          nullable: true
+          example: "Глушитель"
+        description:
+          type: string
+          example: "Тормозная колодка передняя"
+        articleStateDisplayValue:
+          type: string
+          example: "Valid"
+        quantityPerPackingUnit:
+          type: integer
+          format: int32
+          nullable: true
+          minimum: 0
+          example: 2
+        flags:
+          $ref: '#/components/schemas/ArticleFlagsDto'
+
+    ArticleFlagsDto:
+      type: object
+      properties:
+        flagAccessory:
+          type: boolean
+          example: false
+        flagMaterialCertification:
+          type: boolean
+          example: true
+        flagRemanufactured:
+          type: boolean
+          example: false
+        flagSelfServicePacking:
+          type: boolean
+          example: false
+        hasAxle:
+          type: boolean
+          example: false
+        hasCommercialVehicle:
+          type: boolean
+          example: true
+        hasEngine:
+          type: boolean
+          example: false
+        hasLinkItems:
+          type: boolean
+          example: true
+        hasMotorbike:
+          type: boolean
+          example: false
+        hasPassengerCar:
+          type: boolean
+          example: true
+        isValid:
+          type: boolean
+          example: true
+
+    SupplierInfoDto:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 65535
+          example: 7
+        description:
+          type: string
+          example: "BOSCH"
+        matchcode:
+          type: string
+          example: "BOSCH"
+        dataVersion:
+          type: string
+          nullable: true
+          example: "20240101"
+        nbrOfArticles:
+          type: integer
+          format: int64
+          nullable: true
+          minimum: 0
+          example: 50000
+
+    CrossDto:
+      type: object
+      properties:
+        manufacturerId:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 65535
+          example: 16
+        oENbr:
+          type: string
+          example: "123456789"
+        manufacturer:
+          $ref: '#/components/schemas/ManufacturerDto'
+          nullable: true
+
+    ManufacturerDto:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 65535
+          example: 16
+        description:
+          type: string
+          example: "BMW"
+
+    OeNumberDto:
+      type: object
+      properties:
+        oENbr:
+          type: string
+          example: "123456789"
+        isAdditive:
+          type: boolean
+          example: false
+
+    AttributeDto:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 0
+          example: 1
+        description:
+          type: string
+          example: "Длина"
+        displayTitle:
+          type: string
+          example: "Длина"
+        displayValue:
+          type: string
+          example: "120 мм"
+
+    ImageDto:
+      type: object
+      properties:
+        pictureName:
+          type: string
+          example: "image.jpg"
+        description:
+          type: string
+          example: "Внешний вид"
+        additionalDescription:
+          type: string
+          nullable: true
+        documentName:
+          type: string
+          nullable: true
+        documentType:
+          type: string
+          nullable: true
+        showImmediately:
+          type: boolean
+          example: true
+
+    LinkageDto:
+      type: object
+      properties:
+        linkageTypeId:
+          type: string
+          example: "P"
+        linkageId:
+          type: integer
+          format: int64
+          minimum: 0
+          example: 12345
+
+    EanCodeDto:
+      type: object
+      properties:
+        ean:
+          type: string
+          example: "4001512345678"
+
+    InformationDto:
+      type: object
+      properties:
+        informationTypeKey:
+          type: string
+          example: "INFO"
+        informationType:
+          type: string
+          example: "Описание"
+        informationText:
+          type: string
+          example: "Дополнительная информация об артикуле"
+
+    AccessoryDto:
+      type: object
+      properties:
+        accSupplierId:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 65535
+          example: 7
+        accDataSupplierArticleNumber:
+          type: string
+          example: "ACC-123"
+        accSupplier:
+          $ref: '#/components/schemas/SupplierInfoDto'
+          nullable: true
+
+    NewNumberDto:
+      type: object
+      properties:
+        newSupplierId:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 65535
+          example: 7
+        newDataSupplierArticleNumber:
+          type: string
+          example: "NEW-123"
+        newSupplier:
+          $ref: '#/components/schemas/SupplierInfoDto'
+          nullable: true
+

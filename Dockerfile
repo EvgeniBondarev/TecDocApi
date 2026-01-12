@@ -1,3 +1,17 @@
+# Dockerfile для сборки образа TecDoc API
+# Опубликованный образ: bondarevevgeni/tecdoc-api:latest
+# 
+# Для сборки с двумя тегами (latest и версия):
+#   docker build -t bondarevevgeni/tecdoc-api:latest -t bondarevevgeni/tecdoc-api:1.0.0 .
+#
+# Для публикации:
+#   docker push bondarevevgeni/tecdoc-api:latest
+#   docker push bondarevevgeni/tecdoc-api:1.0.0
+#
+# Или используйте скрипты:
+#   Windows: .\docker-push.ps1 [VERSION]
+#   Linux/Mac: ./docker-push.sh [VERSION]
+
 # Этап 1: Сборка приложения
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
@@ -37,10 +51,10 @@ USER appuser
 COPY --from=publish /app/publish .
 
 # Открываем порт для приложения
-EXPOSE 8080
+EXPOSE 8082
 
 # Переменные окружения
-ENV ASPNETCORE_URLS=http://+:8080
+ENV ASPNETCORE_URLS=http://+:8082
 ENV ASPNETCORE_ENVIRONMENT=Production
 
 # Точка входа
