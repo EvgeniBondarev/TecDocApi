@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.ResponseCaching;
 using TecDocApi.API.Models;
@@ -8,6 +9,7 @@ namespace TecDocApi.API.Controllers;
 /// <summary>
 /// Контроллер для работы с изображениями из S3 хранилища
 /// </summary>
+[EnableCors("AllowAll")]
 [ApiController]
 [Route("api/[controller]")]
 [Produces("application/json")]

@@ -70,9 +70,13 @@ public static class ApplicationBuilderExtensions
         app.UseResponseCompression();
         app.UseHttpsRedirection();
         app.UseRouting();
+        
+        // CORS должен быть после UseRouting и перед UseAuthorization
+        // Разрешаем все источники, методы и заголовки
+        app.UseCors("AllowAll");
+        
         app.UseRateLimiter();
         app.UseResponseCaching();
-        app.UseCors("AllowAll");
         app.UseAuthorization();
         app.MapControllers().RequireRateLimiting("api");
 

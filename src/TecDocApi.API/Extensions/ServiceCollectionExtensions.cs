@@ -240,9 +240,16 @@ public static class ServiceCollectionExtensions
         {
             options.AddPolicy("AllowAll", policy =>
             {
+                // Разрешаем все источники (origins)
                 policy.AllowAnyOrigin()
+                      // Разрешаем все HTTP методы (GET, POST, PUT, DELETE, PATCH, OPTIONS и т.д.)
                       .AllowAnyMethod()
-                      .AllowAnyHeader();
+                      // Разрешаем все заголовки запросов
+                      .AllowAnyHeader()
+                      // Разрешаем отправку credentials (cookies, authorization headers)
+                      // Примечание: AllowAnyOrigin() несовместим с AllowCredentials()
+                      // Если нужны credentials, используйте SetIsOriginAllowed вместо AllowAnyOrigin
+                      .SetPreflightMaxAge(TimeSpan.FromDays(1)); // Кэширование preflight запросов на 24 часа
             });
         });
 

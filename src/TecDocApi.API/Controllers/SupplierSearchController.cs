@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Filters;
 using TecDocApi.API.Examples;
@@ -10,6 +11,7 @@ namespace TecDocApi.API.Controllers;
 /// <summary>
 /// Контроллер для поиска поставщиков через Elasticsearch
 /// </summary>
+[EnableCors("AllowAll")]
 [ApiController]
 [Route("api/[controller]")]
 [Produces("application/json")]
