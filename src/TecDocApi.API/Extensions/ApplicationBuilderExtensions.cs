@@ -26,6 +26,7 @@ public static class ApplicationBuilderExtensions
                 c.EnableFilter();
                 c.EnableValidator();
                 c.InjectStylesheet("/swagger/custom.css");
+                c.HeadContent = "<link rel=\"icon\" type=\"image/svg+xml\" href=\"/favicon.svg\">";
             });
         }
 
@@ -41,6 +42,8 @@ public static class ApplicationBuilderExtensions
             c.RequiredPropsFirst();
             c.SortPropsAlphabetically();
             c.HeadContent = """
+                <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+                <link rel="alternate icon" type="image/x-icon" href="/favicon.ico">
                 <style>
                     .redoc-wrap .menu-content { padding-top: 60px; }
                     .redoc-wrap .menu-content::before {

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4CAF50;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2E7D32;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="100" height="100" fill="url(#grad)" rx="20"/>
+  <g transform="translate(50, 50)">
+    <!-- Гаечный ключ -->
+    <path d="M-20,-15 L-10,-5 L-5,-10 L-15,-20 Z M-10,-5 L5,10 Q8,13 11,10 Q14,7 11,4 L-4,-11 Z" 
+          fill="white" opacity="0.9"/>
+    <!-- Шестеренка -->
+    <circle cx="15" cy="-15" r="12" fill="none" stroke="white" stroke-width="3"/>
+    <circle cx="15" cy="-15" r="6" fill="white"/>
+    <path d="M15,-27 L15,-21 M27,-15 L21,-15 M15,-3 L15,-9 M3,-15 L9,-15" 
+          stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+  </g>
+  <text x="50" y="88" font-family="Arial, sans-serif" font-size="22" font-weight="bold" 
+        text-anchor="middle" fill="white" opacity="0.95">TecDoc</text>
+</svg>
+

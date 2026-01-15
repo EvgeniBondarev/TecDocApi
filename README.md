@@ -218,6 +218,47 @@ TecDocApi/
 - Получение артикула по точному совпадению
 - Возвращает полную информацию со всеми связями
 
+**GET** `/api/v1/articles/search/ean/{eanCode}`
+- Поиск артикула и поставщика по EAN коду (штрих-коду)
+- Возвращает полную информацию об артикуле с поставщиком
+- **Пример:** `GET /api/v1/articles/search/ean/4001512345678`
+- **Ответ:**
+  ```json
+  {
+    "count": 1,
+    "ean": "4001512345678",
+    "results": [
+      {
+        "article": {
+          "supplierId": 101,
+          "dataSupplierArticleNumber": "ABC-123",
+          "foundString": "ABC123",
+          "normalizedDescription": "Тормозная колодка",
+          "description": "Передняя тормозная колодка",
+          "articleStateDisplayValue": "Valid",
+          "quantityPerPackingUnit": 4
+        },
+        "supplier": {
+          "id": 101,
+          "description": "BOSCH",
+          "matchcode": "BOSCH"
+        },
+        "eanCodes": [
+          { "ean": "4001512345678" }
+        ],
+        "crosses": [...],
+        "oeNumbers": [...],
+        "images": [...]
+      }
+    ]
+  }
+  ```
+
+#### Поставщики
+
+**GET** `/api/v1/suppliers/search?matchcode={код}&supplierId={id}`
+- Поиск поставщиков по matchcode или ID
+
 ### 🖼️ Изображения из S3
 
 #### Получение URL изображения

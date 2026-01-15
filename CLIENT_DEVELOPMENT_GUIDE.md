@@ -377,6 +377,150 @@ GET /api/v1/articles/search?articleNumber=ABC-123&supplierId=7
 }
 ```
 
+#### GET /api/v1/articles/search/ean/{eanCode}
+
+**Описание:** Поиск артикула и поставщика по EAN коду (штрих-коду)
+
+**Параметры пути:**
+- `eanCode`: строка, 8-24 символов, EAN-13 штрих-код
+
+**Особенности:**
+- EAN код нормализуется автоматически (удаляются пробелы, приведение к верхнему регистру)
+- Возвращает полную информацию об артикуле с поставщиком и всеми связями
+- Если артикул имеет несколько EAN кодов, все они возвращаются в массиве `eanCodes`
+- Кэш: 5 минут
+- Rate limit: 50 запросов за 10 секунд
+
+**Пример:**
+```
+GET /api/v1/articles/search/ean/4001512345678
+```
+
+**Ответ:**
+```json
+{
+  "count": 1,
+  "ean": "4001512345678",
+  "results": [
+    {
+      "article": {
+        "supplierId": 101,
+        "dataSupplierArticleNumber": "ABC-123",
+        "foundString": "ABC123",
+        "normalizedDescription": "Тормозная колодка",
+        "description": "Передняя тормозная колодка",
+        "articleStateDisplayValue": "Valid",
+        "quantityPerPackingUnit": 4,
+        "flags": {
+          "flagAccessory": false,
+          "flagMaterialCertification": true,
+          "flagRemanufactured": false,
+          "flagSelfServicePacking": false,
+          "hasAxle": false,
+          "hasCommercialVehicle": false,
+          "hasEngine": false,
+          "hasLinkItems": true,
+          "hasMotorbike": false,
+          "hasPassengerCar": true,
+          "isValid": true
+        }
+      },
+      "supplier": {
+        "id": 101,
+        "description": "BOSCH",
+        "matchcode": "BOSCH",
+        "dataVersion": 2023,
+        "nbrOfArticles": 5000
+      },
+      "eanCodes": [
+        { "ean": "4001512345678" },
+        { "ean": "4001512345679" }
+      ],
+      "crosses": [...],
+      "oeNumbers": [...],
+      "attributes": [...],
+      "images": [...],
+      "linkages": [...],
+      "information": [...],
+      "accessories": [...],
+      "newNumbers": [...]
+    }
+  ]
+}
+```
+
+**Коды ошибок:**
+- **400** - Неверный формат EAN кода
+- **404** - Артикул с указанным EAN кодом не найден
+- **429** - Превышен лимит запросов
+- **500** - Внутренняя ошибка сервера
+
+**Примеры использования:**
+
+JavaScript:
+```javascript
+async function searchByEan(eanCode) {
+  const response = await fetch(`http://localhost:8082/api/v1/articles/search/ean/${eanCode}`, {
+    method: 'GET',
+    headers: { 'Accept': 'application/json' }
+  });
+  
+  if (!response.ok) {
+    if (response.status === 404) {
+      console.log('Артикул не найден');
+      return null;
+    }
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  
+  return await response.json();
+}
+
+// Использование
+const result = await searchByEan('4001512345678');
+console.log(`Найдено артикулов: ${result.count}`);
+```
+
+Python:
+```python
+import requests
+
+def search_by_ean(ean_code: str) -> dict:
+    url = f"http://localhost:8082/api/v1/articles/search/ean/{ean_code}"
+    response = requests.get(url, headers={"Accept": "application/json"})
+    
+    if response.status_code == 404:
+        print("Артикул не найден")
+        return None
+    
+    response.raise_for_status()
+    return response.json()
+
+# Использование
+result = search_by_ean("4001512345678")
+print(f"Найдено артикулов: {result['count']}")
+```
+
+C#:
+```csharp
+public async Task<ArticleSearchResponseDto> SearchByEanAsync(string eanCode)
+{
+    using var client = new HttpClient();
+    client.BaseAddress = new Uri("http://localhost:8082");
+    
+    var response = await client.GetAsync($"/api/v1/articles/search/ean/{eanCode}");
+    
+    if (response.StatusCode == HttpStatusCode.NotFound)
+    {
+        Console.WriteLine("Артикул не найден");
+        return null;
+    }
+    
+    response.EnsureSuccessStatusCode();
+    return await response.Content.ReadFromJsonAsync<ArticleSearchResponseDto>();
+}
+```
+
 #### GET /api/v1/articles/{supplierId}/{articleNumber}
 
 **Описание:** Получение артикула по точному совпадению

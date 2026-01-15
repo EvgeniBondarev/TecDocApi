@@ -867,5 +867,195 @@ public class TecDocArticleService : ITecDocArticleService
             return result;
         }, cancellationToken);
     }
+
+    public async Task<object> SearchByEanAsync(string eanCode, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(eanCode))
+        {
+            throw new ArgumentException("EAN код не может быть пустым", nameof(eanCode));
+        }
+
+        try
+        {
+            // Нормализуем EAN код: убираем пробелы и приводим к верхнему регистру
+            var normalizedEan = eanCode.Trim().ToUpperInvariant();
+            
+            var cacheKey = $"article_ean_search_{normalizedEan}";
+            if (_cache.TryGetValue(cacheKey, out object? cachedResult))
+            {
+                _logger.LogInformation("Кэш HIT: ключ {CacheKey}", cacheKey);
+                return cachedResult!;
+            }
+            
+            _logger.LogInformation("Кэш MISS: ключ {CacheKey}, выполняется запрос к БД", cacheKey);
+
+            // Ищем EAN коды и получаем связанные артикулы
+            var eanArticles = await _unitOfWork.ArticleEans.GetAllAsNoTracking()
+                .Where(ean => ean.Ean == normalizedEan)
+                .Select(ean => new
+                {
+                    SupplierId = ean.SupplierId,
+                    DataSupplierArticleNumber = ean.DataSupplierArticleNumber,
+                    Ean = ean.Ean
+                })
+                .ToListAsync(cancellationToken);
+
+            if (!eanArticles.Any())
+            {
+                var emptyResult = new { Count = 0, Results = Array.Empty<object>(), Ean = normalizedEan };
+                _cache.Set(cacheKey, emptyResult, new MemoryCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = CacheExpiration,
+                    Size = 1
+                });
+                _logger.LogInformation("Кэш SET: ключ {CacheKey}, пустой результат (Count=0)", cacheKey);
+                return emptyResult;
+            }
+
+            // Получаем полные данные артикулов
+            var articleKeys = eanArticles
+                .Select(ea => (ea.SupplierId, ea.DataSupplierArticleNumber))
+                .Distinct()
+                .ToList();
+
+            // Загружаем базовую информацию об артикулах
+            var articlesList = new List<TdArticle>();
+            foreach (var key in articleKeys)
+            {
+                var article = await _unitOfWork.Articles.GetAllAsNoTracking()
+                    .Where(a => a.SupplierId == key.SupplierId && a.DataSupplierArticleNumber == key.DataSupplierArticleNumber)
+                    .FirstOrDefaultAsync(cancellationToken);
+                
+                if (article != null)
+                {
+                    articlesList.Add(article);
+                }
+            }
+
+            if (!articlesList.Any())
+            {
+                var emptyResult = new { Count = 0, Results = Array.Empty<object>(), Ean = normalizedEan };
+                _cache.Set(cacheKey, emptyResult, new MemoryCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = CacheExpiration,
+                    Size = 1
+                });
+                return emptyResult;
+            }
+
+            var supplierIds = articlesList.Select(a => a.SupplierId).Distinct().ToList();
+            var suppliersList = supplierIds.Any()
+                ? await _unitOfWork.Suppliers.GetAllAsNoTracking()
+                    .Where(s => supplierIds.Contains(s.Id))
+                    .ToListAsync(cancellationToken)
+                : new List<Domain.Entities.TecDoc.TdSupplier>();
+            
+            var suppliers = suppliersList
+                .GroupBy(s => s.Id)
+                .ToDictionary(g => g.Key, g => g.First());
+
+            // Параллельная загрузка связанных данных
+            var crossesTask = LoadCrossesAsync(articleKeys, cancellationToken);
+            var oeNumbersTask = LoadOeNumbersAsync(articleKeys, cancellationToken);
+            var attributesTask = LoadAttributesAsync(articleKeys, cancellationToken);
+            var imagesTask = LoadImagesAsync(articleKeys, cancellationToken);
+            var linkagesTask = LoadLinkagesAsync(articleKeys, cancellationToken);
+            var eanCodesTask = LoadEanCodesAsync(articleKeys, cancellationToken);
+            var informationTask = LoadInformationAsync(articleKeys, cancellationToken);
+            var accessoriesTask = LoadAccessoriesAsync(articleKeys, cancellationToken);
+            var newNumbersTask = LoadNewNumbersAsync(articleKeys, cancellationToken);
+
+            await Task.WhenAll(
+                crossesTask, oeNumbersTask, attributesTask, imagesTask, linkagesTask,
+                eanCodesTask, informationTask, accessoriesTask, newNumbersTask);
+
+            var crosses = await crossesTask;
+            var oeNumbers = await oeNumbersTask;
+            var attributes = await attributesTask;
+            var images = await imagesTask;
+            var linkages = await linkagesTask;
+            var eanCodes = await eanCodesTask;
+            var information = await informationTask;
+            var accessories = await accessoriesTask;
+            var newNumbers = await newNumbersTask;
+
+            var result = articlesList.Select(a => new
+            {
+                Article = new
+                {
+                    SupplierId = a.SupplierId,
+                    DataSupplierArticleNumber = a.DataSupplierArticleNumber,
+                    FoundString = a.FoundString,
+                    NormalizedDescription = a.NormalizedDescription,
+                    Description = a.Description,
+                    ArticleStateDisplayValue = a.ArticleStateDisplayValue,
+                    QuantityPerPackingUnit = a.QuantityPerPackingUnit,
+                    Flags = new
+                    {
+                        FlagAccessory = a.FlagAccessory,
+                        FlagMaterialCertification = a.FlagMaterialCertification,
+                        FlagRemanufactured = a.FlagRemanufactured,
+                        FlagSelfServicePacking = a.FlagSelfServicePacking,
+                        HasAxle = a.HasAxle,
+                        HasCommercialVehicle = a.HasCommercialVehicle,
+                        HasEngine = a.HasEngine,
+                        HasLinkItems = a.HasLinkItems,
+                        HasMotorbike = a.HasMotorbike,
+                        HasPassengerCar = a.HasPassengerCar,
+                        IsValid = a.IsValid
+                    }
+                },
+                Supplier = suppliers.TryGetValue(a.SupplierId, out var supplier) ? new
+                {
+                    Id = supplier.Id,
+                    Description = supplier.Description,
+                    Matchcode = supplier.Matchcode,
+                    DataVersion = supplier.DataVersion,
+                    NbrOfArticles = supplier.NbrOfArticles
+                } : null,
+                Crosses = crosses.TryGetValue((a.SupplierId, a.DataSupplierArticleNumber), out var articleCrosses)
+                    ? articleCrosses : Enumerable.Empty<object>(),
+                OeNumbers = oeNumbers.TryGetValue((a.SupplierId, a.DataSupplierArticleNumber), out var articleOeNumbers)
+                    ? articleOeNumbers : Enumerable.Empty<object>(),
+                Attributes = attributes.TryGetValue((a.SupplierId, a.DataSupplierArticleNumber), out var articleAttributes)
+                    ? articleAttributes : Enumerable.Empty<object>(),
+                Images = images.TryGetValue((a.SupplierId, a.DataSupplierArticleNumber), out var articleImages)
+                    ? articleImages : Enumerable.Empty<object>(),
+                Linkages = linkages.TryGetValue((a.SupplierId, a.DataSupplierArticleNumber), out var articleLinkages)
+                    ? articleLinkages : Enumerable.Empty<object>(),
+                EanCodes = eanCodes.TryGetValue((a.SupplierId, a.DataSupplierArticleNumber), out var articleEanCodes)
+                    ? articleEanCodes : Enumerable.Empty<object>(),
+                Information = information.TryGetValue((a.SupplierId, a.DataSupplierArticleNumber), out var articleInformation)
+                    ? articleInformation : Enumerable.Empty<object>(),
+                Accessories = accessories.TryGetValue((a.SupplierId, a.DataSupplierArticleNumber), out var articleAccessories)
+                    ? articleAccessories : Enumerable.Empty<object>(),
+                NewNumbers = newNumbers.TryGetValue((a.SupplierId, a.DataSupplierArticleNumber), out var articleNewNumbers)
+                    ? articleNewNumbers : Enumerable.Empty<object>()
+            });
+
+            var response = new
+            {
+                Count = articlesList.Count,
+                Results = result,
+                Ean = normalizedEan
+            };
+            
+            // Сохраняем в кэш
+            _cache.Set(cacheKey, response, new MemoryCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = CacheExpiration,
+                Size = 1
+            });
+            
+            _logger.LogInformation("Кэш SET: ключ {CacheKey}, Count={Count}", cacheKey, response.Count);
+
+            return response;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Ошибка при поиске по EAN {EanCode}", eanCode);
+            throw;
+        }
+    }
 }
 

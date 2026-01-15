@@ -152,5 +152,89 @@ public class TecDocArticlesController : ControllerBase
             throw;
         }
     }
+
+    /// <summary>
+    /// Поиск артикула и поставщика по EAN коду
+    /// </summary>
+    /// <remarks>
+    /// 🔍 **Поиск по штрих-коду EAN-13**
+    ///
+    /// Позволяет найти артикул и информацию о поставщике по штрих-коду (EAN-13).
+    /// Возвращает полную информацию об артикуле, включая:
+    /// - Базовые данные артикула
+    /// - Информацию о поставщике
+    /// - Кроссы и OEM номера
+    /// - Характеристики и атрибуты
+    /// - Изображения
+    /// - Применяемость к автомобилям
+    /// - Все EAN коды артикула
+    /// - Аксессуары и дополнительную информацию
+    ///
+    /// ### Примеры EAN кодов:
+    /// - `4001512345678` - стандартный EAN-13
+    /// - `4006083159296` - реальный EAN код запчасти
+    ///
+    /// ### Особенности:
+    /// - EAN код нормализуется автоматически (удаляются пробелы, приведение к верхнему регистру)
+    /// - Если артикул имеет несколько EAN кодов, все они будут возвращены
+    /// - Результаты кэшируются на 5 минут
+    ///
+    /// ### Ограничения:
+    /// - Таймаут запроса: 10 секунд
+    /// - Rate limit: 50 запросов за 10 секунд
+    /// - Кэш: 5 минут
+    /// </remarks>
+    /// <param name="eanCode">EAN код (штрих-код) для поиска</param>
+    /// <response code="200">Артикул найден</response>
+    /// <response code="400">Ошибка валидации параметров</response>
+    /// <response code="404">Артикул с указанным EAN кодом не найден</response>
+    /// <response code="429">Превышен лимит запросов</response>
+    /// <response code="500">Внутренняя ошибка сервера</response>
+    [HttpGet("search/ean/{eanCode}")]
+    [EnableRateLimiting("search")]
+    [ResponseCache(Duration = 300, VaryByQueryKeys = new[] { "eanCode" })]
+    [ProducesResponseType(typeof(ArticleSearchResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status429TooManyRequests)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> SearchByEan(
+        [FromRoute] [Required] [StringLength(24, MinimumLength = 8)] string eanCode,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(eanCode))
+        {
+            return BadRequest("EAN код не может быть пустым");
+        }
+
+        var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+
+        try
+        {
+            var result = await _articleService.SearchByEanAsync(eanCode, cancellationToken);
+            
+            var count = result?.GetType().GetProperty("Count")?.GetValue(result) as int? ?? 0;
+            
+            if (count == 0)
+            {
+                _logger.LogInformation("Поиск по EAN {EanCode} от IP {ClientIp}: не найдено", eanCode, clientIp);
+                return NotFound($"Артикул с EAN кодом '{eanCode}' не найден в базе TecDoc");
+            }
+
+            _logger.LogInformation("Поиск по EAN {EanCode} от IP {ClientIp}: найдено {Count} артикулов", 
+                eanCode, clientIp, count);
+            return Ok(result);
+        }
+        catch (ArgumentException ex)
+        {
+            _logger.LogWarning(ex, "Неверный EAN код {EanCode} от IP {ClientIp}", eanCode, clientIp);
+            return BadRequest(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Ошибка при поиске по EAN {EanCode} от IP {ClientIp}", eanCode, clientIp);
+            return StatusCode(500, $"Ошибка при поиске по EAN коду: {ex.Message}");
+        }
+    }
 }
 
