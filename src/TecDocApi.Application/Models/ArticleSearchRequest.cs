@@ -29,6 +29,17 @@ public class ArticleSearchRequest
     public string? Query { get; set; }
 
     /// <summary>
+    /// Режим поиска: auto, article или name
+    /// </summary>
+    /// <remarks>
+    /// - auto: режим определяется автоматически по запросу
+    /// - article: приоритет точному и нормализованному поиску по артикулу
+    /// - name: приоритет полнотекстовому поиску по названию детали
+    /// </remarks>
+    /// <example>auto</example>
+    public string? SearchMode { get; set; } = "auto";
+
+    /// <summary>
     /// Номер страницы (начиная с 1)
     /// </summary>
     /// <remarks>

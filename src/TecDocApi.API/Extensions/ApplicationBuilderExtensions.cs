@@ -1,4 +1,8 @@
 using TecDocApi.API.Middleware;
+using System.IO;
+using TecDocApi.API.Models;
+using TecDocApi.Application.Models;
+using TecDocApi.Application.Services;
 
 namespace TecDocApi.API.Extensions;
 
@@ -45,6 +49,24 @@ public static class ApplicationBuilderExtensions
                 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
                 <link rel="alternate icon" type="image/x-icon" href="/favicon.ico">
                 <style>
+                    .docs-banner {
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        background: linear-gradient(135deg, #0c7c59, #159a71);
+                        color: white;
+                        padding: 12px 16px;
+                        text-align: center;
+                        z-index: 10000;
+                        font-weight: 700;
+                        box-shadow: 0 12px 28px rgba(12,124,89,0.22);
+                    }
+                    .docs-banner a {
+                        color: #fff7cc;
+                        text-decoration: underline;
+                        margin: 0 8px;
+                    }
                     .redoc-wrap .menu-content { padding-top: 60px; }
                     .redoc-wrap .menu-content::before {
                         content: '';
@@ -61,8 +83,8 @@ public static class ApplicationBuilderExtensions
                 <script>
                     document.addEventListener('DOMContentLoaded', function() {
                         const banner = document.createElement('div');
-                        banner.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; background: #4CAF50; color: white; padding: 10px; text-align: center; z-index: 10000; font-weight: bold;';
-                        banner.innerHTML = 'Для выполнения запросов используйте <a href="/swagger" style="color: #FFD700; text-decoration: underline;">Swagger UI</a>';
+                        banner.className = 'docs-banner';
+                        banner.innerHTML = 'Новый поток картинок: сначала <strong>ArticleSearch</strong>, затем <strong>Images/article-search</strong>. Для глобального поиска используйте <strong>Images/s3-search?articleNumber=ALM2019YX</strong>. Если превью не поддерживается браузером, используйте ссылки открытия файла. <a href="/tests">Открыть Test Bench</a><a href="/swagger">Открыть Swagger UI</a>';
                         document.body.insertBefore(banner, document.body.firstChild);
                     });
                 </script>
@@ -82,6 +104,54 @@ public static class ApplicationBuilderExtensions
         app.UseResponseCaching();
         app.UseAuthorization();
         app.MapControllers().RequireRateLimiting("api");
+        app.MapGet("/tests", async context =>
+        {
+            var filePath = Path.Combine(app.Environment.WebRootPath, "tests", "index.html");
+            context.Response.ContentType = "text/html; charset=utf-8";
+            await context.Response.SendFileAsync(filePath);
+        });
+        app.MapGet("/api/Images/s3-search", async (
+            string articleNumber,
+            int maxResults,
+            IS3ImageService s3ImageService) =>
+        {
+            if (string.IsNullOrWhiteSpace(articleNumber))
+            {
+                return Results.BadRequest(new ErrorResponse
+                {
+                    Code = ErrorCodes.BAD_REQUEST,
+                    Message = "Номер артикула не может быть пустым"
+                });
+            }
+
+            var matches = await s3ImageService.SearchImagesByArticleAsync(articleNumber, null, maxResults);
+            var result = matches.Select(match => new ArticleImageDocument
+            {
+                PictureName = match.PictureName,
+                Description = match.MatchedBy,
+                AdditionalDescription = match.ObjectKey,
+                DocumentName = match.ObjectKey,
+                DocumentType = Path.GetExtension(match.PictureName).TrimStart('.').ToUpperInvariant(),
+                ShowImmediately = false,
+                Url = match.Url,
+                StreamUrl = match.StreamUrl,
+                S3Url = match.S3Url
+            }).ToList();
+
+            return Results.Ok(result);
+        })
+        .WithName("SearchS3Images")
+        .WithTags("Images")
+        .WithSummary("Глобальный поиск изображений по articleNumber по всем папкам S3")
+        .WithDescription("Ищет картинки по всем папкам S3Info без supplierId. Игнорирует регистр и спецсимволы и находит вариации вроде ALM2019YX-6, ALM2019YX_3, 1234ALM2019YX-6. Пример: /api/Images/s3-search?articleNumber=ALM2019YX&amp;maxResults=10")
+        .Produces<List<ArticleImageDocument>>(StatusCodes.Status200OK)
+        .Produces<ErrorResponse>(StatusCodes.Status400BadRequest)
+        .RequireRateLimiting("api");
+        app.MapGet("/docs/index.html", context =>
+        {
+            context.Response.Redirect("/docs");
+            return Task.CompletedTask;
+        });
 
         // Инициализация Elasticsearch индексов при старте
         _ = Task.Run(async () =>

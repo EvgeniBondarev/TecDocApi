@@ -1,7 +1,11 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Elasticsearch.Net;
 using Nest;
 using TecDocApi.Application.Models;
+using System.Text;
+using Microsoft.EntityFrameworkCore;
+using TecDocApi.Infrastructure.Data;
 
 namespace TecDocApi.Application.Services;
 
@@ -13,10 +17,18 @@ public class ArticleElasticsearchService : IArticleElasticsearchService
     private readonly IElasticClient _client;
     private readonly string _indexName;
     private readonly ILogger<ArticleElasticsearchService> _logger;
+    private readonly IDbContextFactory<TecDocContext> _contextFactory;
+    private readonly IS3ImageService _s3ImageService;
 
-    public ArticleElasticsearchService(IConfiguration configuration, ILogger<ArticleElasticsearchService> logger)
+    public ArticleElasticsearchService(
+        IConfiguration configuration,
+        ILogger<ArticleElasticsearchService> logger,
+        IDbContextFactory<TecDocContext> contextFactory,
+        IS3ImageService s3ImageService)
     {
         _logger = logger;
+        _contextFactory = contextFactory;
+        _s3ImageService = s3ImageService;
         _indexName = configuration["Elasticsearch:IndexName"] ?? "articles";
         
         var elasticsearchUrl = configuration["Elasticsearch:Url"] ?? "http://localhost:9200";
@@ -161,12 +173,13 @@ public class ArticleElasticsearchService : IArticleElasticsearchService
     {
         try
         {
+            var indexedAt = DateTime.UtcNow;
             var bulkDescriptor = new BulkDescriptor();
             
             foreach (var article in articles)
             {
                 article.Id = $"{article.SupplierId}_{article.DataSupplierArticleNumber}";
-                article.IndexedAt = DateTime.UtcNow;
+                article.IndexedAt = indexedAt;
                 
                 bulkDescriptor.Index<ArticleDocument>(i => i
                     .Document(article)
@@ -174,7 +187,7 @@ public class ArticleElasticsearchService : IArticleElasticsearchService
                 );
             }
             
-            var response = await _client.BulkAsync(bulkDescriptor);
+            var response = await _client.BulkAsync(bulkDescriptor.Refresh(Elasticsearch.Net.Refresh.False));
             
             if (response.IsValid)
             {
@@ -326,49 +339,7 @@ public class ArticleElasticsearchService : IArticleElasticsearchService
 
         if (!string.IsNullOrWhiteSpace(request.Query))
         {
-            var normalizedQuery = request.Query.Trim().ToUpperInvariant();
-
-            // Поиск по FoundString (точное совпадение или ngram)
-            queries.Add(new BoolQuery
-            {
-                Should = new QueryContainer[]
-                {
-                    // Точное совпадение (высокий приоритет)
-                    new TermQuery
-                    {
-                        Field = Infer.Field<ArticleDocument>(f => f.FoundString),
-                        Value = normalizedQuery,
-                        Boost = 5.0
-                    },
-                    // Ngram поиск для частичного совпадения
-                    new MatchQuery
-                    {
-                        Field = Infer.Field<ArticleDocument>(f => f.FoundString.Suffix("ngram")),
-                        Query = normalizedQuery,
-                        Boost = 3.0,
-                        Operator = Operator.And
-                    },
-                    // Поиск по NormalizedDescription
-                    new MatchQuery
-                    {
-                        Field = Infer.Field<ArticleDocument>(f => f.NormalizedDescription),
-                        Query = request.Query,
-                        Boost = 2.0,
-                        Fuzziness = Fuzziness.Auto,
-                        Operator = Operator.Or
-                    },
-                    // Поиск по Description
-                    new MatchQuery
-                    {
-                        Field = Infer.Field<ArticleDocument>(f => f.Description),
-                        Query = request.Query,
-                        Boost = 1.0,
-                        Fuzziness = Fuzziness.Auto,
-                        Operator = Operator.Or
-                    }
-                },
-                MinimumShouldMatch = 1
-            });
+            queries.Add(BuildQueryByMode(request));
         }
 
         // Фильтр по SupplierId
@@ -384,6 +355,133 @@ public class ArticleElasticsearchService : IArticleElasticsearchService
         return queries.Any() 
             ? new BoolQuery { Must = queries } 
             : new MatchAllQuery();
+    }
+
+    private QueryContainer BuildQueryByMode(ArticleSearchRequest request)
+    {
+        var rawQuery = request.Query!.Trim();
+        var normalizedArticleQuery = NormalizeArticleQuery(rawQuery);
+        var requestedMode = request.SearchMode?.Trim().ToLowerInvariant();
+        var resolvedMode = requestedMode switch
+        {
+            "article" => "article",
+            "name" => "name",
+            _ => LooksLikeArticleQuery(rawQuery) ? "article" : "name"
+        };
+
+        return resolvedMode == "article"
+            ? BuildArticleNumberQuery(rawQuery, normalizedArticleQuery)
+            : BuildArticleNameQuery(rawQuery);
+    }
+
+    private QueryContainer BuildArticleNumberQuery(string rawQuery, string normalizedArticleQuery)
+    {
+        return new BoolQuery
+        {
+            Should = new QueryContainer[]
+            {
+                new TermQuery
+                {
+                    Field = Infer.Field<ArticleDocument>(f => f.FoundString.Suffix("keyword")),
+                    Value = normalizedArticleQuery,
+                    Boost = 15.0
+                },
+                new TermQuery
+                {
+                    Field = Infer.Field<ArticleDocument>(f => f.FoundString),
+                    Value = normalizedArticleQuery,
+                    Boost = 12.0
+                },
+                new MatchQuery
+                {
+                    Field = Infer.Field<ArticleDocument>(f => f.FoundString.Suffix("ngram")),
+                    Query = normalizedArticleQuery,
+                    Boost = 6.0,
+                    Operator = Operator.And
+                },
+                new MatchPhrasePrefixQuery
+                {
+                    Field = Infer.Field<ArticleDocument>(f => f.DataSupplierArticleNumber),
+                    Query = rawQuery,
+                    Boost = 4.0,
+                    MaxExpansions = 20
+                }
+            },
+            MinimumShouldMatch = 1
+        };
+    }
+
+    private QueryContainer BuildArticleNameQuery(string rawQuery)
+    {
+        return new BoolQuery
+        {
+            Should = new QueryContainer[]
+            {
+                new MatchPhraseQuery
+                {
+                    Field = Infer.Field<ArticleDocument>(f => f.NormalizedDescription),
+                    Query = rawQuery,
+                    Boost = 10.0,
+                    Slop = 1
+                },
+                new MultiMatchQuery
+                {
+                    Query = rawQuery,
+                    Type = TextQueryType.BestFields,
+                    Fields = Infer.Fields<ArticleDocument>(
+                        f => f.NormalizedDescription,
+                        f => f.Description,
+                        f => f.SupplierDescription),
+                    Boost = 6.0,
+                    Operator = Operator.And,
+                    Fuzziness = Fuzziness.Auto
+                },
+                new MatchQuery
+                {
+                    Field = Infer.Field<ArticleDocument>(f => f.NormalizedDescription),
+                    Query = rawQuery,
+                    Boost = 3.0,
+                    Operator = Operator.Or,
+                    MinimumShouldMatch = "75%"
+                },
+                new MatchQuery
+                {
+                    Field = Infer.Field<ArticleDocument>(f => f.Description),
+                    Query = rawQuery,
+                    Boost = 1.5,
+                    Operator = Operator.And,
+                    Fuzziness = Fuzziness.Auto
+                }
+            },
+            MinimumShouldMatch = 1
+        };
+    }
+
+    private static bool LooksLikeArticleQuery(string query)
+    {
+        var normalized = NormalizeArticleQuery(query);
+        if (string.IsNullOrWhiteSpace(normalized))
+        {
+            return false;
+        }
+
+        var hasDigit = normalized.Any(char.IsDigit);
+        var hasLetter = normalized.Any(char.IsLetter);
+        return hasDigit && (normalized.Length >= 5 || hasLetter);
+    }
+
+    private static string NormalizeArticleQuery(string query)
+    {
+        var builder = new StringBuilder(query.Length);
+        foreach (var character in query)
+        {
+            if (char.IsLetterOrDigit(character))
+            {
+                builder.Append(char.ToUpperInvariant(character));
+            }
+        }
+
+        return builder.ToString();
     }
 
     private SortDescriptor<ArticleDocument> BuildSort(ArticleSearchRequest request)
@@ -422,19 +520,16 @@ public class ArticleElasticsearchService : IArticleElasticsearchService
         {
             var normalizedQuery = request.Query.Trim().ToUpperInvariant();
 
-            // Поиск по модели поставщика (SupplierDescription и SupplierMatchcode)
             queries.Add(new BoolQuery
             {
                 Should = new QueryContainer[]
                 {
-                    // Точное совпадение по Matchcode (высокий приоритет)
                     new TermQuery
                     {
                         Field = Infer.Field<ArticleDocument>(f => f.SupplierMatchcode),
                         Value = normalizedQuery,
                         Boost = 5.0
                     },
-                    // Ngram поиск по Matchcode для частичного совпадения
                     new MatchQuery
                     {
                         Field = Infer.Field<ArticleDocument>(f => f.SupplierMatchcode.Suffix("ngram")),
@@ -442,7 +537,6 @@ public class ArticleElasticsearchService : IArticleElasticsearchService
                         Boost = 4.0,
                         Operator = Operator.And
                     },
-                    // Поиск по SupplierDescription
                     new MatchQuery
                     {
                         Field = Infer.Field<ArticleDocument>(f => f.SupplierDescription),
@@ -451,7 +545,6 @@ public class ArticleElasticsearchService : IArticleElasticsearchService
                         Fuzziness = Fuzziness.Auto,
                         Operator = Operator.Or
                     },
-                    // Точное совпадение по SupplierDescription (keyword)
                     new MatchQuery
                     {
                         Field = Infer.Field<ArticleDocument>(f => f.SupplierDescription.Suffix("keyword")),
@@ -464,7 +557,6 @@ public class ArticleElasticsearchService : IArticleElasticsearchService
             });
         }
 
-        // Фильтр по SupplierId
         if (request.SupplierId.HasValue)
         {
             queries.Add(new TermQuery
@@ -474,11 +566,10 @@ public class ArticleElasticsearchService : IArticleElasticsearchService
             });
         }
 
-        return queries.Any() 
-            ? new BoolQuery { Must = queries } 
+        return queries.Any()
+            ? new BoolQuery { Must = queries }
             : new MatchAllQuery();
     }
-
     #endregion
 }
 

@@ -70,8 +70,7 @@ services:
     restart: unless-stopped
     networks:
       - tecdoc-network
-    # Примечание: База данных MySQL должна быть доступна извне
-    # Строка подключения настраивается в .env файле или appsettings.Development.json
+    # Примечание: База данных MySQL и S3 настраиваются через .env или appsettings.Development.json
     # Этот файл используется для локальной разработки с локальной сборкой образа
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8082/swagger/index.html"]

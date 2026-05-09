@@ -218,6 +218,11 @@ docker.env
 appsettings.*.json
 !appsettings.json
 
+# Local smoke-test inputs and generated reports
+api_test_report_*.csv
+api_test_report_*.md
+*test_articles*.txt
+
 # ============================================
 # Database files
 # ============================================

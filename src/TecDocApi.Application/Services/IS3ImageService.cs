@@ -1,3 +1,5 @@
+using TecDocApi.Application.Models;
+
 namespace TecDocApi.Application.Services;
 
 /// <summary>
@@ -28,5 +30,21 @@ public interface IS3ImageService
     /// <param name="fileName">Имя файла изображения</param>
     /// <returns>true, если изображение существует, иначе false</returns>
     Task<bool> ImageExistsAsync(ushort supplierId, string fileName);
+
+    /// <summary>
+    /// Ищет изображения по артикулу в S3Info/S3 с умным нестрогим сопоставлением.
+    /// </summary>
+    /// <param name="articleNumber">Артикул для поиска</param>
+    /// <param name="supplierId">Опциональный ID поставщика для сужения и ранжирования результата</param>
+    /// <param name="maxResults">Максимальное количество результатов</param>
+    /// <returns>Список найденных объектов S3</returns>
+    Task<IReadOnlyList<S3ImageSearchResult>> SearchImagesByArticleAsync(string articleNumber, ushort? supplierId = null, int maxResults = 20);
+
+    /// <summary>
+    /// Получает поток изображения по полному object key в S3.
+    /// </summary>
+    /// <param name="objectKey">Полный object key в бакете</param>
+    /// <returns>Поток изображения или null</returns>
+    Task<Stream?> GetImageStreamByObjectKeyAsync(string objectKey);
 }
 

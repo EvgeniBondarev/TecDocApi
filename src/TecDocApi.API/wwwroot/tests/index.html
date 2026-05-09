@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TecDoc API Tests</title>
+  <link rel="stylesheet" href="/tests/app.css">
+</head>
+<body>
+  <div class="page">
+    <section class="hero">
+      <div>
+        <h1>TecDoc Search Test Bench</h1>
+        <p>Страница для ручного тестирования поиска, проверки индексации, просмотра полного URL, тела запроса, сырого JSON и изображений без переходов по Swagger.</p>
+      </div>
+      <div class="status-cards" id="indexStatus"></div>
+    </section>
+
+    <div class="grid two">
+      <section class="panel">
+        <h2>Поиск артикулов</h2>
+        <p class="section-note">Возвращает только данные из Elasticsearch без картинок. Для изображений используйте отдельную секцию ниже.</p>
+        <div class="grid">
+          <div>
+            <label for="articleQuery">Запрос</label>
+            <input id="articleQuery" placeholder="Например: 3397004672 или Фильтр воздушный">
+          </div>
+          <div class="grid two">
+            <div>
+              <label for="searchMode">Режим</label>
+              <select id="searchMode">
+                <option value="auto">auto</option>
+                <option value="article">article</option>
+                <option value="name">name</option>
+              </select>
+            </div>
+            <div>
+              <label for="supplierId">Supplier ID</label>
+              <input id="supplierId" placeholder="Опционально">
+            </div>
+          </div>
+          <button id="runArticleSearch">Выполнить поиск</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Файл изображения по имени</h2>
+        <p class="section-note">Проверка конкретного файла через supplierId и fileName.</p>
+        <div class="grid">
+          <div class="grid two">
+            <div>
+              <label for="imageSupplierId">Supplier ID</label>
+              <input id="imageSupplierId" value="101">
+            </div>
+            <div>
+              <label for="imageFileName">File name</label>
+              <input id="imageFileName" value="101_116209_1.jpg">
+            </div>
+          </div>
+          <button class="secondary" id="loadImage">Проверить изображение</button>
+        </div>
+      </section>
+    </div>
+
+    <section class="panel panel-gap">
+      <h2>Картинки по артикулу</h2>
+      <p class="section-note">Отдельный запрос в `S3Info` и S3 через `/api/Images/article-search`. Используйте после поиска артикула или независимо от него.</p>
+      <div class="grid">
+        <div class="grid two">
+          <div>
+            <label for="articleImageSupplierId">Supplier ID</label>
+            <input id="articleImageSupplierId" value="101">
+          </div>
+          <div>
+            <label for="articleImageArticleNumber">Article number</label>
+            <input id="articleImageArticleNumber" value="116209">
+          </div>
+        </div>
+        <button class="secondary" id="loadArticleImages">Найти картинки по артикулу</button>
+      </div>
+    </section>
+
+    <section class="panel panel-gap">
+      <h2>Глобальный поиск по S3</h2>
+      <p class="section-note">Отдельный поиск по всем папкам S3 через `/api/Images/s3-search`. Пример: `ALM2019YX` должен находить `ALM2019YX-6` и другие вариации.</p>
+      <div class="grid">
+        <div class="grid two">
+          <div>
+            <label for="globalArticleNumber">Article number</label>
+            <input id="globalArticleNumber" value="ALM2019YX">
+          </div>
+          <div>
+            <label for="globalMaxResults">Max results</label>
+            <input id="globalMaxResults" value="10">
+          </div>
+        </div>
+        <button class="secondary" id="loadGlobalS3Search">Найти по всем папкам S3</button>
+      </div>
+    </section>
+
+    <section class="panel panel-gap">
+      <h2>Результат поиска</h2>
+      <div id="searchOutput" class="muted">Ожидает запрос.</div>
+    </section>
+
+    <section class="panel panel-gap">
+      <h2>Результат по картинке</h2>
+      <div id="imageOutput" class="muted">Ожидает запрос.</div>
+    </section>
+
+    <section class="panel panel-gap">
+      <h2>Результат поиска картинок по артикулу</h2>
+      <div id="articleImageOutput" class="muted">Ожидает запрос.</div>
+    </section>
+
+    <section class="panel panel-gap">
+      <h2>Результат глобального поиска по S3</h2>
+      <div id="globalS3Output" class="muted">Ожидает запрос.</div>
+    </section>
+  </div>
+  <script src="/tests/app.js" defer></script>
+</body>
+</html>

@@ -70,8 +70,17 @@ public static class ServiceCollectionExtensions
                     #### 📊 Эндпоинты:
                     - `/api/ArticleSearch/*` - поиск артикулов через Elasticsearch
                     - `/api/SupplierSearch/*` - поиск поставщиков через Elasticsearch
+                    - `/api/Images/article-search` - поиск картинок по articleNumber с опциональным `supplierId`
+                    - `/api/Images/s3-search` - глобальный поиск картинок по всем папкам S3
                     - `/api/v1/articles/*` - классический поиск артикулов (MySQL)
                     - `/api/v1/suppliers/*` - классический поиск поставщиков (MySQL)
+
+                    #### 🖼️ Новый поток картинок:
+                    - `/api/ArticleSearch/search` возвращает только данные поиска без поля картинок
+                    - изображения загружаются вторым запросом через `/api/Images/article-search`
+                    - для глобального поиска по S3 используйте `/api/Images/s3-search?articleNumber=ALM2019YX`
+                    - в тестовом стенде превью загружаются сразу; если формат не поддерживается браузером, используйте ссылку `Открыть файл` или `Открыть stream`
+                    - для ручной проверки используйте `/tests`
                     
                     #### 🚀 Особенности:
                     - Автоматическая синхронизация данных из MySQL в Elasticsearch

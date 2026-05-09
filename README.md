@@ -36,6 +36,7 @@ TecDoc API предоставляет RESTful интерфейс для рабо
 - **MySQL поиск** - точный поиск по номеру артикула и ID поставщика
 - **Ngram анализ** - поиск по части артикула (например, "123" найдет "12345")
 - **Изображения из S3** - быстрый доступ к изображениям из S3 хранилища с кэшированием
+- **Глобальный поиск картинок** - отдельные endpoints для поиска по S3Info/S3 без хранения секретов в репозитории
 - **Русский язык** - поддержка морфологии и стемминга для русского языка
 - **Fuzzy search** - поиск с учетом опечаток
 - **Сортировка** - по релевантности, номеру артикула, описанию, количеству артикулов
@@ -71,8 +72,11 @@ TecDoc API предоставляет RESTful интерфейс для рабо
 # 1. Создайте файл .env из примера
 cp .env.example .env
 
-# 2. Отредактируйте .env и укажите строку подключения к БД
+# 2. Отредактируйте .env и заполните подключения к БД и S3
 # TECDOC_DATABASE_CONNECTION_STRING=Server=your-server;Port=3306;Database=TD2018;User=your-user;Password=your-password;...
+# S3_ACCESS_KEY=your-access-key
+# S3_SECRET_KEY=your-secret-key
+# S3_BUCKET_NAME=your-bucket-name
 
 # 3. Запустите приложение
 docker-compose up -d --build
@@ -85,6 +89,7 @@ docker-compose logs -f api
 - **API:** http://localhost:8082
 - **Swagger UI:** http://localhost:8082/swagger
 - **ReDoc:** http://localhost:8082/docs
+- **Test Bench:** http://localhost:8082/tests
 - **Elasticsearch:** http://localhost:9200
 - **Kibana:** http://localhost:5601
 
@@ -173,6 +178,7 @@ TecDocApi/
   ```json
   {
     "query": "12345",
+    "searchMode": "auto",
     "page": 1,
     "pageSize": 20,
     "supplierId": null,
@@ -187,6 +193,9 @@ TecDocApi/
 
 **GET** `/api/ArticleSearch/health`
 - Проверка состояния индекса артикулов в Elasticsearch
+
+**GET** `/api/search-diagnostics/index-status`
+- Диагностика прогресса индексации по исходным данным и Elasticsearch
 
 #### Поиск поставщиков
 
@@ -276,6 +285,15 @@ TecDocApi/
     "fileName": "101_116209_1.jpg"
   }
   ```
+
+**GET** `/api/Images/article-search?supplierId={id}&articleNumber={номер}`
+- Поиск изображений артикула через S3Info и S3 с проверкой фактического наличия файлов
+
+**GET** `/api/Images/s3-search?articleNumber={номер}&maxResults={n}`
+- Глобальный поиск изображений по всем папкам S3 без обязательного `supplierId`
+
+**GET** `/api/Images/by-key/stream?objectKey={key}`
+- Потоковая выдача файла напрямую по полному object key
 
 **GET** `/api/Images/{supplierId}/{fileName}/stream`
 - Получение изображения напрямую из S3 как поток данных

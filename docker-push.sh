@@ -2,50 +2,48 @@
 
 # Скрипт для сборки и публикации образа TecDoc API в Docker Hub
 # Использование: ./docker-push.sh [VERSION]
-# Если версия не указана, используется текущая дата в формате YYYY.MM.DD
+# Если версия не указана, публикуется только тег amd64-v2
 
 set -e
 
-# Определяем версию
-if [ -z "$1" ]; then
-    VERSION=$(date +%Y.%m.%d)
-else
-    VERSION=$1
-fi
-
 IMAGE_NAME="bondarevevgeni/tecdoc-api"
-LATEST_TAG="${IMAGE_NAME}:latest"
-VERSION_TAG="${IMAGE_NAME}:${VERSION}"
+PRIMARY_TAG="${IMAGE_NAME}:amd64-v2"
+
+if [ -n "$1" ]; then
+    VERSION_TAG="${IMAGE_NAME}:$1"
+else
+    VERSION_TAG=""
+fi
 
 echo "=========================================="
 echo "Сборка и публикация образа TecDoc API"
 echo "=========================================="
-echo "Версия: ${VERSION}"
-echo "Теги: ${LATEST_TAG} и ${VERSION_TAG}"
+if [ -n "${VERSION_TAG}" ]; then
+    echo "Теги: ${PRIMARY_TAG} и ${VERSION_TAG}"
+else
+    echo "Тег: ${PRIMARY_TAG}"
+fi
 echo "=========================================="
 echo ""
 
-# Сборка образа с двумя тегами
 echo "Сборка образа..."
-docker build -t ${LATEST_TAG} -t ${VERSION_TAG} .
+if [ -n "${VERSION_TAG}" ]; then
+    docker buildx build --platform linux/amd64 -t ${PRIMARY_TAG} -t ${VERSION_TAG} --push .
+else
+    docker buildx build --platform linux/amd64 -t ${PRIMARY_TAG} --push .
+fi
 
 echo ""
 echo "Образ успешно собран!"
 echo ""
 
-# Публикация образа latest
-echo "Публикация образа ${LATEST_TAG}..."
-docker push ${LATEST_TAG}
-
-echo ""
-echo "Публикация образа ${VERSION_TAG}..."
-docker push ${VERSION_TAG}
-
 echo ""
 echo "=========================================="
 echo "✅ Образ успешно опубликован!"
 echo "=========================================="
-echo "Latest: ${LATEST_TAG}"
-echo "Version: ${VERSION_TAG}"
+echo "Primary: ${PRIMARY_TAG}"
+if [ -n "${VERSION_TAG}" ]; then
+    echo "Version: ${VERSION_TAG}"
+fi
 echo "=========================================="
 

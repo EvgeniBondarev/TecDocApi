@@ -1,12 +1,8 @@
 # Dockerfile для сборки образа TecDoc API
-# Опубликованный образ: bondarevevgeni/tecdoc-api:latest
+# Опубликованный образ: bondarevevgeni/tecdoc-api:amd64-v2
 # 
-# Для сборки с двумя тегами (latest и версия):
-#   docker build -t bondarevevgeni/tecdoc-api:latest -t bondarevevgeni/tecdoc-api:1.0.0 .
-#
-# Для публикации:
-#   docker push bondarevevgeni/tecdoc-api:latest
-#   docker push bondarevevgeni/tecdoc-api:1.0.0
+# Для сборки и публикации linux/amd64:
+#   docker buildx build --platform linux/amd64 -t bondarevevgeni/tecdoc-api:amd64-v2 -t bondarevevgeni/tecdoc-api:1.0.0 --push .
 #
 # Или используйте скрипты:
 #   Windows: .\docker-push.ps1 [VERSION]

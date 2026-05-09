@@ -131,5 +131,51 @@ public class ArticleDocument
     /// </remarks>
     /// <example>2024-01-10T12:00:00Z</example>
     public DateTime? LastModified { get; set; }
+
+    /// <summary>
+    /// Список изображений артикула, подмешиваемый в API-ответ после поиска.
+    /// В Elasticsearch не используется как поисковое поле.
+    /// </summary>
+    public List<ArticleImageDocument>? Images { get; set; }
+}
+
+public class ArticleImageDocument
+{
+    public string PictureName { get; set; } = string.Empty;
+
+    public string Description { get; set; } = string.Empty;
+
+    public string AdditionalDescription { get; set; } = string.Empty;
+
+    public string DocumentName { get; set; } = string.Empty;
+
+    public string DocumentType { get; set; } = string.Empty;
+
+    public bool ShowImmediately { get; set; }
+
+    public string Url { get; set; } = string.Empty;
+
+    public string StreamUrl { get; set; } = string.Empty;
+
+    public string S3Url { get; set; } = string.Empty;
+}
+
+public class S3ImageSearchResult
+{
+    public string PictureName { get; set; } = string.Empty;
+
+    public string ObjectKey { get; set; } = string.Empty;
+
+    public ushort? SupplierId { get; set; }
+
+    public int MatchScore { get; set; }
+
+    public string MatchedBy { get; set; } = string.Empty;
+
+    public string Url { get; set; } = string.Empty;
+
+    public string StreamUrl { get; set; } = string.Empty;
+
+    public string S3Url { get; set; } = string.Empty;
 }
 

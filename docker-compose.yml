@@ -37,9 +37,10 @@ services:
     restart: unless-stopped
 
   api:
-    image: bondarevevgeni/tecdoc-api:latest
+    image: bondarevevgeni/tecdoc-api:amd64-v2
     pull_policy: always
     container_name: tecdoc-api
+    platform: linux/amd64
     ports:
       - "8082:8082"
     env_file:
@@ -68,10 +69,9 @@ services:
     restart: unless-stopped
     networks:
       - tecdoc-network
-    # Примечание: База данных MySQL должна быть доступна извне
-    # Строка подключения настраивается в .env файле
-    # Образ публикуется на Docker Hub: bondarevevgeni/tecdoc-api:latest
-    # Для локальной разработки используйте: docker-compose -f docker-compose.local.yml up
+    # Примечание: База данных MySQL и S3 настраиваются через .env файл
+    # Образ публикуется на Docker Hub: bondarevevgeni/tecdoc-api:amd64-v2
+    # Для локальной разработки используйте: docker compose -f docker-compose.local.yml up
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8082/swagger/index.html"]
       interval: 30s

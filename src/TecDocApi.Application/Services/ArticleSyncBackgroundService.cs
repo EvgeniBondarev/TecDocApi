@@ -94,6 +94,7 @@ public class ArticleSyncBackgroundService : BackgroundService
             await _elasticsearchService.CreateIndexAsync();
 
             var offset = 0;
+
             while (offset < totalCount)
             {
                 if (cancellationToken.IsCancellationRequested)
@@ -125,8 +126,9 @@ public class ArticleSyncBackgroundService : BackgroundService
                     break;
 
                 await _elasticsearchService.BulkIndexArticlesAsync(articles);
-                
-                offset += _bulkSize;
+
+                offset += articles.Count;
+
                 _logger.LogInformation("Синхронизировано {Current} из {Total} артикулов", 
                     Math.Min(offset, totalCount), totalCount);
             }

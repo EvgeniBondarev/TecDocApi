@@ -40,7 +40,9 @@ public class SecurityHeadersMiddleware
         }
         else
         {
-            context.Response.Headers["Content-Security-Policy"] = "default-src 'self'";
+            context.Response.Headers["Content-Security-Policy"] =
+                "default-src 'self'; " +
+                "img-src 'self' data: https://s3.timeweb.cloud";
         }
 
         await _next(context);
