@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
+using TecDocApi.Domain.Entities.TecDoc;
 using TecDocApi.Infrastructure.Data;
 using TecDocApi.Infrastructure.Repositories;
 
@@ -14,7 +15,7 @@ public class TecDocSupplierService : ITecDocSupplierService
     private readonly ILogger<TecDocSupplierService> _logger;
     
     // Ограничение параллелизма для защиты БД
-    private static readonly SemaphoreSlim _dbSemaphore = new(10);
+    private static readonly SemaphoreSlim DbSemaphore = new(10);
     
     // Время жизни кэша
     private static readonly TimeSpan CacheExpiration = TimeSpan.FromMinutes(10);
@@ -36,14 +37,14 @@ public class TecDocSupplierService : ITecDocSupplierService
     /// </summary>
     private async Task<T> RunDbAsync<T>(Func<Task<T>> action, CancellationToken cancellationToken = default)
     {
-        await _dbSemaphore.WaitAsync(cancellationToken);
+        await DbSemaphore.WaitAsync(cancellationToken);
         try
         {
             return await action();
         }
         finally
         {
-            _dbSemaphore.Release();
+            DbSemaphore.Release();
         }
     }
 
@@ -71,9 +72,9 @@ public class TecDocSupplierService : ITecDocSupplierService
                 return cachedResult!;
             }
             
-            IQueryable<Domain.Entities.TecDoc.TdSupplier> query = _unitOfWork.Suppliers.GetAllAsNoTracking();
+            IQueryable<TdSupplier> query = _unitOfWork.Suppliers.GetAllAsNoTracking();
 
-            List<Domain.Entities.TecDoc.TdSupplier> suppliers;
+            List<TdSupplier> suppliers;
 
             if (id.HasValue)
             {
@@ -124,41 +125,41 @@ public class TecDocSupplierService : ITecDocSupplierService
             {
                 Supplier = new
                 {
-                    Id = supplier.Id,
-                    Description = supplier.Description,
-                    Matchcode = supplier.Matchcode,
-                    DataVersion = supplier.DataVersion,
-                    NbrOfArticles = supplier.NbrOfArticles,
-                    HasNewVersionArticles = supplier.HasNewVersionArticles
+                    supplier.Id,
+                    supplier.Description,
+                    supplier.Matchcode,
+                    supplier.DataVersion,
+                    supplier.NbrOfArticles,
+                    supplier.HasNewVersionArticles
                 },
                 Details = detailsBySupplier.TryGetValue(supplier.Id, out var details)
                     ? details.Select(d => new
                     {
-                        AddressType = d.AddressType,
-                        AddressTypeId = d.AddressTypeId,
-                        City1 = d.City1,
-                        City2 = d.City2,
-                        CountryCode = d.CountryCode,
-                        Email = d.Email,
-                        Fax = d.Fax,
-                        Homepage = d.Homepage,
-                        Name1 = d.Name1,
-                        Name2 = d.Name2,
-                        PostalCodeCity = d.PostalCodeCity,
-                        PostalCodePob = d.PostalCodePob,
-                        PostalCodeWholesaler = d.PostalCodeWholesaler,
-                        PostalCountryCode = d.PostalCountryCode,
-                        PostOfficeBox = d.PostOfficeBox,
-                        Street1 = d.Street1,
-                        Street2 = d.Street2,
-                        Telephone = d.Telephone
+                        d.AddressType,
+                        d.AddressTypeId,
+                        d.City1,
+                        d.City2,
+                        d.CountryCode,
+                        d.Email,
+                        d.Fax,
+                        d.Homepage,
+                        d.Name1,
+                        d.Name2,
+                        d.PostalCodeCity,
+                        d.PostalCodePob,
+                        d.PostalCodeWholesaler,
+                        d.PostalCountryCode,
+                        d.PostOfficeBox,
+                        d.Street1,
+                        d.Street2,
+                        d.Telephone
                     })
                     : Enumerable.Empty<object>()
             });
 
             return new
             {
-                Count = suppliers.Count,
+                suppliers.Count,
                 Results = result
             };
         }
@@ -201,33 +202,33 @@ public class TecDocSupplierService : ITecDocSupplierService
             {
                 Supplier = new
                 {
-                    Id = supplier.Id,
-                    Description = supplier.Description,
-                    Matchcode = supplier.Matchcode,
-                    DataVersion = supplier.DataVersion,
-                    NbrOfArticles = supplier.NbrOfArticles,
-                    HasNewVersionArticles = supplier.HasNewVersionArticles
+                    supplier.Id,
+                    supplier.Description,
+                    supplier.Matchcode,
+                    supplier.DataVersion,
+                    supplier.NbrOfArticles,
+                    supplier.HasNewVersionArticles
                 },
                 Details = details.Select(d => new
                 {
-                    AddressType = d.AddressType,
-                    AddressTypeId = d.AddressTypeId,
-                    City1 = d.City1,
-                    City2 = d.City2,
-                    CountryCode = d.CountryCode,
-                    Email = d.Email,
-                    Fax = d.Fax,
-                    Homepage = d.Homepage,
-                    Name1 = d.Name1,
-                    Name2 = d.Name2,
-                    PostalCodeCity = d.PostalCodeCity,
-                    PostalCodePob = d.PostalCodePob,
-                    PostalCodeWholesaler = d.PostalCodeWholesaler,
-                    PostalCountryCode = d.PostalCountryCode,
-                    PostOfficeBox = d.PostOfficeBox,
-                    Street1 = d.Street1,
-                    Street2 = d.Street2,
-                    Telephone = d.Telephone
+                    d.AddressType,
+                    d.AddressTypeId,
+                    d.City1,
+                    d.City2,
+                    d.CountryCode,
+                    d.Email,
+                    d.Fax,
+                    d.Homepage,
+                    d.Name1,
+                    d.Name2,
+                    d.PostalCodeCity,
+                    d.PostalCodePob,
+                    d.PostalCodeWholesaler,
+                    d.PostalCountryCode,
+                    d.PostOfficeBox,
+                    d.Street1,
+                    d.Street2,
+                    d.Telephone
                 })
             };
             

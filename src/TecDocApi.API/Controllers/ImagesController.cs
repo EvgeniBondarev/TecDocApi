@@ -1,9 +1,8 @@
-using Microsoft.AspNetCore.Cors;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.ResponseCaching;
-using Microsoft.EntityFrameworkCore;
 using System.Text;
 using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.Cors;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using TecDocApi.API.Models;
 using TecDocApi.Application.Models;
 using TecDocApi.Application.Services;
@@ -250,7 +249,7 @@ public class ImagesController : ControllerBase
         }
 
         Response.Headers.CacheControl = "public, max-age=86400";
-        Response.Headers.ETag = $"\"{Convert.ToHexString(System.Text.Encoding.UTF8.GetBytes(objectKey))}\"";
+        Response.Headers.ETag = $"\"{Convert.ToHexString(Encoding.UTF8.GetBytes(objectKey))}\"";
         return File(imageStream, GetContentType(objectKey));
     }
 

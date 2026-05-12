@@ -12,9 +12,9 @@ public class ArticleSearchResultExample : IExamplesProvider<ArticleSearchResult>
     {
         return new ArticleSearchResult
         {
-            Items = new List<ArticleDocument>
-            {
-                new ArticleDocument
+            Items =
+            [
+                new()
                 {
                     Id = "7_12345",
                     SupplierId = 7,
@@ -29,7 +29,7 @@ public class ArticleSearchResultExample : IExamplesProvider<ArticleSearchResult>
                     IndexedAt = DateTime.UtcNow,
                     LastModified = DateTime.UtcNow
                 }
-            },
+            ],
             Total = 1,
             Page = 1,
             PageSize = 20,

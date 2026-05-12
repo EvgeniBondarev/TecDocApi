@@ -1,11 +1,11 @@
+using System.Text;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Minio;
 using Minio.DataModel.Args;
 using MySqlConnector;
-using System.Text;
-using System.Text.RegularExpressions;
 using TecDocApi.Application.Models;
 
 namespace TecDocApi.Application.Services;
@@ -247,6 +247,7 @@ public class S3ImageService : IS3ImageService
             }
             catch
             {
+                // ignored
             }
 
             return true;
@@ -263,6 +264,7 @@ public class S3ImageService : IS3ImageService
             }
             catch
             {
+                // ignored
             }
 
             return false;
@@ -578,7 +580,7 @@ LIMIT 200;";
             await _minioClient.GetObjectAsync(new GetObjectArgs()
                 .WithBucket(_bucketName)
                 .WithObject(objectKey)
-                .WithCallbackStream(async stream => await stream.CopyToAsync(memoryStream)));
+                .WithCallbackStream(async void (stream) => await stream.CopyToAsync(memoryStream)));
 
             memoryStream.Position = 0;
             return memoryStream;
@@ -612,7 +614,7 @@ LIMIT 200;";
             await _minioClient.GetObjectAsync(new GetObjectArgs()
                 .WithBucket(_bucketName)
                 .WithObject(objectName)
-                .WithCallbackStream(async stream => await stream.CopyToAsync(memoryStream)));
+                .WithCallbackStream(async void (stream) => await stream.CopyToAsync(memoryStream)));
 
             memoryStream.Position = 0;
             return memoryStream;

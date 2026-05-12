@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using TecDocApi.Domain.Entities;
 using TecDocApi.Domain.Interfaces;
 using TecDocApi.Infrastructure.Data;
 using TecDocApi.Infrastructure.Repositories;

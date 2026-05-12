@@ -4,7 +4,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using TecDocApi.Application.Models;
-using TecDocApi.Domain.Interfaces;
 using TecDocApi.Infrastructure.Repositories;
 
 namespace TecDocApi.Application.Services;
@@ -31,8 +30,8 @@ public class ArticleSyncBackgroundService : BackgroundService
         _elasticsearchService = elasticsearchService;
         _configuration = configuration;
         _logger = logger;
-        _bulkSize = configuration.GetValue<int>("Elasticsearch:BulkSize", 1000);
-        _syncIntervalMinutes = configuration.GetValue<int>("Elasticsearch:SyncIntervalMinutes", 5);
+        _bulkSize = configuration.GetValue("Elasticsearch:BulkSize", 1000);
+        _syncIntervalMinutes = configuration.GetValue("Elasticsearch:SyncIntervalMinutes", 5);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -40,27 +39,27 @@ public class ArticleSyncBackgroundService : BackgroundService
         _logger.LogInformation("Служба синхронизации артикулов запущена");
 
         // Ждем немного перед первой синхронизацией, чтобы Elasticsearch успел запуститься
-        await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
+        await Task.Delay(TimeSpan.FromMinutes(10), stoppingToken);
 
         await FullSyncAsync(stoppingToken);
 
-        while (!stoppingToken.IsCancellationRequested)
-        {
-            try
-            {
-                await IncrementalSyncAsync(stoppingToken);
-                await Task.Delay(TimeSpan.FromMinutes(_syncIntervalMinutes), stoppingToken);
-            }
-            catch (OperationCanceledException)
-            {
-                break;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Ошибка в фоновой службе синхронизации");
-                await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
-            }
-        }
+        // while (!stoppingToken.IsCancellationRequested)
+        // {
+        //     try
+        //     {
+        //         await IncrementalSyncAsync(stoppingToken);
+        //         await Task.Delay(TimeSpan.FromMinutes(_syncIntervalMinutes), stoppingToken);
+        //     }
+        //     catch (OperationCanceledException)
+        //     {
+        //         break;
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         _logger.LogError(ex, "Ошибка в фоновой службе синхронизации");
+        //         await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
+        //     }
+        // }
 
         _logger.LogInformation("Служба синхронизации артикулов остановлена");
     }
@@ -109,13 +108,13 @@ public class ArticleSyncBackgroundService : BackgroundService
                                      {
                                          SupplierId = a.SupplierId,
                                          DataSupplierArticleNumber = a.DataSupplierArticleNumber,
-                                         FoundString = a.FoundString ?? string.Empty,
-                                         NormalizedDescription = a.NormalizedDescription ?? string.Empty,
-                                         Description = a.Description ?? string.Empty,
-                                         ArticleStateDisplayValue = a.ArticleStateDisplayValue ?? string.Empty,
+                                         FoundString = a.FoundString,
+                                         NormalizedDescription = a.NormalizedDescription,
+                                         Description = a.Description,
+                                         ArticleStateDisplayValue = a.ArticleStateDisplayValue,
                                          QuantityPerPackingUnit = a.QuantityPerPackingUnit,
-                                         SupplierDescription = s != null ? (s.Description ?? string.Empty) : string.Empty,
-                                         SupplierMatchcode = s != null ? (s.Matchcode ?? string.Empty) : string.Empty,
+                                         SupplierDescription = s != null ? s.Description ?? string.Empty : string.Empty,
+                                         SupplierMatchcode = s != null ? s.Matchcode ?? string.Empty : string.Empty,
                                          LastModified = DateTime.UtcNow
                                      })
                     .Skip(offset)
@@ -151,8 +150,8 @@ public class ArticleSyncBackgroundService : BackgroundService
             _logger.LogDebug("Начало инкрементальной синхронизации артикулов");
 
             // Получаем дату последней индексации из конфигурации или используем текущую дату минус час
-            var lastSyncDate = _configuration.GetValue<DateTime?>("Elasticsearch:LastSyncDate") 
-                ?? DateTime.UtcNow.AddHours(-1);
+            // var lastSyncDate = _configuration.GetValue<DateTime?>("Elasticsearch:LastSyncDate") 
+            //     ?? DateTime.UtcNow.AddHours(-1);
 
             // Для инкрементальной синхронизации берем все артикулы, которые были изменены недавно
             // В реальном проекте здесь должна быть проверка по полю LastModified или аналогичному
@@ -175,13 +174,13 @@ public class ArticleSyncBackgroundService : BackgroundService
                                  {
                                      SupplierId = a.SupplierId,
                                      DataSupplierArticleNumber = a.DataSupplierArticleNumber,
-                                     FoundString = a.FoundString ?? string.Empty,
-                                     NormalizedDescription = a.NormalizedDescription ?? string.Empty,
-                                     Description = a.Description ?? string.Empty,
-                                     ArticleStateDisplayValue = a.ArticleStateDisplayValue ?? string.Empty,
+                                     FoundString = a.FoundString,
+                                     NormalizedDescription = a.NormalizedDescription,
+                                     Description = a.Description,
+                                     ArticleStateDisplayValue = a.ArticleStateDisplayValue,
                                      QuantityPerPackingUnit = a.QuantityPerPackingUnit,
-                                     SupplierDescription = s != null ? (s.Description ?? string.Empty) : string.Empty,
-                                     SupplierMatchcode = s != null ? (s.Matchcode ?? string.Empty) : string.Empty,
+                                     SupplierDescription = s != null ? s.Description ?? string.Empty : string.Empty,
+                                     SupplierMatchcode = s != null ? s.Matchcode ?? string.Empty : string.Empty,
                                      LastModified = DateTime.UtcNow
                                  })
                 .Skip((int)indexedCount)

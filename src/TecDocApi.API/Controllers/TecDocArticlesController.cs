@@ -1,7 +1,7 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
-using System.ComponentModel.DataAnnotations;
 using TecDocApi.API.DTOs;
 using TecDocApi.API.Exceptions;
 using TecDocApi.API.Models;
@@ -36,11 +36,11 @@ public class TecDocArticlesController : ControllerBase
     /// - регистра (ABC-123 = abc-123)
     /// - пробелов (ABC 123 = ABC123)
     /// - спецсимволов (ABC-123 = ABC123)
-    ///
+    /// 
     /// ### Примеры:
     /// - `ABC-123` = `abc 123` = `ABC123`
     /// - `12345` найдет все артикулы с нормализованным номером "12345"
-    ///
+    /// 
     /// ### Ограничения:
     /// - Максимум 50 результатов
     /// - Таймаут запроса: 10 секунд
@@ -49,6 +49,7 @@ public class TecDocArticlesController : ControllerBase
     /// </remarks>
     /// <param name="articleNumber">Артикул для поиска (будет нормализован автоматически)</param>
     /// <param name="supplierId">Опционально: ID поставщика для фильтрации результатов</param>
+    /// <param name="cancellationToken"></param>
     /// <response code="200">Артикулы найдены</response>
     /// <response code="400">Ошибка валидации параметров</response>
     /// <response code="404">Артикулы не найдены</response>
@@ -99,11 +100,11 @@ public class TecDocArticlesController : ControllerBase
     /// </summary>
     /// <remarks>
     /// Получение полной информации об артикуле по точному совпадению FoundString (нормализованный артикул).
-    ///
+    /// 
     /// ### Особенности:
     /// - Артикул будет автоматически нормализован
     /// - Возвращает полную информацию со всеми связями (кроссы, OEM, изображения и т.д.)
-    ///
+    /// 
     /// ### Ограничения:
     /// - Таймаут запроса: 10 секунд
     /// - Rate limit: 50 запросов за 10 секунд
@@ -111,6 +112,7 @@ public class TecDocArticlesController : ControllerBase
     /// </remarks>
     /// <param name="supplierId">ID поставщика</param>
     /// <param name="articleNumber">Номер артикула (будет нормализован)</param>
+    /// <param name="cancellationToken"></param>
     /// <response code="200">Артикул найден</response>
     /// <response code="404">Артикул не найден</response>
     /// <response code="429">Превышен лимит запросов</response>
@@ -158,7 +160,7 @@ public class TecDocArticlesController : ControllerBase
     /// </summary>
     /// <remarks>
     /// 🔍 **Поиск по штрих-коду EAN-13**
-    ///
+    /// 
     /// Позволяет найти артикул и информацию о поставщике по штрих-коду (EAN-13).
     /// Возвращает полную информацию об артикуле, включая:
     /// - Базовые данные артикула
@@ -169,22 +171,23 @@ public class TecDocArticlesController : ControllerBase
     /// - Применяемость к автомобилям
     /// - Все EAN коды артикула
     /// - Аксессуары и дополнительную информацию
-    ///
+    /// 
     /// ### Примеры EAN кодов:
     /// - `4001512345678` - стандартный EAN-13
     /// - `4006083159296` - реальный EAN код запчасти
-    ///
+    /// 
     /// ### Особенности:
     /// - EAN код нормализуется автоматически (удаляются пробелы, приведение к верхнему регистру)
     /// - Если артикул имеет несколько EAN кодов, все они будут возвращены
     /// - Результаты кэшируются на 5 минут
-    ///
+    /// 
     /// ### Ограничения:
     /// - Таймаут запроса: 10 секунд
     /// - Rate limit: 50 запросов за 10 секунд
     /// - Кэш: 5 минут
     /// </remarks>
     /// <param name="eanCode">EAN код (штрих-код) для поиска</param>
+    /// <param name="cancellationToken"></param>
     /// <response code="200">Артикул найден</response>
     /// <response code="400">Ошибка валидации параметров</response>
     /// <response code="404">Артикул с указанным EAN кодом не найден</response>
@@ -213,7 +216,7 @@ public class TecDocArticlesController : ControllerBase
         {
             var result = await _articleService.SearchByEanAsync(eanCode, cancellationToken);
             
-            var count = result?.GetType().GetProperty("Count")?.GetValue(result) as int? ?? 0;
+            var count = result.GetType().GetProperty("Count")?.GetValue(result) as int? ?? 0;
             
             if (count == 0)
             {

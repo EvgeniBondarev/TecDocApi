@@ -1,9 +1,8 @@
-using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
 using TecDocApi.Infrastructure.Data;
+using TecDocApi.Infrastructure.Repositories;
 
 namespace TecDocApi.Infrastructure.Extensions;
 
@@ -57,7 +56,6 @@ public static class TecDocServiceExtensions
         Console.WriteLine($"[TecDocServiceExtensions] Строка подключения загружена из: {source}");
         
         // Отладочное логирование - проверяем наличие пароля в строке
-        var hasPassword = tecDocConnectionString.Contains("Password=", StringComparison.OrdinalIgnoreCase);
         var passwordStartIndex = tecDocConnectionString.IndexOf("Password=", StringComparison.OrdinalIgnoreCase);
         if (passwordStartIndex >= 0)
         {
@@ -132,7 +130,7 @@ public static class TecDocServiceExtensions
         });
 
         // Регистрация сервисов с фабрикой
-        services.AddScoped<Repositories.TecDocUnitOfWork>();
+        services.AddScoped<TecDocUnitOfWork>();
 
         return services;
     }

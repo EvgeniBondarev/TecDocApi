@@ -334,7 +334,7 @@ public class SupplierElasticsearchService : ISupplierElasticsearchService
             default:
                 if (!string.IsNullOrWhiteSpace(request.Query))
                 {
-                    sortDescriptor.Field("_score", request.SortDescending ? SortOrder.Descending : SortOrder.Descending);
+                    sortDescriptor.Field("_score", request.SortDescending ? SortOrder.Descending : SortOrder.Ascending);
                 }
                 else
                 {

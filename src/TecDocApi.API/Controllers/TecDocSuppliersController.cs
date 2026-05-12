@@ -1,12 +1,12 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
-using System.ComponentModel.DataAnnotations;
 using TecDocApi.API.DTOs;
 using TecDocApi.API.Exceptions;
 using TecDocApi.API.Models;
-using ValidationException = TecDocApi.API.Exceptions.ValidationException;
 using TecDocApi.Application.Services;
+using ValidationException = TecDocApi.API.Exceptions.ValidationException;
 
 namespace TecDocApi.API.Controllers;
 
@@ -36,12 +36,12 @@ public class TecDocSuppliersController : ControllerBase
     /// 🔍 **Поиск поставщиков:**
     /// - По matchcode (без учета пробелов и регистра)
     /// - По точному ID поставщика
-    ///
+    /// 
     /// ### Примеры:
     /// - `matchcode=BOSCH` найдет всех поставщиков с matchcode "BOSCH"
     /// - `id=7` вернет поставщика с ID 7
     /// - Можно использовать оба параметра одновременно
-    ///
+    /// 
     /// ### Ограничения:
     /// - Таймаут запроса: 10 секунд
     /// - Rate limit: 50 запросов за 10 секунд
@@ -49,6 +49,7 @@ public class TecDocSuppliersController : ControllerBase
     /// </remarks>
     /// <param name="matchcode">Matchcode для поиска (будет нормализован: убраны пробелы, приведен к верхнему регистру)</param>
     /// <param name="id">ID поставщика для точного поиска</param>
+    /// <param name="cancellationToken"></param>
     /// <response code="200">Поставщики найдены</response>
     /// <response code="400">Ошибка валидации параметров</response>
     /// <response code="404">Поставщики не найдены</response>
@@ -56,7 +57,7 @@ public class TecDocSuppliersController : ControllerBase
     /// <response code="500">Внутренняя ошибка сервера</response>
     [HttpGet("search")]
     [EnableRateLimiting("search")]
-    [ResponseCache(Duration = 600, VaryByQueryKeys = new[] { "matchcode", "id" })]
+    [ResponseCache(Duration = 600, VaryByQueryKeys = ["matchcode", "id"])]
     [ProducesResponseType(typeof(SupplierSearchResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
@@ -103,16 +104,17 @@ public class TecDocSuppliersController : ControllerBase
     /// </summary>
     /// <remarks>
     /// Получение полной информации о поставщике по его ID, включая все детали (адреса, контакты).
-    ///
+    /// 
     /// ### Особенности:
     /// - Возвращает полную информацию о поставщике
     /// - Включает все адреса и контактные данные
-    ///
+    /// 
     /// ### Ограничения:
     /// - Таймаут запроса: 10 секунд
     /// - Кэш: 30 минут (поставщики меняются редко)
     /// </remarks>
     /// <param name="id">ID поставщика</param>
+    /// <param name="cancellationToken"></param>
     /// <response code="200">Поставщик найден</response>
     /// <response code="404">Поставщик не найден</response>
     /// <response code="429">Превышен лимит запросов</response>

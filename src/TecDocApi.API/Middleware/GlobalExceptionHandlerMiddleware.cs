@@ -1,7 +1,5 @@
-using System.Net;
 using System.Security;
 using System.Text.Json;
-using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using TecDocApi.API.Exceptions;
 using TecDocApi.API.Models;

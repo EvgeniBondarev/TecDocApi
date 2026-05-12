@@ -4,7 +4,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using TecDocApi.Application.Models;
-using TecDocApi.Domain.Interfaces;
 using TecDocApi.Infrastructure.Repositories;
 
 namespace TecDocApi.Application.Services;
@@ -16,7 +15,6 @@ public class SupplierSyncBackgroundService : BackgroundService
 {
     private readonly IServiceScopeFactory _serviceScopeFactory;
     private readonly ISupplierElasticsearchService _elasticsearchService;
-    private readonly IConfiguration _configuration;
     private readonly ILogger<SupplierSyncBackgroundService> _logger;
     private readonly int _bulkSize;
     private readonly int _syncIntervalMinutes;
@@ -29,10 +27,9 @@ public class SupplierSyncBackgroundService : BackgroundService
     {
         _serviceScopeFactory = serviceScopeFactory;
         _elasticsearchService = elasticsearchService;
-        _configuration = configuration;
         _logger = logger;
-        _bulkSize = configuration.GetValue<int>("Elasticsearch:SupplierBulkSize", 500);
-        _syncIntervalMinutes = configuration.GetValue<int>("Elasticsearch:SupplierSyncIntervalMinutes", 10);
+        _bulkSize = configuration.GetValue("Elasticsearch:SupplierBulkSize", 500);
+        _syncIntervalMinutes = configuration.GetValue("Elasticsearch:SupplierSyncIntervalMinutes", 10);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)

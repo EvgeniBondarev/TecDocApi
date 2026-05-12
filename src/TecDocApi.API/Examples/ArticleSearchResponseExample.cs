@@ -13,9 +13,9 @@ public class ArticleSearchResponseExample : IExamplesProvider<ArticleSearchRespo
         return new ArticleSearchResponseDto
         {
             Count = 1,
-            Results = new List<ArticleDto>
-            {
-                new ArticleDto
+            Results =
+            [
+                new()
                 {
                     Article = new ArticleInfoDto
                     {
@@ -54,7 +54,7 @@ public class ArticleSearchResponseExample : IExamplesProvider<ArticleSearchRespo
                     Attributes = new List<AttributeDto>(),
                     Images = new List<ImageDto>
                     {
-                        new ImageDto
+                        new()
                         {
                             PictureName = "7_12400G.BMP",
                             Description = "Рисунок",
@@ -63,7 +63,7 @@ public class ArticleSearchResponseExample : IExamplesProvider<ArticleSearchRespo
                             DocumentType = "Picture",
                             ShowImmediately = true
                         },
-                        new ImageDto
+                        new()
                         {
                             PictureName = "7_12400G.BMP",
                             Description = "Рисунок",
@@ -75,7 +75,7 @@ public class ArticleSearchResponseExample : IExamplesProvider<ArticleSearchRespo
                     },
                     Linkages = new List<LinkageDto>
                     {
-                        new LinkageDto
+                        new()
                         {
                             LinkageTypeId = "PassengerCar",
                             LinkageId = 8971
@@ -84,13 +84,13 @@ public class ArticleSearchResponseExample : IExamplesProvider<ArticleSearchRespo
                     EanCodes = new List<EanCodeDto>(),
                     Information = new List<InformationDto>
                     {
-                        new InformationDto
+                        new()
                         {
                             InformationTypeKey = "2",
                             InformationType = "Общая информация",
                             InformationText = "EBERSPÄCHER-VERSION\n"
                         },
-                        new InformationDto
+                        new()
                         {
                             InformationTypeKey = "2",
                             InformationType = "Общая информация",
@@ -100,7 +100,7 @@ public class ArticleSearchResponseExample : IExamplesProvider<ArticleSearchRespo
                     Accessories = new List<AccessoryDto>(),
                     NewNumbers = new List<NewNumberDto>()
                 }
-            }
+            ]
         };
     }
 }

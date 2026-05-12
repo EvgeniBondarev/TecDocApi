@@ -1,6 +1,7 @@
+using System.Text.Json;
+using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
-using System.Text.Json;
 using TecDocApi.API.DTOs;
 
 namespace TecDocApi.API.Filters;
@@ -18,8 +19,8 @@ public class ResponseExamplesFilter : IOperationFilter
             var example = new ArticleSearchResponseDto
             {
                 Count = 1,
-                Results = new List<ArticleDto>
-                {
+                Results =
+                [
                     new ArticleDto
                     {
                         Article = new ArticleInfoDto
@@ -54,12 +55,12 @@ public class ResponseExamplesFilter : IOperationFilter
                             DataVersion = "1117",
                             NbrOfArticles = 2633666
                         },
-                        Crosses = new List<CrossDto>(),
-                        OeNumbers = new List<OeNumberDto>(),
-                        Attributes = new List<AttributeDto>(),
-                        Images = new List<ImageDto>
-                        {
-                            new ImageDto
+                        Crosses = [],
+                        OeNumbers = [],
+                        Attributes = [],
+                        Images =
+                        [
+                            new()
                             {
                                 PictureName = "7_12400G.BMP",
                                 Description = "Рисунок",
@@ -68,29 +69,29 @@ public class ResponseExamplesFilter : IOperationFilter
                                 DocumentType = "Picture",
                                 ShowImmediately = true
                             }
-                        },
-                        Linkages = new List<LinkageDto>
-                        {
-                            new LinkageDto
+                        ],
+                        Linkages =
+                        [
+                            new()
                             {
                                 LinkageTypeId = "PassengerCar",
                                 LinkageId = 8971
                             }
-                        },
-                        EanCodes = new List<EanCodeDto>(),
-                        Information = new List<InformationDto>
-                        {
+                        ],
+                        EanCodes = [],
+                        Information =
+                        [
                             new InformationDto
                             {
                                 InformationTypeKey = "2",
                                 InformationType = "Общая информация",
                                 InformationText = "EBERSPÄCHER-VERSION\n"
                             }
-                        },
-                        Accessories = new List<AccessoryDto>(),
-                        NewNumbers = new List<NewNumberDto>()
+                        ],
+                        Accessories = [],
+                        NewNumbers = []
                     }
-                }
+                ]
             };
 
             var jsonExample = JsonSerializer.Serialize(example, new JsonSerializerOptions
@@ -104,37 +105,37 @@ public class ResponseExamplesFilter : IOperationFilter
             {
                 try
                 {
-                    using var doc = System.Text.Json.JsonDocument.Parse(jsonExample);
+                    using var doc = JsonDocument.Parse(jsonExample);
                     content.Example = ConvertToOpenApiAny(doc.RootElement);
                 }
                 catch
                 {
-                    content.Example = new Microsoft.OpenApi.Any.OpenApiString(jsonExample);
+                    content.Example = new OpenApiString(jsonExample);
                 }
             }
         }
     }
 
-    private static Microsoft.OpenApi.Any.IOpenApiAny ConvertToOpenApiAny(System.Text.Json.JsonElement element)
+    private static IOpenApiAny ConvertToOpenApiAny(JsonElement element)
     {
         return element.ValueKind switch
         {
-            System.Text.Json.JsonValueKind.Object => ConvertObject(element),
-            System.Text.Json.JsonValueKind.Array => ConvertArray(element),
-            System.Text.Json.JsonValueKind.String => new Microsoft.OpenApi.Any.OpenApiString(element.GetString() ?? string.Empty),
-            System.Text.Json.JsonValueKind.Number => element.TryGetInt64(out var intValue) 
-                ? new Microsoft.OpenApi.Any.OpenApiInteger((int)intValue)
-                : new Microsoft.OpenApi.Any.OpenApiDouble(element.GetDouble()),
-            System.Text.Json.JsonValueKind.True => new Microsoft.OpenApi.Any.OpenApiBoolean(true),
-            System.Text.Json.JsonValueKind.False => new Microsoft.OpenApi.Any.OpenApiBoolean(false),
-            System.Text.Json.JsonValueKind.Null => new Microsoft.OpenApi.Any.OpenApiNull(),
-            _ => new Microsoft.OpenApi.Any.OpenApiString(element.ToString())
+            JsonValueKind.Object => ConvertObject(element),
+            JsonValueKind.Array => ConvertArray(element),
+            JsonValueKind.String => new OpenApiString(element.GetString() ?? string.Empty),
+            JsonValueKind.Number => element.TryGetInt64(out var intValue) 
+                ? new OpenApiInteger((int)intValue)
+                : new OpenApiDouble(element.GetDouble()),
+            JsonValueKind.True => new OpenApiBoolean(true),
+            JsonValueKind.False => new OpenApiBoolean(false),
+            JsonValueKind.Null => new OpenApiNull(),
+            _ => new OpenApiString(element.ToString())
         };
     }
 
-    private static Microsoft.OpenApi.Any.OpenApiObject ConvertObject(System.Text.Json.JsonElement element)
+    private static OpenApiObject ConvertObject(JsonElement element)
     {
-        var obj = new Microsoft.OpenApi.Any.OpenApiObject();
+        var obj = new OpenApiObject();
         foreach (var prop in element.EnumerateObject())
         {
             obj[prop.Name] = ConvertToOpenApiAny(prop.Value);
@@ -142,9 +143,9 @@ public class ResponseExamplesFilter : IOperationFilter
         return obj;
     }
 
-    private static Microsoft.OpenApi.Any.OpenApiArray ConvertArray(System.Text.Json.JsonElement element)
+    private static OpenApiArray ConvertArray(JsonElement element)
     {
-        var array = new Microsoft.OpenApi.Any.OpenApiArray();
+        var array = new OpenApiArray();
         foreach (var item in element.EnumerateArray())
         {
             array.Add(ConvertToOpenApiAny(item));

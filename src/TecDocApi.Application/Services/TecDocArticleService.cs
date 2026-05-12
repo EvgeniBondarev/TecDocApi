@@ -22,7 +22,7 @@ public class TecDocArticleService : ITecDocArticleService
     private readonly IMemoryCache _cache;
     private readonly ILogger<TecDocArticleService> _logger;
     
-    private static readonly SemaphoreSlim _dbSemaphore = new(10);
+    private static readonly SemaphoreSlim DbSemaphore = new(10);
     private static readonly TimeSpan CacheExpiration = TimeSpan.FromMinutes(5);
 
     public TecDocArticleService(
@@ -42,14 +42,14 @@ public class TecDocArticleService : ITecDocArticleService
     /// </summary>
     private async Task<T> RunDbAsync<T>(Func<Task<T>> action, CancellationToken cancellationToken = default)
     {
-        await _dbSemaphore.WaitAsync(cancellationToken);
+        await DbSemaphore.WaitAsync(cancellationToken);
         try
         {
             return await action();
         }
         finally
         {
-            _dbSemaphore.Release();
+            DbSemaphore.Release();
         }
     }
 
@@ -102,7 +102,7 @@ public class TecDocArticleService : ITecDocArticleService
                 .Select(a => new
                 {
                     Article = a,
-                    SupplierId = a.SupplierId
+                    a.SupplierId
                 })
                 .ToListAsync(cancellationToken);
 
@@ -123,7 +123,7 @@ public class TecDocArticleService : ITecDocArticleService
                 ? await _unitOfWork.Suppliers.GetAllAsNoTracking()
                     .Where(s => supplierIds.Contains(s.Id))
                     .ToListAsync(cancellationToken)
-                : new List<Domain.Entities.TecDoc.TdSupplier>();
+                : new List<TdSupplier>();
             
             var suppliers = suppliersList
                 .GroupBy(s => s.Id)
@@ -159,35 +159,35 @@ public class TecDocArticleService : ITecDocArticleService
             {
                 Article = new
                 {
-                    SupplierId = a.Article.SupplierId,
-                    DataSupplierArticleNumber = a.Article.DataSupplierArticleNumber,
-                    FoundString = a.Article.FoundString,
-                    NormalizedDescription = a.Article.NormalizedDescription,
-                    Description = a.Article.Description,
-                    ArticleStateDisplayValue = a.Article.ArticleStateDisplayValue,
-                    QuantityPerPackingUnit = a.Article.QuantityPerPackingUnit,
+                    a.Article.SupplierId,
+                    a.Article.DataSupplierArticleNumber,
+                    a.Article.FoundString,
+                    a.Article.NormalizedDescription,
+                    a.Article.Description,
+                    a.Article.ArticleStateDisplayValue,
+                    a.Article.QuantityPerPackingUnit,
                     Flags = new
                     {
-                        FlagAccessory = a.Article.FlagAccessory,
-                        FlagMaterialCertification = a.Article.FlagMaterialCertification,
-                        FlagRemanufactured = a.Article.FlagRemanufactured,
-                        FlagSelfServicePacking = a.Article.FlagSelfServicePacking,
-                        HasAxle = a.Article.HasAxle,
-                        HasCommercialVehicle = a.Article.HasCommercialVehicle,
-                        HasEngine = a.Article.HasEngine,
-                        HasLinkItems = a.Article.HasLinkItems,
-                        HasMotorbike = a.Article.HasMotorbike,
-                        HasPassengerCar = a.Article.HasPassengerCar,
-                        IsValid = a.Article.IsValid
+                        a.Article.FlagAccessory,
+                        a.Article.FlagMaterialCertification,
+                        a.Article.FlagRemanufactured,
+                        a.Article.FlagSelfServicePacking,
+                        a.Article.HasAxle,
+                        a.Article.HasCommercialVehicle,
+                        a.Article.HasEngine,
+                        a.Article.HasLinkItems,
+                        a.Article.HasMotorbike,
+                        a.Article.HasPassengerCar,
+                        a.Article.IsValid
                     }
                 },
                 Supplier = suppliers.TryGetValue(a.Article.SupplierId, out var supplier) ? new
                 {
-                    Id = supplier.Id,
-                    Description = supplier.Description,
-                    Matchcode = supplier.Matchcode,
-                    DataVersion = supplier.DataVersion,
-                    NbrOfArticles = supplier.NbrOfArticles
+                    supplier.Id,
+                    supplier.Description,
+                    supplier.Matchcode,
+                    supplier.DataVersion,
+                    supplier.NbrOfArticles
                 } : null,
                 Crosses = crosses.TryGetValue((a.Article.SupplierId, a.Article.DataSupplierArticleNumber), out var articleCrosses)
                     ? articleCrosses : Enumerable.Empty<object>(),
@@ -211,7 +211,7 @@ public class TecDocArticleService : ITecDocArticleService
 
             var response = new
             {
-                Count = articles.Count,
+                articles.Count,
                 Results = result
             };
             
@@ -400,8 +400,8 @@ public class TecDocArticleService : ITecDocArticleService
                     .Select(m => new { m.Id, m.Description })
                     .ToListAsync(cancellationToken))
                     .GroupBy(m => m.Id)
-                    .ToDictionary(g => g.Key, g => new Domain.Entities.TecDoc.TdManufacturer { Id = g.Key, Description = g.First().Description })
-                : new Dictionary<uint, Domain.Entities.TecDoc.TdManufacturer>();
+                    .ToDictionary(g => g.Key, g => new TdManufacturer { Id = g.Key, Description = g.First().Description })
+                : new Dictionary<uint, TdManufacturer>();
 
             var result = new Dictionary<(ushort, string), List<object>>();
             foreach (var cross in crosses)
@@ -412,8 +412,8 @@ public class TecDocArticleService : ITecDocArticleService
 
                 result[key].Add(new
                 {
-                    ManufacturerId = cross.ManufacturerId,
-                    OENbr = cross.OENbr,
+                    cross.ManufacturerId,
+                    cross.OENbr,
                     Manufacturer = manufacturersDict.TryGetValue(cross.ManufacturerId, out var m) 
                         ? new { m.Id, m.Description } 
                         : null
@@ -546,7 +546,7 @@ public class TecDocArticleService : ITecDocArticleService
                     var key = (li.SupplierId, li.DataSupplierArticleNumber);
                     if (!result.ContainsKey(key))
                         result[key] = new List<object>();
-                    result[key].Add(new { LinkageTypeId = li.LinkageTypeId, LinkageId = li.LinkageId });
+                    result[key].Add(new { li.LinkageTypeId, li.LinkageId });
                 }
                 return result;
             }
@@ -653,10 +653,10 @@ public class TecDocArticleService : ITecDocArticleService
                     var attributes = attributesByCarId.TryGetValue(passengerCar.Id, out var attrs)
                         ? attrs.Select(a => new
                         {
-                            AttributeGroup = a.AttributeGroup,
-                            AttributeType = a.AttributeType,
-                            DisplayTitle = a.DisplayTitle,
-                            DisplayValue = a.DisplayValue
+                            a.AttributeGroup,
+                            a.AttributeType,
+                            a.DisplayTitle,
+                            a.DisplayValue
                         }).Cast<object>().ToList()
                         : new List<object>();
 
@@ -670,36 +670,36 @@ public class TecDocArticleService : ITecDocArticleService
 
                     result[key].Add(new
                     {
-                        LinkageTypeId = li.LinkageTypeId,
-                        LinkageId = li.LinkageId,
+                        li.LinkageTypeId,
+                        li.LinkageId,
                         Vehicle = new
                         {
-                            Id = passengerCar.Id,
-                            Description = passengerCar.Description,
-                            FullDescription = passengerCar.FullDescription,
-                            ConstructionInterval = passengerCar.ConstructionInterval,
-                            CanBeDisplayed = passengerCar.CanBeDisplayed,
-                            HasLink = passengerCar.HasLink,
+                            passengerCar.Id,
+                            passengerCar.Description,
+                            passengerCar.FullDescription,
+                            passengerCar.ConstructionInterval,
+                            passengerCar.CanBeDisplayed,
+                            passengerCar.HasLink,
                             TypeFlags = new
                             {
-                                IsAxle = passengerCar.IsAxle,
-                                IsCommercialVehicle = passengerCar.IsCommercialVehicle,
-                                IsCvManufacturerId = passengerCar.IsCvManufacturerId,
-                                IsEngine = passengerCar.IsEngine,
-                                IsMotorbike = passengerCar.IsMotorbike,
-                                IsPassengerCar = passengerCar.IsPassengerCar,
-                                IsTransporter = passengerCar.IsTransporter
+                                passengerCar.IsAxle,
+                                passengerCar.IsCommercialVehicle,
+                                passengerCar.IsCvManufacturerId,
+                                passengerCar.IsEngine,
+                                passengerCar.IsMotorbike,
+                                passengerCar.IsPassengerCar,
+                                passengerCar.IsTransporter
                             },
                             Model = model != null ? new
                             {
-                                Id = model.Id,
-                                Description = model.Description,
-                                FullDescription = model.FullDescription,
-                                ConstructionInterval = model.ConstructionInterval,
+                                model.Id,
+                                model.Description,
+                                model.FullDescription,
+                                model.ConstructionInterval,
                                 Manufacturer = manufacturer != null ? new
                                 {
-                                    Id = manufacturer.Id,
-                                    Description = manufacturer.Description
+                                    manufacturer.Id,
+                                    manufacturer.Description
                                 } : null
                             } : null,
                             Attributes = attributes
@@ -708,12 +708,12 @@ public class TecDocArticleService : ITecDocArticleService
                 }
                 else
                 {
-                    result[key].Add(new { LinkageTypeId = li.LinkageTypeId, LinkageId = li.LinkageId });
+                    result[key].Add(new { li.LinkageTypeId, li.LinkageId });
                 }
             }
             else
             {
-                result[key].Add(new { LinkageTypeId = li.LinkageTypeId, LinkageId = li.LinkageId });
+                result[key].Add(new { li.LinkageTypeId, li.LinkageId });
             }
         }
         return result;
@@ -801,8 +801,8 @@ public class TecDocArticleService : ITecDocArticleService
                     .Select(s => new { s.Id, s.Description })
                     .ToListAsync(cancellationToken))
                     .GroupBy(s => s.Id)
-                    .ToDictionary(g => g.Key, g => new Domain.Entities.TecDoc.TdSupplier { Id = g.Key, Description = g.First().Description })
-                : new Dictionary<ushort, Domain.Entities.TecDoc.TdSupplier>();
+                    .ToDictionary(g => g.Key, g => new TdSupplier { Id = g.Key, Description = g.First().Description })
+                : new Dictionary<ushort, TdSupplier>();
 
             var result = new Dictionary<(ushort, string), List<object>>();
             foreach (var acc in accessories)
@@ -846,8 +846,8 @@ public class TecDocArticleService : ITecDocArticleService
                     .Select(s => new { s.Id, s.Description })
                     .ToListAsync(cancellationToken))
                     .GroupBy(s => s.Id)
-                    .ToDictionary(g => g.Key, g => new Domain.Entities.TecDoc.TdSupplier { Id = g.Key, Description = g.First().Description })
-                : new Dictionary<ushort, Domain.Entities.TecDoc.TdSupplier>();
+                    .ToDictionary(g => g.Key, g => new TdSupplier { Id = g.Key, Description = g.First().Description })
+                : new Dictionary<ushort, TdSupplier>();
 
             var result = new Dictionary<(ushort, string), List<object>>();
             foreach (var nn in newNumbers)
@@ -858,8 +858,8 @@ public class TecDocArticleService : ITecDocArticleService
 
                 result[key].Add(new
                 {
-                    NewSupplierId = nn.NewSupplierId,
-                    NewDataSupplierArticleNumber = nn.NewDataSupplierArticleNumber,
+                    nn.NewSupplierId,
+                    nn.NewDataSupplierArticleNumber,
                     NewSupplier = nn.NewSupplierId > 0 && newSuppliers.TryGetValue(nn.NewSupplierId, out var s)
                         ? new { s.Id, s.Description } : null
                 });
@@ -894,9 +894,9 @@ public class TecDocArticleService : ITecDocArticleService
                 .Where(ean => ean.Ean == normalizedEan)
                 .Select(ean => new
                 {
-                    SupplierId = ean.SupplierId,
-                    DataSupplierArticleNumber = ean.DataSupplierArticleNumber,
-                    Ean = ean.Ean
+                    ean.SupplierId,
+                    ean.DataSupplierArticleNumber,
+                    ean.Ean
                 })
                 .ToListAsync(cancellationToken);
 
@@ -948,7 +948,7 @@ public class TecDocArticleService : ITecDocArticleService
                 ? await _unitOfWork.Suppliers.GetAllAsNoTracking()
                     .Where(s => supplierIds.Contains(s.Id))
                     .ToListAsync(cancellationToken)
-                : new List<Domain.Entities.TecDoc.TdSupplier>();
+                : new List<TdSupplier>();
             
             var suppliers = suppliersList
                 .GroupBy(s => s.Id)
@@ -983,35 +983,35 @@ public class TecDocArticleService : ITecDocArticleService
             {
                 Article = new
                 {
-                    SupplierId = a.SupplierId,
-                    DataSupplierArticleNumber = a.DataSupplierArticleNumber,
-                    FoundString = a.FoundString,
-                    NormalizedDescription = a.NormalizedDescription,
-                    Description = a.Description,
-                    ArticleStateDisplayValue = a.ArticleStateDisplayValue,
-                    QuantityPerPackingUnit = a.QuantityPerPackingUnit,
+                    a.SupplierId,
+                    a.DataSupplierArticleNumber,
+                    a.FoundString,
+                    a.NormalizedDescription,
+                    a.Description,
+                    a.ArticleStateDisplayValue,
+                    a.QuantityPerPackingUnit,
                     Flags = new
                     {
-                        FlagAccessory = a.FlagAccessory,
-                        FlagMaterialCertification = a.FlagMaterialCertification,
-                        FlagRemanufactured = a.FlagRemanufactured,
-                        FlagSelfServicePacking = a.FlagSelfServicePacking,
-                        HasAxle = a.HasAxle,
-                        HasCommercialVehicle = a.HasCommercialVehicle,
-                        HasEngine = a.HasEngine,
-                        HasLinkItems = a.HasLinkItems,
-                        HasMotorbike = a.HasMotorbike,
-                        HasPassengerCar = a.HasPassengerCar,
-                        IsValid = a.IsValid
+                        a.FlagAccessory,
+                        a.FlagMaterialCertification,
+                        a.FlagRemanufactured,
+                        a.FlagSelfServicePacking,
+                        a.HasAxle,
+                        a.HasCommercialVehicle,
+                        a.HasEngine,
+                        a.HasLinkItems,
+                        a.HasMotorbike,
+                        a.HasPassengerCar,
+                        a.IsValid
                     }
                 },
                 Supplier = suppliers.TryGetValue(a.SupplierId, out var supplier) ? new
                 {
-                    Id = supplier.Id,
-                    Description = supplier.Description,
-                    Matchcode = supplier.Matchcode,
-                    DataVersion = supplier.DataVersion,
-                    NbrOfArticles = supplier.NbrOfArticles
+                    supplier.Id,
+                    supplier.Description,
+                    supplier.Matchcode,
+                    supplier.DataVersion,
+                    supplier.NbrOfArticles
                 } : null,
                 Crosses = crosses.TryGetValue((a.SupplierId, a.DataSupplierArticleNumber), out var articleCrosses)
                     ? articleCrosses : Enumerable.Empty<object>(),
@@ -1035,7 +1035,7 @@ public class TecDocArticleService : ITecDocArticleService
 
             var response = new
             {
-                Count = articlesList.Count,
+                articlesList.Count,
                 Results = result,
                 Ean = normalizedEan
             };

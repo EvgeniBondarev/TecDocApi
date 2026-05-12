@@ -6,12 +6,10 @@ namespace TecDocApi.API.Middleware;
 public class SecurityHeadersMiddleware
 {
     private readonly RequestDelegate _next;
-    private readonly ILogger<SecurityHeadersMiddleware> _logger;
 
-    public SecurityHeadersMiddleware(RequestDelegate next, ILogger<SecurityHeadersMiddleware> logger)
+    public SecurityHeadersMiddleware(RequestDelegate next)
     {
         _next = next;
-        _logger = logger;
     }
 
     public async Task InvokeAsync(HttpContext context)

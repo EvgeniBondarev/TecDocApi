@@ -1,15 +1,14 @@
+using System.IO.Compression;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.OpenApi.Models;
-using Swashbuckle.AspNetCore.Filters;
-using Swashbuckle.AspNetCore.SwaggerGen;
 using TecDocApi.API.Filters;
-using TecDocApi.API.Models;
-using TecDocApi.Application.Mappings;
 using TecDocApi.Application.Services;
 using TecDocApi.Infrastructure.Extensions;
 
@@ -30,7 +29,7 @@ public static class ServiceCollectionExtensions
                 options.JsonSerializerOptions.WriteIndented = false;
                 options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
                 options.JsonSerializerOptions.TypeInfoResolver = JsonSerializer.IsReflectionEnabledByDefault 
-                    ? new System.Text.Json.Serialization.Metadata.DefaultJsonTypeInfoResolver() 
+                    ? new DefaultJsonTypeInfoResolver() 
                     : null;
             });
 
@@ -113,7 +112,7 @@ public static class ServiceCollectionExtensions
                 var controllerName = api.ActionDescriptor.RouteValues["controller"] ?? "Default";
                 return new[] { controllerName };
             });
-            c.DocInclusionPredicate((name, api) => true);
+            c.DocInclusionPredicate((_, _) => true);
             c.OperationFilter<ResponseExamplesFilter>();
             
             // Примеры запросов и ответов добавляются через атрибуты SwaggerRequestExample и SwaggerResponseExample в контроллерах
@@ -170,12 +169,12 @@ public static class ServiceCollectionExtensions
 
         services.Configure<BrotliCompressionProviderOptions>(options =>
         {
-            options.Level = System.IO.Compression.CompressionLevel.Optimal;
+            options.Level = CompressionLevel.Optimal;
         });
 
         services.Configure<GzipCompressionProviderOptions>(options =>
         {
-            options.Level = System.IO.Compression.CompressionLevel.Optimal;
+            options.Level = CompressionLevel.Optimal;
         });
 
         return services;
@@ -192,7 +191,7 @@ public static class ServiceCollectionExtensions
             {
                 opt.PermitLimit = 100;
                 opt.Window = TimeSpan.FromSeconds(10);
-                opt.QueueProcessingOrder = System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst;
+                opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
                 opt.QueueLimit = 10;
             });
 
@@ -200,7 +199,7 @@ public static class ServiceCollectionExtensions
             {
                 opt.PermitLimit = 50;
                 opt.Window = TimeSpan.FromSeconds(10);
-                opt.QueueProcessingOrder = System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst;
+                opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
                 opt.QueueLimit = 5;
             });
 
@@ -271,20 +270,19 @@ public static class ServiceCollectionExtensions
     private static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddTecDocServices(configuration);
-        services.AddAutoMapper(typeof(MappingProfile));
         services.AddScoped<ITecDocArticleService, TecDocArticleService>();
         services.AddScoped<ITecDocSupplierService, TecDocSupplierService>();
 
         // Elasticsearch сервисы для артикулов
-        services.AddSingleton<TecDocApi.Application.Services.IArticleElasticsearchService, TecDocApi.Application.Services.ArticleElasticsearchService>();
-        services.AddHostedService<TecDocApi.Application.Services.ArticleSyncBackgroundService>();
+        services.AddSingleton<IArticleElasticsearchService, ArticleElasticsearchService>();
+        services.AddHostedService<ArticleSyncBackgroundService>();
 
         // Elasticsearch сервисы для поставщиков
-        services.AddSingleton<TecDocApi.Application.Services.ISupplierElasticsearchService, TecDocApi.Application.Services.SupplierElasticsearchService>();
-        services.AddHostedService<TecDocApi.Application.Services.SupplierSyncBackgroundService>();
+        services.AddSingleton<ISupplierElasticsearchService, SupplierElasticsearchService>();
+        services.AddHostedService<SupplierSyncBackgroundService>();
 
         // S3 сервис для изображений
-        services.AddSingleton<TecDocApi.Application.Services.IS3ImageService, TecDocApi.Application.Services.S3ImageService>();
+        services.AddSingleton<IS3ImageService, S3ImageService>();
 
         services.AddHttpClient("default")
             .AddPollyPolicies()

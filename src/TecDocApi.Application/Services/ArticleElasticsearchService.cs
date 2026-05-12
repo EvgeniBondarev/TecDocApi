@@ -1,11 +1,9 @@
+using System.Text;
+using Elasticsearch.Net;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Elasticsearch.Net;
 using Nest;
 using TecDocApi.Application.Models;
-using System.Text;
-using Microsoft.EntityFrameworkCore;
-using TecDocApi.Infrastructure.Data;
 
 namespace TecDocApi.Application.Services;
 
@@ -17,18 +15,12 @@ public class ArticleElasticsearchService : IArticleElasticsearchService
     private readonly IElasticClient _client;
     private readonly string _indexName;
     private readonly ILogger<ArticleElasticsearchService> _logger;
-    private readonly IDbContextFactory<TecDocContext> _contextFactory;
-    private readonly IS3ImageService _s3ImageService;
 
     public ArticleElasticsearchService(
         IConfiguration configuration,
-        ILogger<ArticleElasticsearchService> logger,
-        IDbContextFactory<TecDocContext> contextFactory,
-        IS3ImageService s3ImageService)
+        ILogger<ArticleElasticsearchService> logger)
     {
         _logger = logger;
-        _contextFactory = contextFactory;
-        _s3ImageService = s3ImageService;
         _indexName = configuration["Elasticsearch:IndexName"] ?? "articles";
         
         var elasticsearchUrl = configuration["Elasticsearch:Url"] ?? "http://localhost:9200";
@@ -187,7 +179,7 @@ public class ArticleElasticsearchService : IArticleElasticsearchService
                 );
             }
             
-            var response = await _client.BulkAsync(bulkDescriptor.Refresh(Elasticsearch.Net.Refresh.False));
+            var response = await _client.BulkAsync(bulkDescriptor.Refresh(Refresh.False));
             
             if (response.IsValid)
             {
@@ -216,10 +208,10 @@ public class ArticleElasticsearchService : IArticleElasticsearchService
         try
         {
             var searchDescriptor = new SearchDescriptor<ArticleDocument>()
-                .Query(q => BuildSearchQuery(request))
+                .Query(_ => BuildSearchQuery(request))
                 .From(request.Skip)
                 .Size(request.PageSize ?? 20)
-                .Sort(s => BuildSort(request));
+                .Sort(_ => BuildSort(request));
 
             var searchResponse = await _client.SearchAsync<ArticleDocument>(searchDescriptor);
             
@@ -304,10 +296,10 @@ public class ArticleElasticsearchService : IArticleElasticsearchService
         try
         {
             var searchDescriptor = new SearchDescriptor<ArticleDocument>()
-                .Query(q => BuildSupplierSearchQuery(request))
+                .Query(_ => BuildSupplierSearchQuery(request))
                 .From(request.Skip)
                 .Size(request.PageSize ?? 20)
-                .Sort(s => BuildSort(request));
+                .Sort(_ => BuildSort(request));
 
             var searchResponse = await _client.SearchAsync<ArticleDocument>(searchDescriptor);
             
@@ -490,11 +482,10 @@ public class ArticleElasticsearchService : IArticleElasticsearchService
 
         switch (request.SortBy?.ToLower())
         {
-            case "relevance":
             default:
                 if (!string.IsNullOrWhiteSpace(request.Query))
                 {
-                    sortDescriptor.Field("_score", request.SortDescending ? SortOrder.Descending : SortOrder.Descending);
+                    sortDescriptor.Field("_score", request.SortDescending ? SortOrder.Descending : SortOrder.Ascending);
                 }
                 else
                 {

@@ -12,8 +12,8 @@ public class SupplierSearchResultExample : IExamplesProvider<SupplierSearchResul
     {
         return new SupplierSearchResult
         {
-            Items = new List<SupplierDocument>
-            {
+            Items =
+            [
                 new SupplierDocument
                 {
                     Id = "7",
@@ -26,7 +26,7 @@ public class SupplierSearchResultExample : IExamplesProvider<SupplierSearchResul
                     IndexedAt = DateTime.UtcNow,
                     LastModified = DateTime.UtcNow
                 }
-            },
+            ],
             Total = 1,
             Page = 1,
             PageSize = 20,

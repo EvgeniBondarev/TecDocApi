@@ -1,5 +1,4 @@
 using TecDocApi.API.Middleware;
-using System.IO;
 using TecDocApi.API.Models;
 using TecDocApi.Application.Models;
 using TecDocApi.Application.Services;
@@ -144,7 +143,7 @@ public static class ApplicationBuilderExtensions
         .WithTags("Images")
         .WithSummary("Глобальный поиск изображений по articleNumber по всем папкам S3")
         .WithDescription("Ищет картинки по всем папкам S3Info без supplierId. Игнорирует регистр и спецсимволы и находит вариации вроде ALM2019YX-6, ALM2019YX_3, 1234ALM2019YX-6. Пример: /api/Images/s3-search?articleNumber=ALM2019YX&amp;maxResults=10")
-        .Produces<List<ArticleImageDocument>>(StatusCodes.Status200OK)
+        .Produces<List<ArticleImageDocument>>()
         .Produces<ErrorResponse>(StatusCodes.Status400BadRequest)
         .RequireRateLimiting("api");
         app.MapGet("/docs/index.html", context =>
@@ -160,8 +159,8 @@ public static class ApplicationBuilderExtensions
             try
             {
                 using var scope = app.Services.CreateScope();
-                var articleElasticsearchService = scope.ServiceProvider.GetRequiredService<TecDocApi.Application.Services.IArticleElasticsearchService>();
-                var supplierElasticsearchService = scope.ServiceProvider.GetRequiredService<TecDocApi.Application.Services.ISupplierElasticsearchService>();
+                var articleElasticsearchService = scope.ServiceProvider.GetRequiredService<IArticleElasticsearchService>();
+                var supplierElasticsearchService = scope.ServiceProvider.GetRequiredService<ISupplierElasticsearchService>();
                 var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
                 
                 logger.LogInformation("Инициализация Elasticsearch индексов...");

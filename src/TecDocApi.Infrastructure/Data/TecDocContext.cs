@@ -163,7 +163,7 @@ public class TecDocContext : DbContext
             entity.Property(e => e.HasNewVersionArticles)
                 .HasConversion(
                     v => v.HasValue ? (v.Value ? "True" : "False") : null,
-                    v => v == null ? (bool?)null : (v == "True"));
+                    v => v == null ? null : (v == "True"));
             entity.Property(e => e.Description)
                 .HasColumnType("varchar(32)")
                 .IsRequired(false);

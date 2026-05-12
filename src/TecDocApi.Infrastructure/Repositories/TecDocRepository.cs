@@ -7,46 +7,44 @@ namespace TecDocApi.Infrastructure.Repositories;
 
 public class TecDocRepository<T> : ITecDocRepository<T> where T : class
 {
-    protected readonly TecDocContext _context;
-    protected readonly DbSet<T> _dbSet;
+    protected readonly DbSet<T> DbSet;
 
     public TecDocRepository(TecDocContext context)
     {
-        _context = context;
-        _dbSet = context.Set<T>();
+        DbSet = context.Set<T>();
     }
 
     public virtual IQueryable<T> GetAllAsNoTracking()
     {
-        return _dbSet.AsNoTracking();
+        return DbSet.AsNoTracking();
     }
 
     public virtual async Task<IEnumerable<T>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        return await _dbSet.AsNoTracking().ToListAsync(cancellationToken);
+        return await DbSet.AsNoTracking().ToListAsync(cancellationToken);
     }
 
     public virtual async Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
     {
-        return await _dbSet.AsNoTracking().Where(predicate).ToListAsync(cancellationToken);
+        return await DbSet.AsNoTracking().Where(predicate).ToListAsync(cancellationToken);
     }
 
     public virtual async Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
     {
-        return await _dbSet.AsNoTracking().FirstOrDefaultAsync(predicate, cancellationToken);
+        return await DbSet.AsNoTracking().FirstOrDefaultAsync(predicate, cancellationToken);
     }
 
     public virtual async Task<bool> ExistsAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
     {
-        return await _dbSet.AsNoTracking().AnyAsync(predicate, cancellationToken);
+        return await DbSet.AsNoTracking().AnyAsync(predicate, cancellationToken);
     }
 
     public virtual async Task<int> CountAsync(Expression<Func<T, bool>>? predicate = null, CancellationToken cancellationToken = default)
     {
         if (predicate == null)
-            return await _dbSet.AsNoTracking().CountAsync(cancellationToken);
+            return await DbSet.AsNoTracking().CountAsync(cancellationToken);
         
-        return await _dbSet.AsNoTracking().CountAsync(predicate, cancellationToken);
+        return await DbSet.AsNoTracking().CountAsync(predicate, cancellationToken);
     }
 }
 
