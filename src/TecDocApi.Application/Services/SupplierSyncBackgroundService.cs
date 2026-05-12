@@ -41,23 +41,23 @@ public class SupplierSyncBackgroundService : BackgroundService
 
         await FullSyncAsync(stoppingToken);
 
-        while (!stoppingToken.IsCancellationRequested)
-        {
-            try
-            {
-                await IncrementalSyncAsync(stoppingToken);
-                await Task.Delay(TimeSpan.FromMinutes(_syncIntervalMinutes), stoppingToken);
-            }
-            catch (OperationCanceledException)
-            {
-                break;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Ошибка в фоновой службе синхронизации поставщиков");
-                await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
-            }
-        }
+        // while (!stoppingToken.IsCancellationRequested)
+        // {
+        //     try
+        //     {
+        //         await IncrementalSyncAsync(stoppingToken);
+        //         await Task.Delay(TimeSpan.FromMinutes(_syncIntervalMinutes), stoppingToken);
+        //     }
+        //     catch (OperationCanceledException)
+        //     {
+        //         break;
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         _logger.LogError(ex, "Ошибка в фоновой службе синхронизации поставщиков");
+        //         await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
+        //     }
+        // }
 
         _logger.LogInformation("Служба синхронизации поставщиков остановлена");
     }
