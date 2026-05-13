@@ -55,6 +55,11 @@ public class ImagesController : ControllerBase
     /// <param name="supplierId">Опциональный ID поставщика</param>
     /// <param name="articleNumber">Артикул для нестрогого поиска</param>
     /// <param name="maxResults">Максимальное количество результатов</param>
+    /// <param name="checkS3Existence">
+    /// Проверять ли реальное существование файла в S3 (по умолчанию true).
+    /// Установите false для максимально быстрого ответа — URL будет сформирован без обращения к S3,
+    /// но часть ссылок может вести на несуществующие файлы.
+    /// </param>
     /// <response code="200">Список доступных изображений для артикула</response>
     /// <response code="400">Некорректные параметры запроса</response>
     /// <response code="500">Внутренняя ошибка сервера</response>
@@ -65,7 +70,8 @@ public class ImagesController : ControllerBase
     public async Task<IActionResult> SearchArticleImages(
         [FromQuery] ushort? supplierId,
         [FromQuery] string articleNumber,
-        [FromQuery] int maxResults = 20)
+        [FromQuery] int maxResults = 20,
+        [FromQuery] bool checkS3Existence = true)
     {
         if (supplierId.HasValue && supplierId.Value == 0)
         {
@@ -88,7 +94,7 @@ public class ImagesController : ControllerBase
         try
         {
             var result = supplierId.HasValue
-                ? await SearchArticleImagesBySupplierMetadataAsync(supplierId.Value, articleNumber, maxResults)
+                ? await SearchArticleImagesBySupplierMetadataAsync(supplierId.Value, articleNumber, maxResults, checkS3Existence)
                 : new List<ArticleImageDocument>();
 
             if (result.Count == 0)
@@ -122,7 +128,8 @@ public class ImagesController : ControllerBase
         }
     }
 
-    private async Task<List<ArticleImageDocument>> SearchArticleImagesBySupplierMetadataAsync(ushort supplierId, string articleNumber, int maxResults)
+    private async Task<List<ArticleImageDocument>> SearchArticleImagesBySupplierMetadataAsync(
+        ushort supplierId, string articleNumber, int maxResults, bool checkS3Existence = true)
     {
         var normalizedArticle = NormalizeForSearch(articleNumber);
         if (string.IsNullOrWhiteSpace(normalizedArticle))
@@ -160,14 +167,38 @@ public class ImagesController : ControllerBase
             .Take(Math.Clamp(maxResults, 1, 100))
             .ToList();
 
-        var results = new List<ArticleImageDocument>(filtered.Count);
-        foreach (var image in filtered)
-        {
-            if (!await _s3ImageService.ImageExistsAsync(image.SupplierId, image.PictureName))
-                continue;
+        if (filtered.Count == 0)
+            return [];
 
-            var url = await _s3ImageService.GetImageUrlAsync(image.SupplierId, image.PictureName) ?? string.Empty;
-            results.Add(new ArticleImageDocument
+        if (!checkS3Existence)
+        {
+            // Быстрый путь: формируем URL без обращения к S3
+            return filtered.Select(image =>
+            {
+                var url = $"/api/Images/{image.SupplierId}/{Uri.EscapeDataString(image.PictureName)}/stream";
+                return new ArticleImageDocument
+                {
+                    PictureName = image.PictureName,
+                    Description = image.Description,
+                    AdditionalDescription = image.AdditionalDescription,
+                    DocumentName = image.DocumentName,
+                    DocumentType = image.DocumentType,
+                    ShowImmediately = image.ShowImmediately,
+                    Url = url,
+                    StreamUrl = url,
+                    S3Url = url
+                };
+            }).ToList();
+        }
+
+        // Параллельные S3-проверки: один TryGetImageUrlAsync вместо двух вызовов (ImageExistsAsync + GetImageUrlAsync)
+        var tasks = filtered.Select(async image =>
+        {
+            var url = await _s3ImageService.TryGetImageUrlAsync(image.SupplierId, image.PictureName);
+            if (url == null)
+                return null;
+
+            return new ArticleImageDocument
             {
                 PictureName = image.PictureName,
                 Description = image.Description,
@@ -178,10 +209,11 @@ public class ImagesController : ControllerBase
                 Url = url,
                 StreamUrl = url,
                 S3Url = url
-            });
-        }
+            };
+        });
 
-        return results;
+        var results = await Task.WhenAll(tasks);
+        return results.Where(x => x != null).Select(x => x!).ToList();
     }
 
     private static string NormalizeForSearch(string? value)

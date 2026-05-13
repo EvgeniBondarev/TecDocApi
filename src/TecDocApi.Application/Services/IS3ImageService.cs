@@ -41,6 +41,15 @@ public interface IS3ImageService
     Task<IReadOnlyList<S3ImageSearchResult>> SearchImagesByArticleAsync(string articleNumber, ushort? supplierId = null, int maxResults = 20);
 
     /// <summary>
+    /// Проверяет существование изображения в S3 и возвращает его URL за один вызов.
+    /// Объединяет ImageExistsAsync + GetImageUrlAsync, избегая двойного обращения к S3.
+    /// </summary>
+    /// <param name="supplierId">ID поставщика</param>
+    /// <param name="fileName">Имя файла изображения</param>
+    /// <returns>URL изображения или null, если изображение не найдено</returns>
+    Task<string?> TryGetImageUrlAsync(ushort supplierId, string fileName);
+
+    /// <summary>
     /// Получает поток изображения по полному object key в S3.
     /// </summary>
     /// <param name="objectKey">Полный object key в бакете</param>

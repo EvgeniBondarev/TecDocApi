@@ -664,6 +664,50 @@ public class S3ImageService : IS3ImageService
     /// Использует head_object (GetObjectMetadata) для проверки существования файла.
     /// Аналогично Python версии: s3_client.head_object(Bucket=..., Key=...)
     /// </remarks>
+    /// <summary>
+    /// Проверяет существование изображения в S3 и возвращает URL за один резолв object name.
+    /// Избегает двойного S3-запроса по сравнению с последовательным вызовом ImageExistsAsync + GetImageUrlAsync.
+    /// </summary>
+    public async Task<string?> TryGetImageUrlAsync(ushort supplierId, string fileName)
+    {
+        if (string.IsNullOrWhiteSpace(fileName))
+            return null;
+
+        // Если URL уже закэширован — значит объект точно существовал, возвращаем сразу
+        var urlCacheKey = $"s3_image_url_{supplierId}_{fileName}";
+        if (_cache.TryGetValue(urlCacheKey, out string? cachedUrl))
+            return cachedUrl;
+
+        // Один резолв вместо двух (ImageExistsAsync → ResolveObjectNameAsync, GetImageUrlAsync)
+        var objectName = await ResolveObjectNameAsync(supplierId, fileName);
+        if (string.IsNullOrWhiteSpace(objectName))
+            return null;
+
+        var imageUrl = $"/api/Images/{supplierId}/{Uri.EscapeDataString(fileName)}/stream";
+
+        try
+        {
+            _cache.Set(urlCacheKey, imageUrl, new MemoryCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = _cacheExpiration,
+                Size = 1
+            });
+            // также кэшируем exists-флаг, чтобы повторные ImageExistsAsync не лезли в S3
+            var existsCacheKey = $"s3_image_exists_{supplierId}_{fileName}";
+            _cache.Set(existsCacheKey, true, new MemoryCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(1),
+                Size = 1
+            });
+        }
+        catch
+        {
+            // ignored
+        }
+
+        return imageUrl;
+    }
+
     public async Task<bool> ImageExistsAsync(ushort supplierId, string fileName)
     {
         if (string.IsNullOrWhiteSpace(fileName))
