@@ -39,7 +39,7 @@ public class ArticleSyncBackgroundService : BackgroundService
         _logger.LogInformation("Служба синхронизации артикулов запущена");
 
         // Ждем немного перед первой синхронизацией, чтобы Elasticsearch успел запуститься
-        await Task.Delay(TimeSpan.FromMinutes(10), stoppingToken);
+        await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
 
         await FullSyncAsync(stoppingToken);
 
@@ -82,11 +82,11 @@ public class ArticleSyncBackgroundService : BackgroundService
             _logger.LogInformation("Уже проиндексировано в Elasticsearch: {IndexedCount}", indexedCount);
 
             // Если уже проиндексировано более 90%, пропускаем полную синхронизацию
-            if (indexedCount > 0 && indexedCount >= totalCount * 0.9)
-            {
-                _logger.LogInformation("Пропускаем полную синхронизацию, данные актуальны");
-                return;
-            }
+            // if (indexedCount > 0 && indexedCount >= totalCount * 0.9)
+            // {
+            //     _logger.LogInformation("Пропускаем полную синхронизацию, данные актуальны");
+            //     return;
+            // }
 
             // Пересоздаем индекс для полной синхронизации
             await _elasticsearchService.DeleteIndexAsync();

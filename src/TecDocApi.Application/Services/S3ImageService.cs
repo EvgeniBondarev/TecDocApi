@@ -20,6 +20,11 @@ public class S3ImageService : IS3ImageService
         ".jpg", ".jpeg", ".png", ".bmp", ".gif", ".webp", ".tif", ".tiff", ".avif"
     };
 
+    // Семафор для ограничения одновременных подключений к S3Info БД
+    // Предотвращает исчерпание лимита подключений MySQL (по умолчанию 151)
+    private static readonly SemaphoreSlim DbConnectionSemaphore = new SemaphoreSlim(20, 20);
+    private const int DbConnectionTimeoutMs = 5000; // 5 секунд таймаут для получения слота
+
     private readonly IMinioClient _minioClient;
     private readonly IMemoryCache _cache;
     private readonly ILogger<S3ImageService> _logger;
@@ -404,73 +409,99 @@ public class S3ImageService : IS3ImageService
             .Select((_, index) => $"UPPER(CONCAT(f.filename, IFNULL(CONCAT('.', e.extension), ''))) LIKE @token{index}")
             .ToList();
 
-        var sql = $@"
-WITH RECURSIVE folder_path AS (
-    SELECT id, folder_name, parent_id, folder_name AS full_path
-    FROM Folders
-    WHERE parent_id IS NULL
-    UNION ALL
-    SELECT child.id, child.folder_name, child.parent_id, CONCAT(parent.full_path, '/', child.folder_name) AS full_path
-    FROM Folders child
-    JOIN folder_path parent ON child.parent_id = parent.id
-)
-SELECT CASE
-        WHEN fp.full_path IS NULL OR fp.full_path = '' THEN CONCAT(f.filename, IFNULL(CONCAT('.', e.extension), ''))
-        ELSE CONCAT(fp.full_path, '/', f.filename, IFNULL(CONCAT('.', e.extension), ''))
-    END AS file_key,
-    CONCAT(f.filename, IFNULL(CONCAT('.', e.extension), '')) AS file_name,
-    IFNULL(fp.full_path, '') AS folder_path,
-    f.last_modified,
-    f.created_at,
-    f.id
-FROM Files f
-LEFT JOIN FileExtensions e ON e.id = f.extension_id
-LEFT JOIN folder_path fp ON fp.id = f.folder_id
-WHERE (
-        {string.Join(" AND ", tokenConditions)}
-    )
-    {(supplierId.HasValue ? "AND (fp.full_path LIKE @supplierFolderPattern OR CONCAT(f.filename, IFNULL(CONCAT('.', e.extension), '')) LIKE @supplierFilePattern)" : string.Empty)}
-ORDER BY f.last_modified DESC, f.created_at DESC, f.id DESC
-LIMIT 200;";
+        var sql = $"""
+                   WITH RECURSIVE folder_path AS (
+                       SELECT id, folder_name, parent_id, folder_name AS full_path
+                       FROM Folders
+                       WHERE parent_id IS NULL
+                       UNION ALL
+                       SELECT child.id, child.folder_name, child.parent_id, CONCAT(parent.full_path, '/', child.folder_name) AS full_path
+                       FROM Folders child
+                       JOIN folder_path parent ON child.parent_id = parent.id
+                   )
+                   SELECT CASE
+                           WHEN fp.full_path IS NULL OR fp.full_path = '' THEN CONCAT(f.filename, IFNULL(CONCAT('.', e.extension), ''))
+                           ELSE CONCAT(fp.full_path, '/', f.filename, IFNULL(CONCAT('.', e.extension), ''))
+                       END AS file_key,
+                       CONCAT(f.filename, IFNULL(CONCAT('.', e.extension), '')) AS file_name,
+                       IFNULL(fp.full_path, '') AS folder_path,
+                       f.last_modified,
+                       f.created_at,
+                       f.id
+                   FROM Files f
+                   LEFT JOIN FileExtensions e ON e.id = f.extension_id
+                   LEFT JOIN folder_path fp ON fp.id = f.folder_id
+                   WHERE (
+                           {string.Join(" AND ", tokenConditions)}
+                       )
+                       {(supplierId.HasValue ? "AND (fp.full_path LIKE @supplierFolderPattern OR CONCAT(f.filename, IFNULL(CONCAT('.', e.extension), '')) LIKE @supplierFilePattern)" : string.Empty)}
+                   ORDER BY f.last_modified DESC, f.created_at DESC, f.id DESC
+                   LIMIT 200;
+                   """;
 
-        await using var connection = new MySqlConnection(_s3InfoConnectionString);
-        await connection.OpenAsync();
-
-        await using var command = new MySqlCommand(sql, connection);
-        for (var index = 0; index < effectiveTokens.Count; index++)
+        // Ограничиваем одновременные подключения к БД для предотвращения "Too many connections"
+        if (!await DbConnectionSemaphore.WaitAsync(DbConnectionTimeoutMs))
         {
-            command.Parameters.AddWithValue($"@token{index}", $"%{effectiveTokens[index]}%");
+            _logger.LogWarning("Timeout ожидания свободного слота для подключения к S3Info БД. Слишком много одновременных запросов.");
+            return new List<S3SearchCandidate>();
         }
 
-        if (supplierId.HasValue)
+        try
         {
-            command.Parameters.AddWithValue("@supplierFolderPattern", $"%/{supplierId.Value}/%");
-            command.Parameters.AddWithValue("@supplierFilePattern", $"{supplierId.Value}_%");
-        }
-
-        var results = new List<S3SearchCandidate>();
-        await using var reader = await command.ExecuteReaderAsync();
-        while (await reader.ReadAsync())
-        {
-            var objectKey = reader.GetString("file_key");
-            var fileName = reader.GetString("file_name");
-            if (!IsImageFile(fileName))
+            await using var connection = new MySqlConnection(_s3InfoConnectionString);
+            try
             {
-                continue;
+                await connection.OpenAsync();
+            }
+            catch (MySqlException ex) when (ex.Number == 1040 || ex.Message.Contains("Too many connections"))
+            {
+                _logger.LogError(ex, "Error: MySQL connection limit reached. Consider increasing max_connections or implementing connection pooling.");
+                return new List<S3SearchCandidate>();
             }
 
-            results.Add(new S3SearchCandidate
+            await using var command = new MySqlCommand(sql, connection);
+            command.CommandTimeout = 10; // Таймаут для длительных запросов
+            
+            for (var index = 0; index < effectiveTokens.Count; index++)
             {
-                ObjectKey = objectKey,
-                FileName = fileName,
-                FolderPath = reader.GetString("folder_path"),
-                NormalizedFileName = NormalizeForSearch(fileName),
-                NormalizedObjectKey = NormalizeForSearch(objectKey),
-                SupplierId = TryExtractSupplierId(objectKey, supplierId)
-            });
-        }
+                command.Parameters.AddWithValue($"@token{index}", $"%{effectiveTokens[index]}%");
+            }
 
-        return results;
+            if (supplierId.HasValue)
+            {
+                command.Parameters.AddWithValue("@supplierFolderPattern", $"%/{supplierId.Value}/%");
+                command.Parameters.AddWithValue("@supplierFilePattern", $"{supplierId.Value}_%");
+            }
+
+            var results = new List<S3SearchCandidate>();
+            await using var reader = await command.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                var objectKey = reader.GetString("file_key");
+                var fileName = reader.GetString("file_name");
+                if (!IsImageFile(fileName))
+                {
+                    continue;
+                }
+
+                results.Add(new S3SearchCandidate
+                {
+                    ObjectKey = objectKey,
+                    FileName = fileName,
+                    FolderPath = reader.GetString("folder_path"),
+                    NormalizedFileName = NormalizeForSearch(fileName),
+                    NormalizedObjectKey = NormalizeForSearch(objectKey),
+                    SupplierId = TryExtractSupplierId(objectKey, supplierId)
+                });
+            }
+
+            return results;
+        }
+        finally
+        {
+            // Освобождаем слот для других ожидающих запросов
+            DbConnectionSemaphore.Release();
+        }
     }
 
     private static bool IsImageFile(string fileName)

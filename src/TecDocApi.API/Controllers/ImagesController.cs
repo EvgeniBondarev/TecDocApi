@@ -67,11 +67,6 @@ public class ImagesController : ControllerBase
         [FromQuery] string articleNumber,
         [FromQuery] int maxResults = 20)
     {
-        return await SearchArticleImagesCoreAsync(supplierId, articleNumber, maxResults);
-    }
-
-    private async Task<IActionResult> SearchArticleImagesCoreAsync(ushort? supplierId, string articleNumber, int maxResults)
-    {
         if (supplierId.HasValue && supplierId.Value == 0)
         {
             return BadRequest(new ErrorResponse
@@ -113,6 +108,7 @@ public class ImagesController : ControllerBase
                 }).ToList();
             }
 
+            result = result.DistinctBy(e => e.Url).ToList();
             return Ok(result);
         }
         catch (Exception ex)
@@ -130,9 +126,7 @@ public class ImagesController : ControllerBase
     {
         var normalizedArticle = NormalizeForSearch(articleNumber);
         if (string.IsNullOrWhiteSpace(normalizedArticle))
-        {
-            return new List<ArticleImageDocument>();
-        }
+            return [];
 
         var rawTokens = ExtractTokens(articleNumber);
         var primaryToken = rawTokens.OrderByDescending(token => token.Length).FirstOrDefault() ?? normalizedArticle;
@@ -170,9 +164,7 @@ public class ImagesController : ControllerBase
         foreach (var image in filtered)
         {
             if (!await _s3ImageService.ImageExistsAsync(image.SupplierId, image.PictureName))
-            {
                 continue;
-            }
 
             var url = await _s3ImageService.GetImageUrlAsync(image.SupplierId, image.PictureName) ?? string.Empty;
             results.Add(new ArticleImageDocument
