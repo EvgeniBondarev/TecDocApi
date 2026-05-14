@@ -370,8 +370,8 @@ public class ArticleElasticsearchService : IArticleElasticsearchService
     {
         return new BoolQuery
         {
-            Should = new QueryContainer[]
-            {
+            Should =
+            [
                 new TermQuery
                 {
                     Field = Infer.Field<ArticleDocument>(f => f.FoundString.Suffix("keyword")),
@@ -398,7 +398,7 @@ public class ArticleElasticsearchService : IArticleElasticsearchService
                     Boost = 4.0,
                     MaxExpansions = 20
                 }
-            },
+            ],
             MinimumShouldMatch = 1
         };
     }
@@ -407,8 +407,8 @@ public class ArticleElasticsearchService : IArticleElasticsearchService
     {
         return new BoolQuery
         {
-            Should = new QueryContainer[]
-            {
+            Should =
+            [
                 new MatchPhraseQuery
                 {
                     Field = Infer.Field<ArticleDocument>(f => f.NormalizedDescription),
@@ -444,7 +444,7 @@ public class ArticleElasticsearchService : IArticleElasticsearchService
                     Operator = Operator.And,
                     Fuzziness = Fuzziness.Auto
                 }
-            },
+            ],
             MinimumShouldMatch = 1
         };
     }
@@ -513,8 +513,8 @@ public class ArticleElasticsearchService : IArticleElasticsearchService
 
             queries.Add(new BoolQuery
             {
-                Should = new QueryContainer[]
-                {
+                Should =
+                [
                     new TermQuery
                     {
                         Field = Infer.Field<ArticleDocument>(f => f.SupplierMatchcode),
@@ -543,7 +543,7 @@ public class ArticleElasticsearchService : IArticleElasticsearchService
                         Boost = 2.0,
                         Operator = Operator.And
                     }
-                },
+                ],
                 MinimumShouldMatch = 1
             });
         }

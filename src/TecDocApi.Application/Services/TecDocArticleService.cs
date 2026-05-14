@@ -62,8 +62,8 @@ public class TecDocArticleService : ITecDocArticleService
             return string.Empty;
 
         return new string(articleNumber
-            .Where(c => char.IsLetterOrDigit(c))
-            .Select(c => char.ToUpperInvariant(c))
+            .Where(char.IsLetterOrDigit)
+            .Select(char.ToUpperInvariant)
             .ToArray());
     }
 
@@ -79,7 +79,7 @@ public class TecDocArticleService : ITecDocArticleService
             var normalizedArticleNumber = NormalizeArticleNumber(articleNumber);
             
             var cacheKey = $"article_search_{normalizedArticleNumber}_{supplierId ?? 0}";
-            if (_cache.TryGetValue(cacheKey, out object? cachedResult))
+            if (_cache.TryGetValue(cacheKey, out var cachedResult))
             {
                 _logger.LogInformation("Кэш HIT: ключ {CacheKey}", cacheKey);
                 return cachedResult!;
@@ -240,7 +240,7 @@ public class TecDocArticleService : ITecDocArticleService
             var normalizedArticleNumber = NormalizeArticleNumber(articleNumber);
             
             var cacheKey = $"article_exact_{supplierId}_{normalizedArticleNumber}";
-            if (_cache.TryGetValue(cacheKey, out object? cachedResult))
+            if (_cache.TryGetValue(cacheKey, out var cachedResult))
             {
                 return cachedResult!;
             }
@@ -281,7 +281,7 @@ public class TecDocArticleService : ITecDocArticleService
             // Параллельная загрузка всех связанных данных
             var supplierTask = RunDbAsync(async () =>
             {
-                await using var db = _contextFactory.CreateDbContext();
+                await using var db = await _contextFactory.CreateDbContextAsync(cancellationToken);
                 return await db.Suppliers
                     .AsNoTracking()
                     .Where(s => s.Id == supplierId)
@@ -380,7 +380,7 @@ public class TecDocArticleService : ITecDocArticleService
     {
         return await RunDbAsync(async () =>
         {
-            await using var db = _contextFactory.CreateDbContext();
+            await using var db = await _contextFactory.CreateDbContextAsync(cancellationToken);
             
             var supplierIds = articleKeys.Select(k => k.SupplierId).Distinct().ToList();
             var articleNumbers = articleKeys.Select(k => k.DataSupplierArticleNumber).Distinct().ToList();
@@ -408,7 +408,7 @@ public class TecDocArticleService : ITecDocArticleService
             {
                 var key = (cross.SupplierId, cross.PartsDataSupplierArticleNumber);
                 if (!result.ContainsKey(key))
-                    result[key] = new List<object>();
+                    result[key] = [];
 
                 result[key].Add(new
                 {
@@ -428,7 +428,7 @@ public class TecDocArticleService : ITecDocArticleService
     {
         return await RunDbAsync(async () =>
         {
-            await using var db = _contextFactory.CreateDbContext();
+            await using var db = await _contextFactory.CreateDbContextAsync(cancellationToken);
             
             var supplierIds = articleKeys.Select(k => k.SupplierId).Distinct().ToList();
             var articleNumbers = articleKeys.Select(k => k.DataSupplierArticleNumber).Distinct().ToList();
@@ -444,7 +444,7 @@ public class TecDocArticleService : ITecDocArticleService
             {
                 var key = (oe.SupplierId, oe.DataSupplierArticleNumber);
                 if (!result.ContainsKey(key))
-                    result[key] = new List<object>();
+                    result[key] = [];
 
                 result[key].Add(new { oe.OENbr, oe.IsAdditive });
             }
@@ -457,7 +457,7 @@ public class TecDocArticleService : ITecDocArticleService
     {
         return await RunDbAsync(async () =>
         {
-            await using var db = _contextFactory.CreateDbContext();
+            await using var db = await _contextFactory.CreateDbContextAsync(cancellationToken);
             
             var supplierIds = articleKeys.Select(k => k.SupplierId).Distinct().ToList();
             var articleNumbers = articleKeys.Select(k => k.DataSupplierArticleNumber).Distinct().ToList();
@@ -486,7 +486,7 @@ public class TecDocArticleService : ITecDocArticleService
     {
         return await RunDbAsync(async () =>
         {
-            await using var db = _contextFactory.CreateDbContext();
+            await using var db = await _contextFactory.CreateDbContextAsync(cancellationToken);
             
             var supplierIds = articleKeys.Select(k => k.SupplierId).Distinct().ToList();
             var articleNumbers = articleKeys.Select(k => k.DataSupplierArticleNumber).Distinct().ToList();
@@ -502,7 +502,7 @@ public class TecDocArticleService : ITecDocArticleService
             {
                 var key = (img.SupplierId, img.DataSupplierArticleNumber);
                 if (!result.ContainsKey(key))
-                    result[key] = new List<object>();
+                    result[key] = [];
 
                 result[key].Add(new { img.PictureName, img.Description, img.AdditionalDescription, img.DocumentName, img.DocumentType, img.ShowImmediately });
             }
@@ -515,7 +515,7 @@ public class TecDocArticleService : ITecDocArticleService
     {
         return await RunDbAsync(async () =>
         {
-            await using var db = _contextFactory.CreateDbContext();
+            await using var db = await _contextFactory.CreateDbContextAsync(cancellationToken);
             
             var supplierIds = articleKeys.Select(k => k.SupplierId).Distinct().ToList();
             var articleNumbers = articleKeys.Select(k => k.DataSupplierArticleNumber).Distinct().ToList();
@@ -545,7 +545,7 @@ public class TecDocArticleService : ITecDocArticleService
                 {
                     var key = (li.SupplierId, li.DataSupplierArticleNumber);
                     if (!result.ContainsKey(key))
-                        result[key] = new List<object>();
+                        result[key] = [];
                     result[key].Add(new { li.LinkageTypeId, li.LinkageId });
                 }
                 return result;
@@ -553,7 +553,7 @@ public class TecDocArticleService : ITecDocArticleService
 
             var passengerCarsTask = RunDbAsync(async () =>
             {
-                await using var db2 = _contextFactory.CreateDbContext();
+                await using var db2 = await _contextFactory.CreateDbContextAsync(cancellationToken);
                 return await db2.PassengerCars
                     .AsNoTracking()
                     .Where(pc => passengerCarIds.Contains(pc.Id))
@@ -562,7 +562,7 @@ public class TecDocArticleService : ITecDocArticleService
 
             var passengerCarAttributesTask = RunDbAsync(async () =>
             {
-                await using var db2 = _contextFactory.CreateDbContext();
+                await using var db2 = await _contextFactory.CreateDbContextAsync(cancellationToken);
                 return await db2.PassengerCarAttributes
                     .AsNoTracking()
                     .Where(pca => passengerCarIds.Contains(pca.PassengerCarId))
@@ -593,7 +593,7 @@ public class TecDocArticleService : ITecDocArticleService
             // Параллельная загрузка Models и Manufacturers
             var modelsTask = RunDbAsync(async () =>
             {
-                await using var db2 = _contextFactory.CreateDbContext();
+                await using var db2 = await _contextFactory.CreateDbContextAsync(cancellationToken);
                 return await db2.Models
                     .AsNoTracking()
                     .Where(m => modelIds.Contains(m.Id))
@@ -611,7 +611,7 @@ public class TecDocArticleService : ITecDocArticleService
             var manufacturers = manufacturerIds.Any()
                 ? await RunDbAsync(async () =>
                 {
-                    await using var db2 = _contextFactory.CreateDbContext();
+                    await using var db2 = await _contextFactory.CreateDbContextAsync(cancellationToken);
                     return (await db2.Manufacturers
                         .AsNoTracking()
                         .Where(m => manufacturerIds.Contains(m.Id))
@@ -724,7 +724,7 @@ public class TecDocArticleService : ITecDocArticleService
     {
         return await RunDbAsync(async () =>
         {
-            await using var db = _contextFactory.CreateDbContext();
+            await using var db = await _contextFactory.CreateDbContextAsync(cancellationToken);
             
             var supplierIds = articleKeys.Select(k => k.SupplierId).Distinct().ToList();
             var articleNumbers = articleKeys.Select(k => k.DataSupplierArticleNumber).Distinct().ToList();
@@ -740,7 +740,7 @@ public class TecDocArticleService : ITecDocArticleService
             {
                 var key = (ean.SupplierId, ean.DataSupplierArticleNumber);
                 if (!result.ContainsKey(key))
-                    result[key] = new List<object>();
+                    result[key] = [];
 
                 result[key].Add(new { ean.Ean });
             }
@@ -753,7 +753,7 @@ public class TecDocArticleService : ITecDocArticleService
     {
         return await RunDbAsync(async () =>
         {
-            await using var db = _contextFactory.CreateDbContext();
+            await using var db = await _contextFactory.CreateDbContextAsync(cancellationToken);
             
             var supplierIds = articleKeys.Select(k => k.SupplierId).Distinct().ToList();
             var articleNumbers = articleKeys.Select(k => k.DataSupplierArticleNumber).Distinct().ToList();
@@ -782,7 +782,7 @@ public class TecDocArticleService : ITecDocArticleService
     {
         return await RunDbAsync(async () =>
         {
-            await using var db = _contextFactory.CreateDbContext();
+            await using var db = await _contextFactory.CreateDbContextAsync(cancellationToken);
             
             var supplierIds = articleKeys.Select(k => k.SupplierId).Distinct().ToList();
             var articleNumbers = articleKeys.Select(k => k.DataSupplierArticleNumber).Distinct().ToList();
@@ -809,7 +809,7 @@ public class TecDocArticleService : ITecDocArticleService
             {
                 var key = (acc.SupplierId, acc.DataSupplierArticleNumber);
                 if (!result.ContainsKey(key))
-                    result[key] = new List<object>();
+                    result[key] = [];
 
                 result[key].Add(new
                 {
@@ -827,7 +827,7 @@ public class TecDocArticleService : ITecDocArticleService
     {
         return await RunDbAsync(async () =>
         {
-            await using var db = _contextFactory.CreateDbContext();
+            await using var db = await _contextFactory.CreateDbContextAsync(cancellationToken);
             
             var supplierIds = articleKeys.Select(k => k.SupplierId).Distinct().ToList();
             var articleNumbers = articleKeys.Select(k => k.DataSupplierArticleNumber).Distinct().ToList();
@@ -854,7 +854,7 @@ public class TecDocArticleService : ITecDocArticleService
             {
                 var key = (nn.SupplierId, nn.DataSupplierArticleNumber);
                 if (!result.ContainsKey(key))
-                    result[key] = new List<object>();
+                    result[key] = [];
 
                 result[key].Add(new
                 {
@@ -948,7 +948,7 @@ public class TecDocArticleService : ITecDocArticleService
                 ? await _unitOfWork.Suppliers.GetAllAsNoTracking()
                     .Where(s => supplierIds.Contains(s.Id))
                     .ToListAsync(cancellationToken)
-                : new List<TdSupplier>();
+                : [];
             
             var suppliers = suppliersList
                 .GroupBy(s => s.Id)

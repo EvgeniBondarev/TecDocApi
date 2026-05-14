@@ -57,7 +57,7 @@ public class TecDocArticlesController : ControllerBase
     /// <response code="500">Внутренняя ошибка сервера</response>
     [HttpGet("search")]
     [EnableRateLimiting("search")]
-    [ResponseCache(Duration = 300, VaryByQueryKeys = new[] { "articleNumber", "supplierId" })]
+    [ResponseCache(Duration = 300, VaryByQueryKeys = ["articleNumber", "supplierId"])]
     [ProducesResponseType(typeof(ArticleSearchResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
@@ -68,11 +68,6 @@ public class TecDocArticlesController : ControllerBase
         [FromQuery] ushort? supplierId = null, 
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(articleNumber))
-        {
-            return BadRequest("Артикул не может быть пустым");
-        }
-
         try
         {
             var result = await _articleService.SearchByArticleAsync(articleNumber, supplierId, cancellationToken);
@@ -195,7 +190,7 @@ public class TecDocArticlesController : ControllerBase
     /// <response code="500">Внутренняя ошибка сервера</response>
     [HttpGet("search/ean/{eanCode}")]
     [EnableRateLimiting("search")]
-    [ResponseCache(Duration = 300, VaryByQueryKeys = new[] { "eanCode" })]
+    [ResponseCache(Duration = 300, VaryByQueryKeys = ["eanCode"])]
     [ProducesResponseType(typeof(ArticleSearchResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]

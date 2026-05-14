@@ -8,24 +8,24 @@ namespace TecDocApi.Infrastructure.Repositories;
 public class TecDocUnitOfWork : IDisposable
 {
     private readonly IDbContextFactory<TecDocContext> _contextFactory;
-    private TecDocContext? _context;
-    
-    public ITecDocRepository<TdArticle> Articles { get; }
-    public ITecDocRepository<TdSupplier> Suppliers { get; }
-    public ITecDocRepository<TdSupplierDetail> SupplierDetails { get; }
-    public ITecDocRepository<TdArticleCross> ArticleCrosses { get; }
-    public ITecDocRepository<TdArticleOe> ArticleOes { get; }
-    public ITecDocRepository<TdArticleAttribute> ArticleAttributes { get; }
-    public ITecDocRepository<TdArticleImage> ArticleImages { get; }
-    public ITecDocRepository<TdArticleLi> ArticleLis { get; }
-    public ITecDocRepository<TdArticleEan> ArticleEans { get; }
-    public ITecDocRepository<TdArticleInf> ArticleInfs { get; }
-    public ITecDocRepository<TdArticleAcc> ArticleAccs { get; }
-    public ITecDocRepository<TdArticleNn> ArticleNns { get; }
-    public ITecDocRepository<TdManufacturer> Manufacturers { get; }
-    public ITecDocRepository<TdModel> Models { get; }
-    public ITecDocRepository<TdPassengerCar> PassengerCars { get; }
-    public ITecDocRepository<TdPassengerCarAttribute> PassengerCarAttributes { get; }
+    private readonly TecDocContext? _context;
+
+    public readonly ITecDocRepository<TdArticle> Articles;
+    public readonly ITecDocRepository<TdSupplier> Suppliers;
+    public readonly ITecDocRepository<TdSupplierDetail> SupplierDetails;
+    public readonly ITecDocRepository<TdArticleCross> ArticleCrosses;
+    public readonly ITecDocRepository<TdArticleOe> ArticleOes;
+    public readonly ITecDocRepository<TdArticleAttribute> ArticleAttributes;
+    public readonly ITecDocRepository<TdArticleImage> ArticleImages;
+    public readonly ITecDocRepository<TdArticleLi> ArticleLis;
+    public readonly ITecDocRepository<TdArticleEan> ArticleEans;
+    public readonly ITecDocRepository<TdArticleInf> ArticleInfs;
+    public readonly ITecDocRepository<TdArticleAcc> ArticleAccs;
+    public readonly ITecDocRepository<TdArticleNn> ArticleNns;
+    public readonly ITecDocRepository<TdManufacturer> Manufacturers;
+    public readonly ITecDocRepository<TdModel> Models;
+    public readonly ITecDocRepository<TdPassengerCar> PassengerCars;
+    public readonly ITecDocRepository<TdPassengerCarAttribute> PassengerCarAttributes;
 
     public TecDocUnitOfWork(IDbContextFactory<TecDocContext> contextFactory)
     {

@@ -190,10 +190,10 @@ public class SupplierElasticsearchService : ISupplierElasticsearchService
         try
         {
             var searchDescriptor = new SearchDescriptor<SupplierDocument>()
-                .Query(q => BuildSearchQuery(request))
+                .Query(_ => BuildSearchQuery(request))
                 .From(request.Skip)
                 .Size(request.PageSize ?? 20)
-                .Sort(s => BuildSort(request));
+                .Sort(_ => BuildSort(request));
 
             var searchResponse = await _client.SearchAsync<SupplierDocument>(searchDescriptor);
             
@@ -280,8 +280,8 @@ public class SupplierElasticsearchService : ISupplierElasticsearchService
             // Поиск по Description и Matchcode
             queries.Add(new BoolQuery
             {
-                Should = new QueryContainer[]
-                {
+                Should =
+                [
                     // Точное совпадение по Matchcode (высокий приоритет)
                     new TermQuery
                     {
@@ -314,7 +314,7 @@ public class SupplierElasticsearchService : ISupplierElasticsearchService
                         Boost = 2.0,
                         Operator = Operator.And
                     }
-                },
+                ],
                 MinimumShouldMatch = 1
             });
         }
@@ -330,7 +330,6 @@ public class SupplierElasticsearchService : ISupplierElasticsearchService
 
         switch (request.SortBy?.ToLower())
         {
-            case "relevance":
             default:
                 if (!string.IsNullOrWhiteSpace(request.Query))
                 {

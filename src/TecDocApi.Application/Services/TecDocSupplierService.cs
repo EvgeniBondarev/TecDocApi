@@ -58,7 +58,7 @@ public class TecDocSupplierService : ITecDocSupplierService
 
         return new string(matchcode
             .Where(c => !char.IsWhiteSpace(c))
-            .Select(c => char.ToUpperInvariant(c))
+            .Select(char.ToUpperInvariant)
             .ToArray());
     }
 
@@ -110,7 +110,7 @@ public class TecDocSupplierService : ITecDocSupplierService
 
             var supplierDetails = await RunDbAsync(async () =>
             {
-                await using var db = _contextFactory.CreateDbContext();
+                await using var db = await _contextFactory.CreateDbContextAsync(cancellationToken);
                 return await db.SupplierDetails
                     .AsNoTracking()
                     .Where(sd => supplierIds.Contains(sd.SupplierId))
@@ -191,7 +191,7 @@ public class TecDocSupplierService : ITecDocSupplierService
 
             var details = await RunDbAsync(async () =>
             {
-                await using var db = _contextFactory.CreateDbContext();
+                await using var db = await _contextFactory.CreateDbContextAsync(cancellationToken);
                 return await db.SupplierDetails
                     .AsNoTracking()
                     .Where(sd => sd.SupplierId == id)

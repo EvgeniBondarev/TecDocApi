@@ -17,7 +17,6 @@ public class SupplierSyncBackgroundService : BackgroundService
     private readonly ISupplierElasticsearchService _elasticsearchService;
     private readonly ILogger<SupplierSyncBackgroundService> _logger;
     private readonly int _bulkSize;
-    private readonly int _syncIntervalMinutes;
 
     public SupplierSyncBackgroundService(
         IServiceScopeFactory serviceScopeFactory,
@@ -29,7 +28,6 @@ public class SupplierSyncBackgroundService : BackgroundService
         _elasticsearchService = elasticsearchService;
         _logger = logger;
         _bulkSize = configuration.GetValue("Elasticsearch:SupplierBulkSize", 500);
-        _syncIntervalMinutes = configuration.GetValue("Elasticsearch:SupplierSyncIntervalMinutes", 10);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)

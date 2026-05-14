@@ -15,11 +15,9 @@ public class ArticleSyncBackgroundService : BackgroundService
 {
     private readonly IServiceScopeFactory _serviceScopeFactory;
     private readonly IArticleElasticsearchService _elasticsearchService;
-    private readonly IConfiguration _configuration;
     private readonly ILogger<ArticleSyncBackgroundService> _logger;
     private readonly int _bulkSize;
-    private readonly int _syncIntervalMinutes;
-
+    
     public ArticleSyncBackgroundService(
         IServiceScopeFactory serviceScopeFactory,
         IArticleElasticsearchService elasticsearchService,
@@ -28,10 +26,8 @@ public class ArticleSyncBackgroundService : BackgroundService
     {
         _serviceScopeFactory = serviceScopeFactory;
         _elasticsearchService = elasticsearchService;
-        _configuration = configuration;
         _logger = logger;
         _bulkSize = configuration.GetValue("Elasticsearch:BulkSize", 1000);
-        _syncIntervalMinutes = configuration.GetValue("Elasticsearch:SyncIntervalMinutes", 5);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)

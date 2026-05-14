@@ -304,7 +304,7 @@ public class ImagesController : ControllerBase
     /// <response code="400">Некорректные параметры запроса</response>
     /// <response code="500">Внутренняя ошибка сервера</response>
     [HttpGet("{supplierId}/{fileName}")]
-    [ResponseCache(Duration = 86400, VaryByQueryKeys = new[] { "supplierId", "fileName" })] // Кэш на 24 часа
+    [ResponseCache(Duration = 86400, VaryByQueryKeys = ["supplierId", "fileName"])] // Кэш на 24 часа
     [ProducesResponseType(typeof(ImageUrlResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
@@ -389,7 +389,7 @@ public class ImagesController : ControllerBase
     /// <response code="400">Некорректные параметры запроса</response>
     /// <response code="500">Внутренняя ошибка сервера</response>
     [HttpGet("{supplierId}/{fileName}/stream")]
-    [ResponseCache(Duration = 86400, VaryByQueryKeys = new[] { "supplierId", "fileName" })] // Кэш на 24 часа
+    [ResponseCache(Duration = 86400, VaryByQueryKeys = ["supplierId", "fileName"])] // Кэш на 24 часа
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
@@ -464,7 +464,7 @@ public class ImagesController : ControllerBase
     /// <response code="200">Результат проверки</response>
     /// <response code="400">Некорректные параметры запроса</response>
     [HttpGet("{supplierId}/{fileName}/exists")]
-    [ResponseCache(Duration = 3600, VaryByQueryKeys = new[] { "supplierId", "fileName" })] // Кэш на 1 час
+    [ResponseCache(Duration = 3600, VaryByQueryKeys = ["supplierId", "fileName"])] // Кэш на 1 час
     [ProducesResponseType(typeof(ImageExistsResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CheckImageExists(
