@@ -7,7 +7,7 @@ using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.ResponseCompression;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using TecDocApi.API.Filters;
 using TecDocApi.Application.Services;
 using TecDocApi.Infrastructure.Extensions;

@@ -34,28 +34,9 @@ public class SupplierSyncBackgroundService : BackgroundService
     {
         _logger.LogInformation("Служба синхронизации поставщиков запущена");
 
-        // Ждем немного перед первой синхронизацией, чтобы Elasticsearch успел запуститься
-        await Task.Delay(TimeSpan.FromSeconds(15), stoppingToken);
+        await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
 
         await FullSyncAsync(stoppingToken);
-
-        // while (!stoppingToken.IsCancellationRequested)
-        // {
-        //     try
-        //     {
-        //         await IncrementalSyncAsync(stoppingToken);
-        //         await Task.Delay(TimeSpan.FromMinutes(_syncIntervalMinutes), stoppingToken);
-        //     }
-        //     catch (OperationCanceledException)
-        //     {
-        //         break;
-        //     }
-        //     catch (Exception ex)
-        //     {
-        //         _logger.LogError(ex, "Ошибка в фоновой службе синхронизации поставщиков");
-        //         await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
-        //     }
-        // }
 
         _logger.LogInformation("Служба синхронизации поставщиков остановлена");
     }
@@ -77,8 +58,7 @@ public class SupplierSyncBackgroundService : BackgroundService
             var indexedCount = await _elasticsearchService.GetTotalCountAsync();
             _logger.LogInformation("Уже проиндексировано в Elasticsearch: {IndexedCount}", indexedCount);
 
-            // Если уже проиндексировано более 90%, пропускаем полную синхронизацию
-            if (indexedCount > 0 && indexedCount >= totalCount * 0.9)
+            if (indexedCount == totalCount)
             {
                 _logger.LogInformation("Пропускаем полную синхронизацию, данные актуальны");
                 return;
@@ -126,59 +106,6 @@ public class SupplierSyncBackgroundService : BackgroundService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Ошибка при полной синхронизации поставщиков");
-        }
-    }
-
-    private async Task IncrementalSyncAsync(CancellationToken cancellationToken)
-    {
-        using var scope = _serviceScopeFactory.CreateScope();
-        var unitOfWork = scope.ServiceProvider.GetRequiredService<TecDocUnitOfWork>();
-        
-        try
-        {
-            _logger.LogDebug("Начало инкрементальной синхронизации поставщиков");
-
-            var indexedCount = await _elasticsearchService.GetTotalCountAsync();
-            var totalCount = await unitOfWork.Suppliers.GetAllAsNoTracking().CountAsync(cancellationToken);
-
-            if (indexedCount >= totalCount)
-            {
-                _logger.LogDebug("Все поставщики уже проиндексированы");
-                return;
-            }
-
-            var suppliers = await unitOfWork.Suppliers
-                .GetAllAsNoTracking()
-                .OrderBy(s => s.Id)
-                .Skip((int)indexedCount)
-                .Take(_bulkSize)
-                .Select(s => new SupplierDocument
-                {
-                    SupplierId = s.Id,
-                    Description = s.Description ?? string.Empty,
-                    Matchcode = s.Matchcode ?? string.Empty,
-                    DataVersion = s.DataVersion,
-                    NbrOfArticles = s.NbrOfArticles,
-                    HasNewVersionArticles = s.HasNewVersionArticles,
-                    LastModified = DateTime.UtcNow
-                })
-                .ToListAsync(cancellationToken);
-
-            if (!suppliers.Any())
-            {
-                _logger.LogDebug("Нет новых поставщиков для синхронизации");
-                return;
-            }
-
-            _logger.LogInformation("Найдено {Count} новых поставщиков для синхронизации", suppliers.Count);
-
-            await _elasticsearchService.BulkIndexSuppliersAsync(suppliers);
-
-            _logger.LogInformation("Инкрементальная синхронизация поставщиков завершена");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Ошибка при инкрементальной синхронизации поставщиков");
         }
     }
 }

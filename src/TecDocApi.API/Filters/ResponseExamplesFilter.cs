@@ -1,6 +1,6 @@
 using System.Text.Json;
-using Microsoft.OpenApi.Any;
-using Microsoft.OpenApi.Models;
+using System.Text.Json.Nodes;
+using Microsoft.OpenApi;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using TecDocApi.API.DTOs;
 
@@ -13,7 +13,8 @@ public class ResponseExamplesFilter : IOperationFilter
 {
     public void Apply(OpenApiOperation operation, OperationFilterContext context)
     {
-        if (context.MethodInfo.Name == "SearchByArticle" && 
+        if (context.MethodInfo.Name == "SearchByArticle" &&
+            operation.Responses != null &&
             operation.Responses.TryGetValue("200", out var response200))
         {
             var example = new ArticleSearchResponseDto
@@ -100,57 +101,21 @@ public class ResponseExamplesFilter : IOperationFilter
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase
             });
 
-            response200.Content ??= new Dictionary<string, OpenApiMediaType>();
-            foreach (var content in response200.Content.Values)
+            if (response200.Content != null)
             {
-                try
+                foreach (var content in response200.Content.Values)
                 {
-                    using var doc = JsonDocument.Parse(jsonExample);
-                    content.Example = ConvertToOpenApiAny(doc.RootElement);
-                }
-                catch
-                {
-                    content.Example = new OpenApiString(jsonExample);
+                    try
+                    {
+                        content.Example = JsonNode.Parse(jsonExample);
+                    }
+                    catch
+                    {
+                        content.Example = JsonValue.Create(jsonExample);
+                    }
                 }
             }
         }
-    }
-
-    private static IOpenApiAny ConvertToOpenApiAny(JsonElement element)
-    {
-        return element.ValueKind switch
-        {
-            JsonValueKind.Object => ConvertObject(element),
-            JsonValueKind.Array => ConvertArray(element),
-            JsonValueKind.String => new OpenApiString(element.GetString() ?? string.Empty),
-            JsonValueKind.Number => element.TryGetInt64(out var intValue) 
-                ? new OpenApiInteger((int)intValue)
-                : new OpenApiDouble(element.GetDouble()),
-            JsonValueKind.True => new OpenApiBoolean(true),
-            JsonValueKind.False => new OpenApiBoolean(false),
-            JsonValueKind.Null => new OpenApiNull(),
-            _ => new OpenApiString(element.ToString())
-        };
-    }
-
-    private static OpenApiObject ConvertObject(JsonElement element)
-    {
-        var obj = new OpenApiObject();
-        foreach (var prop in element.EnumerateObject())
-        {
-            obj[prop.Name] = ConvertToOpenApiAny(prop.Value);
-        }
-        return obj;
-    }
-
-    private static OpenApiArray ConvertArray(JsonElement element)
-    {
-        var array = new OpenApiArray();
-        foreach (var item in element.EnumerateArray())
-        {
-            array.Add(ConvertToOpenApiAny(item));
-        }
-        return array;
     }
 }
 
