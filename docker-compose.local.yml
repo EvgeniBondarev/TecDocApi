@@ -9,17 +9,17 @@ services:
       - xpack.security.transport.ssl.enabled=false
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
     ports:
-      - "9200:9200"
+      - "127.0.0.1:9200:9200"
     volumes:
       - elasticsearch-data:/usr/share/elasticsearch/data
     networks:
       - tecdoc-network
+    restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      test: ["CMD", "curl", "-f", "http://localhost:9200"]
       interval: 30s
       timeout: 10s
       retries: 5
-    restart: unless-stopped
 
   kibana:
     image: docker.elastic.co/kibana/kibana:8.18.8
@@ -55,8 +55,6 @@ services:
       - Elasticsearch__SupplierIndexName=suppliers
       - Elasticsearch__BulkSize=1000
       - Elasticsearch__SupplierBulkSize=500
-      - Elasticsearch__SyncIntervalMinutes=5
-      - Elasticsearch__SupplierSyncIntervalMinutes=10
       # Настройки S3 для изображений
       - S3__AccessKey=${S3_ACCESS_KEY}
       - S3__SecretKey=${S3_SECRET_KEY}
@@ -70,14 +68,15 @@ services:
     restart: unless-stopped
     networks:
       - tecdoc-network
-    # Примечание: База данных MySQL и S3 настраиваются через .env или appsettings.Development.json
-    # Этот файл используется для локальной разработки с локальной сборкой образа
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8082/swagger/index.html"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+
+  client:
+    image: javaro3/parts-info-client:0.3
+    container_name: parts-info-client
+    ports:
+      - "8083:80"
+    restart: unless-stopped
+    networks:
+      - tecdoc-network
 
 volumes:
   elasticsearch-data:
@@ -85,4 +84,3 @@ volumes:
 networks:
   tecdoc-network:
     driver: bridge
-
