@@ -77,12 +77,11 @@ public class ArticleSyncBackgroundService : BackgroundService
             var indexedCount = await _elasticsearchService.GetTotalCountAsync();
             _logger.LogInformation("Уже проиндексировано в Elasticsearch: {IndexedCount}", indexedCount);
 
-            // Если уже проиндексировано более 90%, пропускаем полную синхронизацию
-            // if (indexedCount > 0 && indexedCount >= totalCount * 0.9)
-            // {
-            //     _logger.LogInformation("Пропускаем полную синхронизацию, данные актуальны");
-            //     return;
-            // }
+            if (indexedCount == totalCount)
+            {
+                _logger.LogInformation("Пропускаем полную синхронизацию, данные актуальны");
+                return;
+            }
 
             // Пересоздаем индекс для полной синхронизации
             await _elasticsearchService.DeleteIndexAsync();
