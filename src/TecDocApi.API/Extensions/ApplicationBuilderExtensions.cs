@@ -132,8 +132,6 @@ public static class ApplicationBuilderExtensions
                 DocumentName = match.ObjectKey,
                 DocumentType = Path.GetExtension(match.PictureName).TrimStart('.').ToUpperInvariant(),
                 ShowImmediately = false,
-                Url = match.Url,
-                StreamUrl = match.StreamUrl,
                 S3Url = match.S3Url
             }).ToList();
 
@@ -150,30 +148,6 @@ public static class ApplicationBuilderExtensions
         {
             context.Response.Redirect("/docs");
             return Task.CompletedTask;
-        });
-
-        // Инициализация Elasticsearch индексов при старте
-        _ = Task.Run(async () =>
-        {
-            await Task.Delay(TimeSpan.FromSeconds(5)); // Ждем запуска Elasticsearch
-            try
-            {
-                using var scope = app.Services.CreateScope();
-                var articleElasticsearchService = scope.ServiceProvider.GetRequiredService<IArticleElasticsearchService>();
-                var supplierElasticsearchService = scope.ServiceProvider.GetRequiredService<ISupplierElasticsearchService>();
-                var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-                
-                logger.LogInformation("Инициализация Elasticsearch индексов...");
-                await articleElasticsearchService.CreateIndexAsync();
-                await supplierElasticsearchService.CreateIndexAsync();
-                logger.LogInformation("Инициализация Elasticsearch завершена");
-            }
-            catch (Exception ex)
-            {
-                var loggerFactory = app.Services.GetRequiredService<ILoggerFactory>();
-                var logger = loggerFactory.CreateLogger<Program>();
-                logger.LogError(ex, "Ошибка при инициализации Elasticsearch");
-            }
         });
 
         return app;

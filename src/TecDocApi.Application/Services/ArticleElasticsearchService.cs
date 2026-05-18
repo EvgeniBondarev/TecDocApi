@@ -1,9 +1,10 @@
 using System.Text;
 using Elasticsearch.Net;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Nest;
 using TecDocApi.Application.Models;
+using TecDocApi.Application.Options;
 
 namespace TecDocApi.Application.Services;
 
@@ -17,27 +18,25 @@ public class ArticleElasticsearchService : IArticleElasticsearchService
     private readonly ILogger<ArticleElasticsearchService> _logger;
 
     public ArticleElasticsearchService(
-        IConfiguration configuration,
+        IOptions<ElasticsearchOptions> options,
         ILogger<ArticleElasticsearchService> logger)
     {
         _logger = logger;
-        _indexName = configuration["Elasticsearch:IndexName"] ?? "articles";
-        
-        var elasticsearchUrl = configuration["Elasticsearch:Url"] ?? "http://localhost:9200";
-        var settings = new ConnectionSettings(new Uri(elasticsearchUrl))
+        var esOptions = options.Value;
+
+        _indexName = esOptions.IndexName;
+
+        var settings = new ConnectionSettings(new Uri(esOptions.Url))
             .DefaultIndex(_indexName)
             .RequestTimeout(TimeSpan.FromMinutes(2))
             .EnableDebugMode()
             .PrettyJson();
-        
-        var username = configuration["Elasticsearch:Username"];
-        var password = configuration["Elasticsearch:Password"];
-        
-        if (!string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(password))
+
+        if (!string.IsNullOrEmpty(esOptions.Username) && !string.IsNullOrEmpty(esOptions.Password))
         {
-            settings.BasicAuthentication(username, password);
+            settings.BasicAuthentication(esOptions.Username, esOptions.Password);
         }
-        
+
         _client = new ElasticClient(settings);
     }
 

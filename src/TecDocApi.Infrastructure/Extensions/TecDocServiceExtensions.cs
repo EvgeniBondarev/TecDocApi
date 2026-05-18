@@ -10,20 +10,42 @@ public static class TecDocServiceExtensions
 {
     public static IServiceCollection AddTecDocServices(this IServiceCollection services, IConfiguration configuration)
     {
-        // Приоритет: переменная окружения > appsettings.json
-        // ASP.NET Core автоматически читает переменные окружения через IConfiguration
-        // Формат: ConnectionStrings__TecDocDatabase или TECDOC_DATABASE_CONNECTION_STRING
+        var tecDocConnectionString = ResolveTecDocConnectionString(configuration);
+
+        // TecDoc MySQL база данных - DbContextPool для оптимизации производительности (+10-25%)
+        services.AddDbContextPool<TecDocContext>(options =>
+        {
+            ConfigureMySqlOptions(options, tecDocConnectionString);
+        }, poolSize: 128);
+
+        // Factory для параллельных запросов
+        services.AddDbContextFactory<TecDocContext>(options =>
+        {
+            ConfigureMySqlOptions(options, tecDocConnectionString);
+        });
+
+        services.AddScoped<TecDocUnitOfWork>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// Определяет строку подключения TecDoc с учётом приоритета:
+    /// переменная окружения TECDOC_DATABASE_CONNECTION_STRING > appsettings.json.
+    /// Вызывается также из API слоя для заполнения DatabaseConnectionOptions.
+    /// </summary>
+    private static string ResolveTecDocConnectionString(IConfiguration configuration)
+    {
         var envConnectionString = Environment.GetEnvironmentVariable("TECDOC_DATABASE_CONNECTION_STRING");
         var configConnectionString = configuration.GetConnectionString("TecDocDatabase");
-        
-        // Убираем кавычки, если они есть (Docker Compose может добавлять кавычки для значений со спецсимволами)
+
+        // Убираем кавычки, которые Docker Compose может добавлять для значений со спецсимволами
         if (!string.IsNullOrWhiteSpace(envConnectionString))
         {
             envConnectionString = envConnectionString.Trim().Trim('\'').Trim('"');
-            
-            // Если пароль URL-кодирован, декодируем его
-            // Проверяем наличие URL-кодированных символов (%XX)
-            if (envConnectionString.Contains("%"))
+
+            // Декодируем URL-кодированные символы (%XX), если они есть
+            if (envConnectionString.Contains('%'))
             {
                 try
                 {
@@ -36,40 +58,63 @@ public static class TecDocServiceExtensions
                 }
             }
         }
-        
-        var tecDocConnectionString = envConnectionString ?? configConnectionString;
-        
-        if (string.IsNullOrWhiteSpace(tecDocConnectionString))
+
+        var resolved = envConnectionString ?? configConnectionString;
+
+        if (string.IsNullOrWhiteSpace(resolved))
         {
             throw new InvalidOperationException(
                 "Строка подключения TecDocDatabase не найдена. " +
                 "Установите переменную окружения TECDOC_DATABASE_CONNECTION_STRING или " +
                 "настройте ConnectionStrings:TecDocDatabase в appsettings.json");
         }
-        
-        // Логируем источник (без самой строки для безопасности)
-        var source = envConnectionString != null 
-            ? "переменная окружения TECDOC_DATABASE_CONNECTION_STRING" 
+
+        var source = envConnectionString != null
+            ? "переменная окружения TECDOC_DATABASE_CONNECTION_STRING"
             : "appsettings.json";
-        
-        // Используем Console для логирования, так как ILogger еще не доступен
         Console.WriteLine($"[TecDocServiceExtensions] Строка подключения загружена из: {source}");
-        
-        // Отладочное логирование - проверяем наличие пароля в строке
-        var passwordStartIndex = tecDocConnectionString.IndexOf("Password=", StringComparison.OrdinalIgnoreCase);
+
+        LogConnectionStringDebugInfo(resolved);
+
+        return resolved;
+    }
+
+    private static void ConfigureMySqlOptions(DbContextOptionsBuilder options, string connectionString)
+    {
+        if (!string.IsNullOrWhiteSpace(connectionString))
+        {
+            var serverVersion = ServerVersion.Parse("8.0.0-mysql");
+            options.UseMySql(connectionString, serverVersion, mySqlOptions =>
+            {
+                mySqlOptions.EnableRetryOnFailure(
+                    maxRetryCount: 3,
+                    maxRetryDelay: TimeSpan.FromSeconds(2),
+                    errorNumbersToAdd: null);
+                mySqlOptions.CommandTimeout(10);
+            });
+        }
+
+        options.EnableSensitiveDataLogging(false);
+        options.EnableServiceProviderCaching();
+        // Отключаем отслеживание изменений — режим только чтения
+        options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
+    }
+
+    private static void LogConnectionStringDebugInfo(string connectionString)
+    {
+        var passwordStartIndex = connectionString.IndexOf("Password=", StringComparison.OrdinalIgnoreCase);
         if (passwordStartIndex >= 0)
         {
-            var passwordPart = tecDocConnectionString.Substring(passwordStartIndex);
+            var passwordPart = connectionString[passwordStartIndex..];
             var passwordEndIndex = passwordPart.IndexOf(';');
             if (passwordEndIndex > 0)
             {
-                var passwordValue = passwordPart.Substring(9, passwordEndIndex - 9); // "Password=" = 9 символов
+                var passwordValue = passwordPart[9..passwordEndIndex]; // "Password=" = 9 символов
                 Console.WriteLine($"[TecDocServiceExtensions] Пароль найден, длина: {passwordValue.Length} символов");
-                // Показываем первые и последние символы пароля для отладки (безопасно)
                 if (passwordValue.Length > 4)
                 {
-                    var passwordPreview = passwordValue.Substring(0, 2) + "..." + passwordValue.Substring(passwordValue.Length - 2);
-                    Console.WriteLine($"[TecDocServiceExtensions] Предпросмотр пароля: {passwordPreview}");
+                    var preview = passwordValue[..2] + "..." + passwordValue[^2..];
+                    Console.WriteLine($"[TecDocServiceExtensions] Предпросмотр пароля: {preview}");
                 }
             }
         }
@@ -77,62 +122,10 @@ public static class TecDocServiceExtensions
         {
             Console.WriteLine("[TecDocServiceExtensions] ВНИМАНИЕ: Пароль не найден в строке подключения!");
         }
-        
-        // Отладочное логирование (первые 80 символов для проверки)
-        var preview = tecDocConnectionString.Length > 80 
-            ? tecDocConnectionString.Substring(0, 80) + "..." 
-            : tecDocConnectionString;
-        Console.WriteLine($"[TecDocServiceExtensions] Предпросмотр строки подключения: {preview}");
 
-        // TecDoc MySQL база данных - используем DbContextFactory для параллелизма
-        // И DbContextPool для оптимизации производительности (+10-25%)
-        services.AddDbContextPool<TecDocContext>(options =>
-        {
-            if (!string.IsNullOrWhiteSpace(tecDocConnectionString))
-            {
-                // Используем ServerVersion для MySQL 8.0
-                var serverVersion = ServerVersion.Parse("8.0.0-mysql");
-                options.UseMySql(tecDocConnectionString, serverVersion, mySqlOptions =>
-                {
-                    mySqlOptions.EnableRetryOnFailure(
-                        maxRetryCount: 3, // Уменьшено для быстрого отказа при проблемах
-                        maxRetryDelay: TimeSpan.FromSeconds(2),
-                        errorNumbersToAdd: null
-                    );
-                    mySqlOptions.CommandTimeout(10); // Таймаут 10 секунд для предотвращения бесконечных ожиданий
-                });
-            }
-            options.EnableSensitiveDataLogging(false);
-            options.EnableServiceProviderCaching();
-            // Отключаем отслеживание изменений для режима только чтения
-            options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
-        }, poolSize: 128); // Размер пула для оптимизации
-
-        // Также регистрируем Factory для параллельных запросов
-        services.AddDbContextFactory<TecDocContext>(options =>
-        {
-            if (!string.IsNullOrWhiteSpace(tecDocConnectionString))
-            {
-                var serverVersion = ServerVersion.Parse("8.0.0-mysql");
-                options.UseMySql(tecDocConnectionString, serverVersion, mySqlOptions =>
-                {
-                    mySqlOptions.EnableRetryOnFailure(
-                        maxRetryCount: 3, // Уменьшено для быстрого отказа при проблемах
-                        maxRetryDelay: TimeSpan.FromSeconds(2),
-                        errorNumbersToAdd: null
-                    );
-                    mySqlOptions.CommandTimeout(10); // Таймаут 10 секунд для предотвращения бесконечных ожиданий
-                });
-            }
-            options.EnableSensitiveDataLogging(false);
-            options.EnableServiceProviderCaching();
-            options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
-        });
-
-        // Регистрация сервисов с фабрикой
-        services.AddScoped<TecDocUnitOfWork>();
-
-        return services;
+        var connPreview = connectionString.Length > 80
+            ? connectionString[..80] + "..."
+            : connectionString;
+        Console.WriteLine($"[TecDocServiceExtensions] Предпросмотр строки подключения: {connPreview}");
     }
 }
-

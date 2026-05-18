@@ -153,10 +153,6 @@ public class ArticleImageDocument
 
     public bool ShowImmediately { get; set; }
 
-    public string Url { get; set; } = string.Empty;
-
-    public string StreamUrl { get; set; } = string.Empty;
-
     public string S3Url { get; set; } = string.Empty;
 }
 
@@ -171,10 +167,6 @@ public class S3ImageSearchResult
     public int MatchScore { get; set; }
 
     public string MatchedBy { get; set; } = string.Empty;
-
-    public string Url { get; set; } = string.Empty;
-
-    public string StreamUrl { get; set; } = string.Empty;
 
     public string S3Url { get; set; } = string.Empty;
 }

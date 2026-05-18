@@ -1,9 +1,10 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using TecDocApi.Application.Models;
+using TecDocApi.Application.Options;
 using TecDocApi.Infrastructure.Repositories;
 
 namespace TecDocApi.Application.Services;
@@ -21,20 +22,20 @@ public class SupplierSyncBackgroundService : BackgroundService
     public SupplierSyncBackgroundService(
         IServiceScopeFactory serviceScopeFactory,
         ISupplierElasticsearchService elasticsearchService,
-        IConfiguration configuration,
+        IOptions<ElasticsearchOptions> options,
         ILogger<SupplierSyncBackgroundService> logger)
     {
         _serviceScopeFactory = serviceScopeFactory;
         _elasticsearchService = elasticsearchService;
         _logger = logger;
-        _bulkSize = configuration.GetValue("Elasticsearch:SupplierBulkSize", 500);
+        _bulkSize = options.Value.SupplierBulkSize;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _logger.LogInformation("Служба синхронизации поставщиков запущена");
 
-        await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
+        await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
 
         await FullSyncAsync(stoppingToken);
 

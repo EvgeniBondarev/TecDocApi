@@ -1,9 +1,10 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using TecDocApi.Application.Models;
+using TecDocApi.Application.Options;
 using TecDocApi.Infrastructure.Repositories;
 
 namespace TecDocApi.Application.Services;
@@ -21,13 +22,13 @@ public class ArticleSyncBackgroundService : BackgroundService
     public ArticleSyncBackgroundService(
         IServiceScopeFactory serviceScopeFactory,
         IArticleElasticsearchService elasticsearchService,
-        IConfiguration configuration,
+        IOptions<ElasticsearchOptions> options,
         ILogger<ArticleSyncBackgroundService> logger)
     {
         _serviceScopeFactory = serviceScopeFactory;
         _elasticsearchService = elasticsearchService;
         _logger = logger;
-        _bulkSize = configuration.GetValue("Elasticsearch:BulkSize", 1000);
+        _bulkSize = options.Value.BulkSize;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -35,7 +36,7 @@ public class ArticleSyncBackgroundService : BackgroundService
         _logger.LogInformation("Служба синхронизации артикулов запущена");
 
         // Ждем немного перед первой синхронизацией, чтобы Elasticsearch успел запуститься
-        await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
+        await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
 
         await FullSyncAsync(stoppingToken);
 

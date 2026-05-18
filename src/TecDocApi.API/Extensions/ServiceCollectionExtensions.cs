@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.OpenApi;
 using TecDocApi.API.Filters;
+using TecDocApi.Application.Options;
 using TecDocApi.Application.Services;
 using TecDocApi.Infrastructure.Extensions;
 
@@ -269,6 +270,7 @@ public static class ServiceCollectionExtensions
     /// </summary>
     private static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration configuration)
     {
+        services.AddAppOptions(configuration);
         services.AddTecDocServices(configuration);
         services.AddScoped<ITecDocArticleService, TecDocArticleService>();
         services.AddScoped<ITecDocSupplierService, TecDocSupplierService>();
@@ -292,6 +294,63 @@ public static class ServiceCollectionExtensions
             });
 
         return services;
+    }
+
+    /// <summary>
+    /// Регистрирует все Options-модели из appsettings.json с поддержкой переопределения через переменные окружения
+    /// </summary>
+    private static IServiceCollection AddAppOptions(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.Configure<ElasticsearchOptions>(configuration.GetSection(ElasticsearchOptions.SectionName));
+        services.Configure<S3Options>(configuration.GetSection(S3Options.SectionName));
+
+        // Строки подключения к БД — привязываем секцию ConnectionStrings, затем
+        // переопределяем значения переменными окружения (приоритет выше appsettings.json)
+        services.Configure<DatabaseConnectionOptions>(configuration.GetSection(DatabaseConnectionOptions.SectionName));
+        services.PostConfigure<DatabaseConnectionOptions>(options =>
+        {
+            var envTecDoc = Environment.GetEnvironmentVariable("TECDOC_DATABASE_CONNECTION_STRING");
+            if (!string.IsNullOrWhiteSpace(envTecDoc))
+            {
+                envTecDoc = envTecDoc.Trim().Trim('\'').Trim('"');
+                if (envTecDoc.Contains('%'))
+                    envTecDoc = Uri.UnescapeDataString(envTecDoc);
+                options.TecDocDatabase = envTecDoc;
+            }
+
+            var envS3Info = Environment.GetEnvironmentVariable("S3INFO_DATABASE_CONNECTION_STRING");
+            if (!string.IsNullOrWhiteSpace(envS3Info))
+            {
+                options.S3InfoDatabase = envS3Info.Trim().Trim('\'').Trim('"');
+            }
+            else if (string.IsNullOrWhiteSpace(options.S3InfoDatabase)
+                     && !string.IsNullOrWhiteSpace(options.TecDocDatabase))
+            {
+                options.S3InfoDatabase = ReplaceDatabase(options.TecDocDatabase, "S3Info");
+            }
+        });
+
+        return services;
+    }
+
+    /// <summary>
+    /// Заменяет имя базы данных в строке подключения MySQL без дополнительных зависимостей.
+    /// </summary>
+    private static string? ReplaceDatabase(string connectionString, string newDatabase)
+    {
+        try
+        {
+            // Заменяем значение параметра Database= или Initial Catalog= в строке подключения
+            var result = System.Text.RegularExpressions.Regex.Replace(
+                connectionString,
+                @"(?i)(Database|Initial Catalog)\s*=\s*[^;]+",
+                $"Database={newDatabase}");
+            return result;
+        }
+        catch
+        {
+            return null;
+        }
     }
 }
 
