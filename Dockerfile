@@ -36,11 +36,11 @@ RUN dotnet publish "TecDocApi.API.csproj" -c Release -o /app/publish /p:UseAppHo
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 
-# Устанавливаем curl для healthcheck (опционально, можно использовать wget)
+# Устанавливаем curl для healthcheck
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
 # Создаем пользователя для запуска приложения (безопасность)
-RUN adduser --disabled-password --gecos '' appuser && chown -R appuser /app
+RUN useradd -m -s /bin/bash appuser && chown -R appuser:appuser /app
 USER appuser
 
 # Копируем опубликованное приложение из этапа publish
@@ -55,4 +55,3 @@ ENV ASPNETCORE_ENVIRONMENT=Production
 
 # Точка входа
 ENTRYPOINT ["dotnet", "TecDocApi.API.dll"]
-
