@@ -24,6 +24,7 @@ public class S3ImageService : IS3ImageService
     private readonly string _basePath;
     private readonly string _endpointUrl;
     private readonly string? _s3InfoConnectionString;
+    private List<string> _extensions = ["jpg", "jpeg", "png", "bmp", "gif", "webp", "tif", "tiff", "avif"];
 
     public S3ImageService(
         IOptions<S3Options> s3Options,
@@ -151,6 +152,32 @@ public class S3ImageService : IS3ImageService
 
         return builder.ToString();
     }
+    
+    private string NormalizeFileNameForSearch(string? value, string? supplerId)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
+        }
+
+        var builder = new StringBuilder(value.Length);
+        foreach (var character in value)
+        {
+            if (char.IsLetterOrDigit(character))
+            {
+                builder.Append(char.ToUpperInvariant(character));
+            }
+        }
+
+        var result = builder.ToString();
+        if (supplerId != null)
+            result = result.Replace(supplerId, string.Empty, StringComparison.InvariantCultureIgnoreCase);
+
+        foreach (var extension in _extensions)
+            result = result.Replace(extension, string.Empty, StringComparison.InvariantCultureIgnoreCase);
+        
+        return result;
+    }
 
     private static List<string> ExtractSearchTokens(string value)
     {
@@ -230,7 +257,7 @@ public class S3ImageService : IS3ImageService
                     ObjectKey = objectKey,
                     FileName = fileName,
                     FolderPath = folderPath ?? string.Empty,
-                    NormalizedFileName = NormalizeForSearch(fileName),
+                    NormalizedFileName = NormalizeFileNameForSearch(fileName, supplierId.ToString()),
                     NormalizedObjectKey = NormalizeForSearch(objectKey),
                     SupplierId = TryExtractSupplierId(objectKey, supplierId)
                 });
@@ -482,44 +509,44 @@ public class S3ImageService : IS3ImageService
             score += 1000;
         }
 
-        if (candidate.NormalizedFileName.StartsWith(normalizedArticle, StringComparison.Ordinal))
-        {
-            score += 500;
-        }
-
-        if (candidate.NormalizedFileName.Contains(normalizedArticle, StringComparison.Ordinal))
-        {
-            score += 350;
-        }
-
-        if (candidate.NormalizedObjectKey.Contains(normalizedArticle, StringComparison.Ordinal))
-        {
-            score += 200;
-        }
-
-        foreach (var token in tokens)
-        {
-            if (token.Length < 3)
-            {
-                continue;
-            }
-
-            if (candidate.NormalizedFileName.Contains(token, StringComparison.Ordinal))
-            {
-                score += 50;
-            }
-            else if (candidate.NormalizedObjectKey.Contains(token, StringComparison.Ordinal))
-            {
-                score += 20;
-            }
-        }
-
-        if (supplierId.HasValue && candidate.SupplierId == supplierId.Value)
-        {
-            score += 300;
-        }
-
-        score -= Math.Abs(candidate.NormalizedFileName.Length - normalizedArticle.Length);
+        // if (candidate.NormalizedFileName.StartsWith(normalizedArticle, StringComparison.Ordinal))
+        // {
+        //     score += 500;
+        // }
+        //
+        // if (candidate.NormalizedFileName.Contains(normalizedArticle, StringComparison.Ordinal))
+        // {
+        //     score += 350;
+        // }
+        //
+        // if (candidate.NormalizedObjectKey.Contains(normalizedArticle, StringComparison.Ordinal))
+        // {
+        //     score += 200;
+        // }
+        //
+        // foreach (var token in tokens)
+        // {
+        //     if (token.Length < 3)
+        //     {
+        //         continue;
+        //     }
+        //
+        //     if (candidate.NormalizedFileName.Contains(token, StringComparison.Ordinal))
+        //     {
+        //         score += 50;
+        //     }
+        //     else if (candidate.NormalizedObjectKey.Contains(token, StringComparison.Ordinal))
+        //     {
+        //         score += 20;
+        //     }
+        // }
+        //
+        // if (supplierId.HasValue && candidate.SupplierId == supplierId.Value)
+        // {
+        //     score += 300;
+        // }
+        //
+        // score -= Math.Abs(candidate.NormalizedFileName.Length - normalizedArticle.Length);
         return score;
     }
 

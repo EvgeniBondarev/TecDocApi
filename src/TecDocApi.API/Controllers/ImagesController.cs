@@ -163,11 +163,12 @@ public class ImagesController : ControllerBase
         if (filtered.Count == 0)
             return [];
 
-        return filtered.Select(image =>
+        return filtered.Where(image => image.PictureName.Split('.').Length > 1)
+            .Select(image =>
             {
                 var extension = image.PictureName.Split('.')[^1].ToLower();
                 var pictureName = image.PictureName.Replace(image.PictureName.Split('.')[^1], string.Empty);
-                var s3Url = $"{_s3Options.EndpointUrl}/{_s3Options.BucketName}/{_s3Options.BasePath}/{supplierId}/{pictureName}jpg";
+                var s3Url = $"{_s3Options.EndpointUrl}/{_s3Options.BucketName}/{_s3Options.BasePath}/{supplierId}/{Uri.EscapeDataString(pictureName)}jpg";
                 return new ArticleImageDocument
                 {
                     PictureName = image.PictureName,
