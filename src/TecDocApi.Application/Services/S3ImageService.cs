@@ -1,10 +1,12 @@
 using System.Text;
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Minio;
 using Minio.DataModel.Args;
 using MySqlConnector;
+using TecDocApi.Application.Caching;
 using TecDocApi.Application.Models;
 using TecDocApi.Application.Options;
 
@@ -19,6 +21,7 @@ public class S3ImageService : IS3ImageService
     private const int DbConnectionTimeoutMs = 5000;
 
     private readonly IMinioClient _minioClient;
+    private readonly IMemoryCache _cache;
     private readonly ILogger<S3ImageService> _logger;
     private readonly string _bucketName;
     private readonly string _basePath;
@@ -29,9 +32,11 @@ public class S3ImageService : IS3ImageService
     public S3ImageService(
         IOptions<S3Options> s3Options,
         IOptions<DatabaseConnectionOptions> dbOptions,
+        IMemoryCache cache,
         ILogger<S3ImageService> logger)
     {
         _logger = logger;
+        _cache = cache;
 
         var s3 = s3Options.Value;
         _endpointUrl = s3.EndpointUrl;
@@ -65,6 +70,11 @@ public class S3ImageService : IS3ImageService
         }
 
         maxResults = Math.Clamp(maxResults, 1, 100);
+        var cacheKey = $"s3_img_{normalizedArticle}_{supplierId ?? 0}_{maxResults}";
+        if (_cache.TryGetValue(cacheKey, out IReadOnlyList<S3ImageSearchResult>? cachedResults))
+        {
+            return cachedResults!;
+        }
 
         var tokens = ExtractSearchTokens(articleNumber);
         if (tokens.Count == 0)
@@ -75,7 +85,9 @@ public class S3ImageService : IS3ImageService
         var candidates = await LoadS3SearchCandidatesAsync(normalizedArticle, tokens, supplierId);
         if (candidates.Count == 0)
         {
-            return [];
+            IReadOnlyList<S3ImageSearchResult> empty = Array.Empty<S3ImageSearchResult>();
+            StaticDataCache.Set(_cache, cacheKey, empty);
+            return empty;
         }
 
         var rankedCandidates = candidates
@@ -121,6 +133,7 @@ public class S3ImageService : IS3ImageService
             });
         }
 
+        StaticDataCache.Set(_cache, cacheKey, results);
         return results;
     }
 

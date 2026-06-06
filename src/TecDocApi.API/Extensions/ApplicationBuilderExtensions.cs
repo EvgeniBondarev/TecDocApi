@@ -1,7 +1,9 @@
 using TecDocApi.API.Middleware;
 using TecDocApi.API.Models;
+using TecDocApi.Application.Caching;
 using TecDocApi.Application.Models;
 using TecDocApi.Application.Services;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace TecDocApi.API.Extensions;
 
@@ -112,7 +114,8 @@ public static class ApplicationBuilderExtensions
         app.MapGet("/api/Images/s3-search", async (
             string articleNumber,
             int maxResults,
-            IS3ImageService s3ImageService) =>
+            IS3ImageService s3ImageService,
+            IMemoryCache cache) =>
         {
             if (string.IsNullOrWhiteSpace(articleNumber))
             {
@@ -123,7 +126,18 @@ public static class ApplicationBuilderExtensions
                 });
             }
 
-            var matches = await s3ImageService.SearchImagesByArticleAsync(articleNumber, null, maxResults);
+            var normalizedArticle = new string(articleNumber
+                .Where(char.IsLetterOrDigit)
+                .Select(char.ToUpperInvariant)
+                .ToArray());
+            var clampedMaxResults = Math.Clamp(maxResults == 0 ? 20 : maxResults, 1, 100);
+            var cacheKey = $"img_s3_search_{normalizedArticle}_{clampedMaxResults}";
+            if (cache.TryGetValue(cacheKey, out List<ArticleImageDocument>? cachedResult))
+            {
+                return Results.Ok(cachedResult);
+            }
+
+            var matches = await s3ImageService.SearchImagesByArticleAsync(articleNumber, null, clampedMaxResults);
             var result = matches.Select(match => new ArticleImageDocument
             {
                 PictureName = match.PictureName,
@@ -135,6 +149,7 @@ public static class ApplicationBuilderExtensions
                 S3Url = match.S3Url
             }).ToList();
 
+            StaticDataCache.Set(cache, cacheKey, result);
             return Results.Ok(result);
         })
         .WithName("SearchS3Images")

@@ -1,8 +1,10 @@
 using System.Text;
 using Elasticsearch.Net;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nest;
+using TecDocApi.Application.Caching;
 using TecDocApi.Application.Models;
 using TecDocApi.Application.Options;
 
@@ -15,13 +17,16 @@ public class ArticleElasticsearchService : IArticleElasticsearchService
 {
     private readonly IElasticClient _client;
     private readonly string _indexName;
+    private readonly IMemoryCache _cache;
     private readonly ILogger<ArticleElasticsearchService> _logger;
 
     public ArticleElasticsearchService(
         IOptions<ElasticsearchOptions> options,
+        IMemoryCache cache,
         ILogger<ArticleElasticsearchService> logger)
     {
         _logger = logger;
+        _cache = cache;
         var esOptions = options.Value;
 
         _indexName = esOptions.IndexName;
@@ -198,6 +203,12 @@ public class ArticleElasticsearchService : IArticleElasticsearchService
 
     public async Task<ArticleSearchResult> SearchArticlesAsync(ArticleSearchRequest request)
     {
+        var cacheKey = BuildArticleSearchCacheKey("es_article", request);
+        if (_cache.TryGetValue(cacheKey, out ArticleSearchResult? cachedResult))
+        {
+            return cachedResult!;
+        }
+
         var result = new ArticleSearchResult
         {
             Page = request.Page ?? 1,
@@ -225,6 +236,7 @@ public class ArticleElasticsearchService : IArticleElasticsearchService
             result.TotalPages = (int)Math.Ceiling((double)result.Total / result.PageSize);
             result.Took = searchResponse.Took;
 
+            StaticDataCache.Set(_cache, cacheKey, result);
             return result;
         }
         catch (Exception ex)
@@ -233,6 +245,9 @@ public class ArticleElasticsearchService : IArticleElasticsearchService
             return result;
         }
     }
+
+    private static string BuildArticleSearchCacheKey(string prefix, ArticleSearchRequest request) =>
+        $"{prefix}_{request.Query}_{request.SearchMode}_{request.SupplierId}_{request.Page}_{request.PageSize}_{request.SortBy}_{request.SortDescending}";
 
     public async Task<bool> DeleteIndexAsync()
     {
@@ -286,6 +301,12 @@ public class ArticleElasticsearchService : IArticleElasticsearchService
 
     public async Task<ArticleSearchResult> SearchArticlesBySupplierAsync(ArticleSearchRequest request)
     {
+        var cacheKey = BuildArticleSearchCacheKey("es_article_supplier", request);
+        if (_cache.TryGetValue(cacheKey, out ArticleSearchResult? cachedResult))
+        {
+            return cachedResult!;
+        }
+
         var result = new ArticleSearchResult
         {
             Page = request.Page ?? 1,
@@ -313,6 +334,7 @@ public class ArticleElasticsearchService : IArticleElasticsearchService
             result.TotalPages = (int)Math.Ceiling((double)result.Total / result.PageSize);
             result.Took = searchResponse.Took;
 
+            StaticDataCache.Set(_cache, cacheKey, result);
             return result;
         }
         catch (Exception ex)

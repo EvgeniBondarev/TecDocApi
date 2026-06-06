@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
+using TecDocApi.Application.Caching;
 using TecDocApi.Domain.Entities.TecDoc;
 using TecDocApi.Infrastructure.Data;
 using TecDocApi.Infrastructure.Repositories;
@@ -16,7 +17,6 @@ public class TecDocArticleService : ITecDocArticleService
     private readonly ILogger<TecDocArticleService> _logger;
     
     private static readonly SemaphoreSlim DbSemaphore = new(10);
-    private static readonly TimeSpan CacheExpiration = TimeSpan.FromMinutes(5);
 
     public TecDocArticleService(
         TecDocUnitOfWork unitOfWork, 
@@ -102,11 +102,7 @@ public class TecDocArticleService : ITecDocArticleService
             if (!articles.Any())
             {
                 var emptyResult = new { Count = 0, Results = Array.Empty<object>() };
-                _cache.Set(cacheKey, emptyResult, new MemoryCacheEntryOptions
-                {
-                    AbsoluteExpirationRelativeToNow = CacheExpiration,
-                    Size = 1
-                });
+                StaticDataCache.Set(_cache, cacheKey, emptyResult);
                 _logger.LogInformation("Кэш SET: ключ {CacheKey}, пустой результат (Count=0)", cacheKey);
                 return emptyResult;
             }
@@ -209,11 +205,7 @@ public class TecDocArticleService : ITecDocArticleService
             };
             
             // Сохраняем в кэш
-            _cache.Set(cacheKey, response, new MemoryCacheEntryOptions
-            {
-                AbsoluteExpirationRelativeToNow = CacheExpiration,
-                Size = 1
-            });
+            StaticDataCache.Set(_cache, cacheKey, response);
             
             _logger.LogInformation("Кэш SET: ключ {CacheKey}, Count={Count}", cacheKey, response.Count);
 
@@ -265,7 +257,9 @@ public class TecDocArticleService : ITecDocArticleService
 
             if (article == null)
             {
-                return new { };
+                var emptyResult = new { };
+                StaticDataCache.Set(_cache, cacheKey, emptyResult);
+                return emptyResult;
             }
 
             var articleKey = (supplierId, article.DataSupplierArticleNumber);
@@ -351,11 +345,7 @@ public class TecDocArticleService : ITecDocArticleService
             };
             
             // Сохраняем в кэш
-            _cache.Set(cacheKey, response, new MemoryCacheEntryOptions
-            {
-                AbsoluteExpirationRelativeToNow = CacheExpiration,
-                Size = 1
-            });
+            StaticDataCache.Set(_cache, cacheKey, response);
             
             _logger.LogInformation("Кэш SET: ключ {CacheKey}", cacheKey);
 
@@ -896,11 +886,7 @@ public class TecDocArticleService : ITecDocArticleService
             if (!eanArticles.Any())
             {
                 var emptyResult = new { Count = 0, Results = Array.Empty<object>(), Ean = normalizedEan };
-                _cache.Set(cacheKey, emptyResult, new MemoryCacheEntryOptions
-                {
-                    AbsoluteExpirationRelativeToNow = CacheExpiration,
-                    Size = 1
-                });
+                StaticDataCache.Set(_cache, cacheKey, emptyResult);
                 _logger.LogInformation("Кэш SET: ключ {CacheKey}, пустой результат (Count=0)", cacheKey);
                 return emptyResult;
             }
@@ -928,11 +914,7 @@ public class TecDocArticleService : ITecDocArticleService
             if (!articlesList.Any())
             {
                 var emptyResult = new { Count = 0, Results = Array.Empty<object>(), Ean = normalizedEan };
-                _cache.Set(cacheKey, emptyResult, new MemoryCacheEntryOptions
-                {
-                    AbsoluteExpirationRelativeToNow = CacheExpiration,
-                    Size = 1
-                });
+                StaticDataCache.Set(_cache, cacheKey, emptyResult);
                 return emptyResult;
             }
 
@@ -1034,11 +1016,7 @@ public class TecDocArticleService : ITecDocArticleService
             };
             
             // Сохраняем в кэш
-            _cache.Set(cacheKey, response, new MemoryCacheEntryOptions
-            {
-                AbsoluteExpirationRelativeToNow = CacheExpiration,
-                Size = 1
-            });
+            StaticDataCache.Set(_cache, cacheKey, response);
             
             _logger.LogInformation("Кэш SET: ключ {CacheKey}, Count={Count}", cacheKey, response.Count);
 

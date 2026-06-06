@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using TecDocApi.API.DTOs;
 using TecDocApi.API.Exceptions;
 using TecDocApi.API.Models;
+using TecDocApi.Application.Caching;
 using TecDocApi.Application.Services;
 
 namespace TecDocApi.API.Controllers;
@@ -57,7 +58,7 @@ public class TecDocArticlesController : ControllerBase
     /// <response code="500">Внутренняя ошибка сервера</response>
     [HttpGet("search")]
     [EnableRateLimiting("search")]
-    [ResponseCache(Duration = 300, VaryByQueryKeys = ["articleNumber", "supplierId"])]
+    [ResponseCache(Duration = StaticDataCache.ResponseCacheDurationSeconds, VaryByQueryKeys = ["articleNumber", "supplierId"])]
     [ProducesResponseType(typeof(ArticleSearchResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
@@ -114,7 +115,7 @@ public class TecDocArticlesController : ControllerBase
     /// <response code="500">Внутренняя ошибка сервера</response>
     [HttpGet("{supplierId}/{articleNumber}")]
     [EnableRateLimiting("search")]
-    [ResponseCache(Duration = 600)]
+    [ResponseCache(Duration = StaticDataCache.ResponseCacheDurationSeconds)]
     [ProducesResponseType(typeof(ArticleDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status429TooManyRequests)]
@@ -190,7 +191,7 @@ public class TecDocArticlesController : ControllerBase
     /// <response code="500">Внутренняя ошибка сервера</response>
     [HttpGet("search/ean/{eanCode}")]
     [EnableRateLimiting("search")]
-    [ResponseCache(Duration = 300, VaryByQueryKeys = ["eanCode"])]
+    [ResponseCache(Duration = StaticDataCache.ResponseCacheDurationSeconds)]
     [ProducesResponseType(typeof(ArticleSearchResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]

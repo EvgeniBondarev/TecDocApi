@@ -3,8 +3,10 @@ using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using TecDocApi.API.Models;
+using TecDocApi.Application.Caching;
 using TecDocApi.Application.Models;
 using TecDocApi.Application.Options;
 using TecDocApi.Application.Services;
@@ -23,17 +25,20 @@ public class ImagesController : ControllerBase
 {
     private readonly IS3ImageService _s3ImageService;
     private readonly IDbContextFactory<TecDocContext> _contextFactory;
+    private readonly IMemoryCache _cache;
     private readonly ILogger<ImagesController> _logger;
     private readonly S3Options _s3Options;
 
     public ImagesController(
         IS3ImageService s3ImageService,
         IDbContextFactory<TecDocContext> contextFactory,
+        IMemoryCache cache,
         ILogger<ImagesController> logger,
         IOptions<S3Options> s3Options)
     {
         _s3ImageService = s3ImageService;
         _contextFactory = contextFactory;
+        _cache = cache;
         _logger = logger;
         _s3Options = s3Options.Value;
     }
@@ -64,6 +69,7 @@ public class ImagesController : ControllerBase
     /// <response code="400">Некорректные параметры запроса</response>
     /// <response code="500">Внутренняя ошибка сервера</response>
     [HttpGet("article-search")]
+    [ResponseCache(Duration = StaticDataCache.ResponseCacheDurationSeconds, VaryByQueryKeys = ["supplierId", "articleNumber", "maxResults"])]
     [ProducesResponseType(typeof(List<ArticleImageDocument>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError)]
@@ -89,6 +95,13 @@ public class ImagesController : ControllerBase
 
         try
         {
+            var normalizedArticle = NormalizeForSearch(articleNumber);
+            var cacheKey = $"img_search_{supplierId ?? 0}_{normalizedArticle}_{maxResults}";
+            if (_cache.TryGetValue(cacheKey, out List<ArticleImageDocument>? cachedResult))
+            {
+                return Ok(cachedResult);
+            }
+
             var result = supplierId.HasValue
                 ? await SearchArticleImagesBySupplierMetadataAsync(supplierId.Value, articleNumber, maxResults)
                 : [];
@@ -109,6 +122,7 @@ public class ImagesController : ControllerBase
             }
 
             result = result.DistinctBy(e => e.S3Url).ToList();
+            StaticDataCache.Set(_cache, cacheKey, result);
             return Ok(result);
         }
         catch (Exception ex)

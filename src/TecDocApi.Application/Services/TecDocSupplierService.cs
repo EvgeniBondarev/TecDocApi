@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
+using TecDocApi.Application.Caching;
 using TecDocApi.Domain.Entities.TecDoc;
 using TecDocApi.Infrastructure.Data;
 using TecDocApi.Infrastructure.Repositories;
@@ -16,9 +17,6 @@ public class TecDocSupplierService : ITecDocSupplierService
     
     // Ограничение параллелизма для защиты БД
     private static readonly SemaphoreSlim DbSemaphore = new(10);
-    
-    // Время жизни кэша
-    private static readonly TimeSpan CacheExpiration = TimeSpan.FromMinutes(10);
 
     public TecDocSupplierService(
         TecDocUnitOfWork unitOfWork, 
@@ -103,7 +101,9 @@ public class TecDocSupplierService : ITecDocSupplierService
 
             if (!suppliers.Any())
             {
-                return new { Count = 0, Results = Array.Empty<object>() };
+                var emptyResult = new { Count = 0, Results = Array.Empty<object>() };
+                StaticDataCache.Set(_cache, cacheKey, emptyResult);
+                return emptyResult;
             }
 
             var supplierIds = suppliers.Select(s => s.Id).ToList();
@@ -157,11 +157,14 @@ public class TecDocSupplierService : ITecDocSupplierService
                     : Enumerable.Empty<object>()
             });
 
-            return new
+            var response = new
             {
                 suppliers.Count,
                 Results = result
             };
+
+            StaticDataCache.Set(_cache, cacheKey, response);
+            return response;
         }
         catch (Exception ex)
         {
@@ -186,7 +189,9 @@ public class TecDocSupplierService : ITecDocSupplierService
 
             if (supplier == null)
             {
-                return new { };
+                var emptyResult = new { };
+                StaticDataCache.Set(_cache, cacheKey, emptyResult);
+                return emptyResult;
             }
 
             var details = await RunDbAsync(async () =>
@@ -232,11 +237,7 @@ public class TecDocSupplierService : ITecDocSupplierService
                 })
             };
             
-            _cache.Set(cacheKey, response, new MemoryCacheEntryOptions
-            {
-                AbsoluteExpirationRelativeToNow = CacheExpiration,
-                Size = 1
-            });
+            StaticDataCache.Set(_cache, cacheKey, response);
 
             return response;
         }

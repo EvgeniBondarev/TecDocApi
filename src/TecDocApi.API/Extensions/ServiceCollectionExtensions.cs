@@ -130,14 +130,15 @@ public static class ServiceCollectionExtensions
         services.AddResponseCaching(options =>
         {
             options.MaximumBodySize = 64 * 1024 * 1024;
-            options.SizeLimit = 100 * 1024 * 1024;
+            options.SizeLimit = 512 * 1024 * 1024;
             options.UseCaseSensitivePaths = false;
         });
 
         services.AddMemoryCache(options =>
         {
-            options.SizeLimit = 1024;
-            options.CompactionPercentage = 0.25;
+            // Статическая БД: кэшируем ответы без TTL, лимит — по количеству ключей.
+            options.SizeLimit = 1_000_000;
+            options.CompactionPercentage = 0.05;
         });
 
         return services;

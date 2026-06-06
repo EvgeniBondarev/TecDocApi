@@ -1,6 +1,8 @@
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nest;
+using TecDocApi.Application.Caching;
 using TecDocApi.Application.Models;
 using TecDocApi.Application.Options;
 
@@ -13,13 +15,16 @@ public class SupplierElasticsearchService : ISupplierElasticsearchService
 {
     private readonly IElasticClient _client;
     private readonly string _indexName;
+    private readonly IMemoryCache _cache;
     private readonly ILogger<SupplierElasticsearchService> _logger;
 
     public SupplierElasticsearchService(
         IOptions<ElasticsearchOptions> options,
+        IMemoryCache cache,
         ILogger<SupplierElasticsearchService> logger)
     {
         _logger = logger;
+        _cache = cache;
         var esOptions = options.Value;
 
         _indexName = esOptions.SupplierIndexName;
@@ -182,6 +187,12 @@ public class SupplierElasticsearchService : ISupplierElasticsearchService
 
     public async Task<SupplierSearchResult> SearchSuppliersAsync(SupplierSearchRequest request)
     {
+        var cacheKey = BuildSupplierSearchCacheKey(request);
+        if (_cache.TryGetValue(cacheKey, out SupplierSearchResult? cachedResult))
+        {
+            return cachedResult!;
+        }
+
         var result = new SupplierSearchResult
         {
             Page = request.Page ?? 1,
@@ -209,6 +220,7 @@ public class SupplierElasticsearchService : ISupplierElasticsearchService
             result.TotalPages = (int)Math.Ceiling((double)result.Total / result.PageSize);
             result.Took = searchResponse.Took;
 
+            StaticDataCache.Set(_cache, cacheKey, result);
             return result;
         }
         catch (Exception ex)
@@ -217,6 +229,9 @@ public class SupplierElasticsearchService : ISupplierElasticsearchService
             return result;
         }
     }
+
+    private static string BuildSupplierSearchCacheKey(SupplierSearchRequest request) =>
+        $"es_supplier_{request.Query}_{request.Page}_{request.PageSize}_{request.SortBy}_{request.SortDescending}";
 
     public async Task<bool> DeleteIndexAsync()
     {

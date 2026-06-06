@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using TecDocApi.API.DTOs;
 using TecDocApi.API.Exceptions;
 using TecDocApi.API.Models;
+using TecDocApi.Application.Caching;
 using TecDocApi.Application.Services;
 using ValidationException = TecDocApi.API.Exceptions.ValidationException;
 
@@ -57,7 +58,7 @@ public class TecDocSuppliersController : ControllerBase
     /// <response code="500">Внутренняя ошибка сервера</response>
     [HttpGet("search")]
     [EnableRateLimiting("search")]
-    [ResponseCache(Duration = 600, VaryByQueryKeys = ["matchcode", "id"])]
+    [ResponseCache(Duration = StaticDataCache.ResponseCacheDurationSeconds, VaryByQueryKeys = ["matchcode", "id"])]
     [ProducesResponseType(typeof(SupplierSearchResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
@@ -120,7 +121,7 @@ public class TecDocSuppliersController : ControllerBase
     /// <response code="429">Превышен лимит запросов</response>
     /// <response code="500">Внутренняя ошибка сервера</response>
     [HttpGet("{id}")]
-    [ResponseCache(Duration = 1800)]
+    [ResponseCache(Duration = StaticDataCache.ResponseCacheDurationSeconds)]
     [ProducesResponseType(typeof(SupplierDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status429TooManyRequests)]
